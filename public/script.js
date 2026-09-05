@@ -46,7 +46,6 @@ async function initWalletConnect() {
     }
   });
 
-  // Attendre que QRCode.js soit chargé
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -66,23 +65,21 @@ async function initWalletConnect() {
   const qrDiv = document.getElementById('qrcode');
   qrDiv.innerHTML = '';
 
-  // Créer la structure HTML avec le QR et le logo superposé
+  // Structure HTML modifiée : coins arrondis, logo plus petit sans fond blanc
   qrDiv.innerHTML = `
-    <div style="position: relative; display: inline-block; background: white; padding: 10px;">
+    <div style="position: relative; display: inline-block; background: white; padding: 10px; border-radius: 16px;">
       <div id="qr-container"></div>
       <img src="etherscan-logo-circle.png" 
            style="position: absolute; top: 50%; left: 50%; 
                   transform: translate(-50%, -50%); 
-                  width: 70px; height: 70px; 
-                  background: white; border-radius: 12px; 
-                  padding: 5px; object-fit: contain;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                  width: 55px; height: 55px; 
+                  border-radius: 8px;
+                  object-fit: contain;"
            alt="Logo"
            onerror="this.style.display='none'; console.error('Logo failed to load');">
     </div>
   `;
 
-  // Générer le QR code
   new QRCode(document.getElementById('qr-container'), {
     text: uri,
     width: 280,
