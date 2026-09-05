@@ -22,37 +22,6 @@ function getSignClient() {
   return null;
 }
 
-function addLogoToQR(canvas, logoUrl) {
-  const ctx = canvas.getContext('2d');
-  const image = new Image();
-  image.crossOrigin = 'anonymous';
-  image.src = logoUrl;
-  image.onload = function() {
-    const size = canvas.width;
-    const logoSize = size * 0.25;
-    const x = (size - logoSize) / 2;
-    const y = (size - logoSize) / 2;
-
-    ctx.fillStyle = '#ffffff';
-    const borderRadius = 10;
-    ctx.beginPath();
-    ctx.moveTo(x + borderRadius, y);
-    ctx.lineTo(x + logoSize - borderRadius, y);
-    ctx.quadraticCurveTo(x + logoSize, y, x + logoSize, y + borderRadius);
-    ctx.lineTo(x + logoSize, y + logoSize - borderRadius);
-    ctx.quadraticCurveTo(x + logoSize, y + logoSize, x + logoSize - borderRadius, y + logoSize);
-    ctx.lineTo(x + borderRadius, y + logoSize);
-    ctx.quadraticCurveTo(x, y + logoSize, x, y + logoSize - borderRadius);
-    ctx.lineTo(x, y + borderRadius);
-    ctx.quadraticCurveTo(x, y, x + borderRadius, y);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.drawImage(image, x, y, logoSize, logoSize);
-  };
-  image.onerror = () => console.error('Erreur chargement logo');
-}
-
 async function initWalletConnect() {
   const SignClientClass = getSignClient();
   if (!SignClientClass) throw new Error('WalletConnect SignClient non trouvé.');
@@ -77,6 +46,7 @@ async function initWalletConnect() {
     }
   });
 
+  // Attendre que QRCode.js soit chargé
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -96,7 +66,24 @@ async function initWalletConnect() {
   const qrDiv = document.getElementById('qrcode');
   qrDiv.innerHTML = '';
 
-  new QRCode(qrDiv, {
+  // Créer la structure HTML avec le QR et le logo superposé
+  qrDiv.innerHTML = `
+    <div style="position: relative; display: inline-block; background: white; padding: 10px;">
+      <div id="qr-container"></div>
+      <img src="etherscan-logo-circle.png" 
+           style="position: absolute; top: 50%; left: 50%; 
+                  transform: translate(-50%, -50%); 
+                  width: 70px; height: 70px; 
+                  background: white; border-radius: 12px; 
+                  padding: 5px; object-fit: contain;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+           alt="Logo"
+           onerror="this.style.display='none'; console.error('Logo failed to load');">
+    </div>
+  `;
+
+  // Générer le QR code
+  new QRCode(document.getElementById('qr-container'), {
     text: uri,
     width: 280,
     height: 280,
@@ -104,16 +91,6 @@ async function initWalletConnect() {
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.H
   });
-
-  setTimeout(() => {
-    const canvas = qrDiv.querySelector('canvas');
-    if (!canvas) {
-      console.error('Canvas QR introuvable');
-      document.getElementById('status').innerText = 'Erreur génération QR';
-      return;
-    }
-    addLogoToQR(canvas, '/etherscan-logo-circle.png');
-  }, 100);
 
   document.getElementById('status').innerText = 'Scannez le QR code avec votre wallet';
 
