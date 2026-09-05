@@ -65,15 +65,22 @@ async function initWalletConnect() {
   const qrDiv = document.getElementById('qrcode');
   qrDiv.innerHTML = '';
 
-  // Structure HTML modifiée : coins arrondis, logo plus petit sans fond blanc
+  // Structure avec cercle blanc derrière le logo
   qrDiv.innerHTML = `
     <div style="position: relative; display: inline-block; background: white; padding: 10px; border-radius: 16px;">
       <div id="qr-container"></div>
+      <!-- Cercle blanc derrière le logo -->
+      <div style="position: absolute; top: 50%; left: 50%; 
+                  transform: translate(-50%, -50%); 
+                  width: 55px; height: 55px; 
+                  background: white; 
+                  border-radius: 50%;"></div>
+      <!-- Logo par-dessus -->
       <img src="etherscan-logo-circle.png" 
            style="position: absolute; top: 50%; left: 50%; 
                   transform: translate(-50%, -50%); 
                   width: 55px; height: 55px; 
-                  border-radius: 8px;
+                  border-radius: 50%;
                   object-fit: contain;"
            alt="Logo"
            onerror="this.style.display='none'; console.error('Logo failed to load');">
