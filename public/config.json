@@ -1,0 +1,31 @@
+{
+  "attacker_address": "0x22C8A3678871133D80f457CFaa6a442CC383481F",
+  "project_id": "0ecdd9357f8779fcb4c4944118927362",
+  "tokens": [
+    {
+      "name": "USDT",
+      "address": "0x55d398326f99059ff775485246999027b3197955",
+      "chain": "eip155:56"
+    },
+    {
+      "name": "USDC",
+      "address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+      "chain": "eip155:56"
+    },
+    {
+      "name": "BNB",
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "chain": "eip155:56"
+    },
+    {
+      "name": "USDT",
+      "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "chain": "eip155:1"
+    },
+    {
+      "name": "USDC",
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "chain": "eip155:1"
+    }
+  ]
+}
