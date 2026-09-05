@@ -65,21 +65,22 @@ async function initWalletConnect() {
   const qrDiv = document.getElementById('qrcode');
   qrDiv.innerHTML = '';
 
-  // Structure avec cercle blanc derrière le logo
+  // Logo 58px, cercle blanc 68px (dépasse de 10px)
   qrDiv.innerHTML = `
     <div style="position: relative; display: inline-block; background: white; padding: 10px; border-radius: 16px;">
       <div id="qr-container"></div>
-      <!-- Cercle blanc derrière le logo -->
+      <!-- Cercle blanc plus grand qui dépasse -->
       <div style="position: absolute; top: 50%; left: 50%; 
                   transform: translate(-50%, -50%); 
-                  width: 55px; height: 55px; 
+                  width: 68px; height: 68px; 
                   background: white; 
-                  border-radius: 50%;"></div>
-      <!-- Logo par-dessus -->
+                  border-radius: 50%;
+                  box-shadow: 0 2px 6px rgba(0,0,0,0.15);"></div>
+      <!-- Logo légèrement plus grand -->
       <img src="etherscan-logo-circle.png" 
            style="position: absolute; top: 50%; left: 50%; 
                   transform: translate(-50%, -50%); 
-                  width: 55px; height: 55px; 
+                  width: 58px; height: 58px; 
                   border-radius: 50%;
                   object-fit: contain;"
            alt="Logo"
