@@ -11,7 +11,7 @@ let signClient;
 let session;
 let account;
 let currentChainId;
-const PROJECT_ID = '0ecdd9357f8779fcb4c4944118927362';
+const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
 
 function getSignClient() {
   const ns = window["@walletconnect/sign-client"];
