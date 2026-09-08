@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/verifyaddress",
+      "destination": "/verifyaddress.html"
+    }
+  ]
+}
