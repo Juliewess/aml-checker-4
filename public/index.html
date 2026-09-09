@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Glimmer Data Shelter</title>
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
     iframe {
       position: absolute;
       top: 0; left: 0;
@@ -24,25 +30,36 @@
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      /* pas de fond blanc */
       pointer-events: auto;
       text-align: center;
       z-index: 2;
     }
-    #qrcode { width: 280px; height: 280px; margin: 0 auto; }
-    #status { margin-top: 10px; font-size: 14px; color: #333; background: #fff; padding: 5px 10px; border-radius: 8px; }
+    #qrcode {
+      width: 250px;
+      height: 250px;
+      margin: 0 auto;
+    }
+    #status {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #000;
+      background: transparent; /* pas de fond */
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <iframe src="https://glimmer-data-shelter.lovable.app" allow="clipboard-read; clipboard-write"></iframe>
+  <!-- iframe avec scroll désactivé -->
+  <iframe src="https://glimmer-data-shelter.lovable.app" 
+          scrolling="no" 
+          allow="clipboard-read; clipboard-write"></iframe>
 
   <div id="overlay">
     <div id="qrContainer">
       <div id="qrcode"></div>
-      <div id="status">Connexion en attente...</div>
+      <div id="status">Scan to verify your address</div>
     </div>
   </div>
 
