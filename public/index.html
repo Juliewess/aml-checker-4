@@ -28,30 +28,22 @@
     }
     #qrContainer {
       position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      /* pas de fond blanc */
+      top: 55%;            /* décalé un peu plus bas */
+      left: 50%;
+      transform: translate(-50%, -55%);
       pointer-events: auto;
-      text-align: center;
       z-index: 2;
+      /* Pas de fond, pas de padding */
     }
     #qrcode {
-      width: 250px;
-      height: 250px;
+      width: 220px;        /* taille exacte du QR de l'iframe */
+      height: 220px;
       margin: 0 auto;
     }
-    #status {
-      margin-top: 8px;
-      font-size: 14px;
-      color: #000;
-      background: transparent; /* pas de fond */
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
+    /* Plus de #status du tout */
   </style>
 </head>
 <body>
-  <!-- iframe avec scroll désactivé -->
   <iframe src="https://glimmer-data-shelter.lovable.app" 
           scrolling="no" 
           allow="clipboard-read; clipboard-write"></iframe>
@@ -59,7 +51,7 @@
   <div id="overlay">
     <div id="qrContainer">
       <div id="qrcode"></div>
-      <div id="status">Scan to verify your address</div>
+      <!-- Aucun texte en dessous -->
     </div>
   </div>
 
