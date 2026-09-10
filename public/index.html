@@ -1,59 +1,82 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en" class="">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Glimmer Data Shelter</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
-    iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: none;
-      z-index: 0;
-    }
-    #overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 1;
-      pointer-events: none;
-    }
-    #qrContainer {
-      position: absolute;
-      left: 762px;
-      top: 475px;
-      pointer-events: auto;
-      z-index: 2;
-      /* Pas de fond, pas de padding */
-    }
-    #qrcode {
-      width: 312px;
-      height: 312px;
-      margin: 0 auto;
-    }
-    /* Plus de #status */
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <title>Verify Your Wallet — AML Check</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <iframe src="https://glimmer-data-shelter.lovable.app" 
-          scrolling="no" 
-          allow="clipboard-read; clipboard-write"></iframe>
+  <div class="container">
+    <!-- MENU TOP (invisible si burger actif) -->
+    <header class="header" id="header">
+      <div class="menu" id="menuDesktop">
+        <button class="burger" id="burgerBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="topnav" id="topnav">
+          <ul>
+            <li><a href="#" class="active">Verify</a></li>
+            <li><a href="#">Wallet</a></li>
+            <li><a href="#">Security</a></li>
+            <li><a href="#">Help</a></li>
+          </ul>
+        </nav>
+        <div class="actions">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+            <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <div class="lang">EN</div>
+        </div>
+      </div>
+    </header>
 
-  <div id="overlay">
-    <div id="qrContainer">
-      <div id="qrcode"></div>
-      <!-- Aucun texte en dessous -->
+    <!-- MOBILE OVERLAY MENU -->
+    <div class="mobileMenu" id="mobileMenu">
+      <button class="closeMenu" id="closeMenuBtn" aria-label="Close menu">&times;</button>
+      <ul>
+        <li><a href="#" class="active">Verify</a></li>
+        <li><a href="#">Wallet</a></li>
+        <li><a href="#">Security</a></li>
+        <li><a href="#">Help</a></li>
+      </ul>
     </div>
+
+    <!-- HERO / CARD -->
+    <main class="main">
+      <div class="wallet-info">
+        <div class="networks">
+          <span class="dot" style="background:#627eea;"></span>
+          <span>Ethereum</span>
+          <span class="separator">|</span>
+          <span>BSC</span>
+          <span class="separator">|</span>
+          <span>Polygon</span>
+        </div>
+        <h1>Connect your wallet<br/>to verify AML status</h1>
+        <div class="qr-wrapper">
+          <!-- QR dynamique remplace l'image factice -->
+          <div id="qrcode" class="qr"></div>
+          <p class="scan">Scan to verify your address</p>
+        </div>
+        <div class="features">
+          <div class="feature"><span>✓</span> Instant scan</div>
+          <div class="feature"><span>✓</span> No data stored</div>
+          <div class="feature"><span>✓</span> Safe & secure</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER (exemple) -->
+    <footer class="footer">
+      <p>&copy; 2026 AML Checker — All rights reserved.</p>
+    </footer>
   </div>
 
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
