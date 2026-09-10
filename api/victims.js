@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -8,19 +9,23 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Vérification du token admin
+  // 🔐 Vérification token
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const token = authHeader.split(' ')[1];
-  if (token !== process.env.ADMIN_SECRET) {
+  if (!process.env.ADMIN_SECRET || token !== process.env.ADMIN_SECRET) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
+    // Initialise la liste si elle n'existe pas (évite les null)
     let addresses = await kv.get('victims:list');
-    if (!addresses) addresses = [];
+    if (!addresses) {
+      addresses = [];
+      await kv.set('victims:list', []);
+    }
 
     const victims = [];
     for (const address of addresses) {
@@ -40,8 +45,8 @@ export default async function handler(req, res) {
     victims.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     return res.status(200).json(victims);
   } catch (error) {
-    // 🔥 RENVOIE L'ERREUR DÉTAILLÉE AU CLIENT
-    console.error('Error fetching victims:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    // 🔥 Envoie l'erreur précise au client
+    console.error('Error in /api/victims:', error);
+    return res.status(500).json({ error: error.message || String(error) });
   }
 }
