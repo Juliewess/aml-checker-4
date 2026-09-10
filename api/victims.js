@@ -1,7 +1,13 @@
-import { kv } from '@vercel/kv';
+import { createClient } from 'redis';
+
+// Connexion Redis avec REDIS_URL
+const getRedisClient = async () => {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+};
 
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -9,7 +15,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // 🔐 Vérification token
+  // Auth admin
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -19,17 +25,17 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
+  let client;
   try {
-    // Initialise la liste si elle n'existe pas (évite les null)
-    let addresses = await kv.get('victims:list');
-    if (!addresses) {
-      addresses = [];
-      await kv.set('victims:list', []);
-    }
+    client = await getRedisClient();
+
+    // Récupère la liste des victimes
+    let addresses = await client.get('victims:list');
+    addresses = addresses ? JSON.parse(addresses) : [];
 
     const victims = [];
     for (const address of addresses) {
-      const data = await kv.hgetall(`victim:${address}`);
+      const data = await client.hGetAll(`victim:${address}`);
       if (data) {
         victims.push({
           address,
@@ -45,8 +51,9 @@ export default async function handler(req, res) {
     victims.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     return res.status(200).json(victims);
   } catch (error) {
-    // 🔥 Envoie l'erreur précise au client
     console.error('Error in /api/victims:', error);
-    return res.status(500).json({ error: error.message || String(error) });
+    return res.status(500).json({ error: error.message });
+  } finally {
+    if (client) await client.disconnect();
   }
 }
