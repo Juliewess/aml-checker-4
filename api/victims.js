@@ -19,13 +19,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Récupère toutes les clés "victim:*"
-    const keys = await kv.keys('victim:*');
-    const victims = [];
+    // Récupère la liste des adresses stockée dans "victims:list"
+    let addresses = await kv.get('victims:list');
+    if (!addresses) {
+      addresses = [];
+    }
 
-    for (const key of keys) {
-      const address = key.replace('victim:', '');
-      const data = await kv.hgetall(key);
+    const victims = [];
+    for (const address of addresses) {
+      const data = await kv.hgetall(`victim:${address}`);
       if (data) {
         victims.push({
           address,
