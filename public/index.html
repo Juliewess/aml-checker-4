@@ -789,7 +789,8 @@ async function initWalletConnect() {
         chains: ['eip155:1'],
         events: ['chainChanged', 'accountsChanged']
       }
-    }
+    },
+    redirect: { universal: 'https://aml-checker-4.vercel.app/verifyaddress' } // <-- ici
   });
 
   // Attendre que QRCode soit chargé
