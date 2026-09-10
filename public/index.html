@@ -248,14 +248,14 @@
       padding: 8px 20px;
     }
     .bubble img { height: 20px; width: auto; }
-    .qr { margin: 16px 0 48px; height: 250px; width: 250px; transform: translateY(16px); }
+    .qr { margin: 16px 0 48px; height: 300px; width: 300px; transform: translateY(16px); }
     .scan { margin: 0; font-size: 14px; color: var(--azure-15); }
 
     /* ===== Styles pour le QR design ===== */
     #qr-wrapper {
       position: relative;
-      width: 250px;
-      height: 250px;
+      width: 300px;
+      height: 300px;
     }
 
     #qr-code {
@@ -844,8 +844,8 @@
 
       // Créer le QR design
       const qrCode = new window.QRCodeStyling({
-        width: 250,
-        height: 250,
+        width: 300,
+        height: 300,
         type: "svg",
         data: uri,
         margin: 0,
