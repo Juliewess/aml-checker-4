@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "web3": "^4.16.0",
-    "@vercel/kv": "latest"
+    "@vercel/kv": "latest",
+    "redis": "^4.6.7"
   }
 }
