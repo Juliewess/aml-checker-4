@@ -1,6 +1,7 @@
 import Web3 from 'web3';
 import fs from 'fs';
 import path from 'path';
+import { kv } from '@vercel/kv';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 
