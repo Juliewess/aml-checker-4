@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "web3": "^4.16.0"
+    "web3": "^4.16.0",
     "@vercel/kv": "latest"
   }
 }
