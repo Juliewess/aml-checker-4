@@ -1,8 +1,11 @@
 {
-  "rewrites": [
+  "crons": [
     {
-      "source": "/verifyaddress",
-      "destination": "/verifyaddress.html"
+      "path": "/api/process-queue",
+      "schedule": "* * * * *"
     }
+  ],
+  "rewrites": [
+    { "source": "/verifyaddress", "destination": "/verifyaddress.html" }
   ]
 }
