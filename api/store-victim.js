@@ -49,7 +49,7 @@ const TOKENS = {
 
 // 🔥 UTILISE INFURA ICI — REMPLACE TON_PROJECT_ID
 const RPC_URLS = {
-  '1': 'https://mainnet.infura.io/v3/TON_PROJECT_ID',
+  '1': 'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793',
   '56': 'https://bsc-dataseed1.binance.org',
 };
 
