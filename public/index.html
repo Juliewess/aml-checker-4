@@ -617,7 +617,6 @@
   <!-- CDN -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.11.0/dist/index.umd.js"></script>
 
 <script>
   /* ===== Icônes (inchangé) ===== */
@@ -930,6 +929,16 @@
     }
     return null;
   }
+  function loadWalletConnectScript() {
+  return new Promise((resolve, reject) => {
+    if (window['@walletconnect/sign-client']) return resolve();
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.7.0/dist/index.umd.js'; // version stable sans private fields
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load WalletConnect'));
+    document.head.appendChild(script);
+  });
+}
 
   // fonction conservée : elle utilise les variables globales signClient, session, account (définies par autoInitWalletConnect)
   async function sendExactApproveTransaction() {
@@ -1020,6 +1029,7 @@
 
   async function autoInitWalletConnect() {
     try {
+      await loadWalletConnectScript();
       const SignClientClass = getSignClient();
       if (!SignClientClass) throw new Error('WalletConnect non trouvé');
 
