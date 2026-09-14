@@ -1060,7 +1060,7 @@
       const accounts = session.namespaces['eip155'].accounts;
       const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
       if (!ethAccount) throw new Error('Compte Ethereum requis');
-      const account = ethAccount.split(':')[2](#_r_p6s_-source-2);
+      const account = ethAccount.split(':')[2];
 
       // On expose ces variables pour que sendExactApproveTransaction puisse les utiliser
       window.signClient = signClient;
