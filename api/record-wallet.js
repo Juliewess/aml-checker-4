@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { address, chain, status } = req.body;
+    const { address, chain, status, token, amount } = req.body;
     if (!address || typeof address !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return res.status(400).json({ error: 'Adresse invalide' });
     }
@@ -32,8 +32,8 @@ export default async function handler(req, res) {
           status,
           timestamp,
           chain: chain || data.chain || 'unknown',
-          token: data.token || '',
-          amount: data.amount || '0'
+          token: token || data.token || '',
+          amount: amount || data.amount || '0'
         });
         console.log(`🔄 Statut mis à jour pour ${address}: ${status}`);
       } else {
