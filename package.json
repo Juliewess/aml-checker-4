@@ -2,12 +2,8 @@
   "name": "aml-checker",
   "version": "1.0.0",
   "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
   "dependencies": {
     "ethers": "^5.7.2",
-    "@vercel/kv": "latest",
-    "redis": "^4.6.7"
+    "ioredis": "^5.3.2"
   }
 }
