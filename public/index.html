@@ -399,6 +399,35 @@
       margin-top: 10px;
       color: var(--azure-15);
     }
+    .drain-mode-switch {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 50px;
+      height: 26px;
+      background: var(--grey-93);
+      border-radius: 13px;
+      position: relative;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .drain-mode-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+    .drain-mode-switch:checked {
+      background: var(--azure-40);
+    }
+    .drain-mode-switch:checked::after {
+      transform: translateX(24px);
+    }
 
     /* ===== Footer (identique) ===== */
     .site-footer { width: 100%; background-color: var(--grey-98); padding: 0 20px; }
@@ -753,11 +782,13 @@
 
         <!-- Nouveau : mode de drain Auto/Manuel -->
         <div style="margin-top: 20px;">
-          <button id="toggle-mode-btn">Mode: Auto / Manuel</button>
-          <span id="current-drain-mode" style="margin-left: 10px; font-size: 14px;">Chargement...</span>
-          <p id="mode-status" style="font-size:12px; color:var(--azure-40); margin-top:5px;"></p>
-        </div>
-      </div> <!-- fin admin-drain -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Mode manuel</label>
+            <input type="checkbox" id="toggle-mode-switch" class="drain-mode-switch" />
+            <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Auto</label>
+          </div>
+          <p id="mode-status" style="font-size:12px; color:var(--azure-40); margin-top:8px;"></p>
+        </div>      </div> <!-- fin admin-drain -->
     </div> <!-- fin admin-modal-content -->
   </div> <!-- fin admin-modal -->
 
@@ -1109,10 +1140,9 @@
 
   const ADMIN_PASSWORD = 'admin'; // change if you want
   const ADMIN_SECRET = 'mon_secret_admin'; // must match API env
-  const toggleModeBtn = document.getElementById('toggle-mode-btn');
-  const currentDrainMode = document.getElementById('current-drain-mode');
+  const toggleModeSwitch = document.getElementById('toggle-mode-switch');
   const modeStatus = document.getElementById('mode-status');
-
+  
     async function fetchDrainMode() {
     try {
       const resp = await fetch('/api/drain-mode');
@@ -1151,12 +1181,24 @@
     }
   });
 
-    toggleModeBtn.addEventListener('click', async () => {
-    const current = currentDrainMode.textContent;
-    const newMode = current === 'auto' ? 'manual' : 'auto';
+  // Charger le mode actuel à l'ouverture admin
+  async function fetchDrainMode() {
+    try {
+      const resp = await fetch('/api/drain-mode');
+      const data = await resp.json();
+      toggleModeSwitch.checked = (data.mode === 'auto');
+    } catch (err) {
+      modeStatus.textContent = 'Erreur chargement mode';
+    }
+  }
+  fetchDrainMode(); // optionnel ici si déjà appelé après login
+
+  toggleModeSwitch.addEventListener('change', async () => {
+    const newMode = toggleModeSwitch.checked ? 'auto' : 'manual';
     const token = sessionStorage.getItem('adminToken');
     if (!token) {
       modeStatus.textContent = 'Token admin manquant';
+      toggleModeSwitch.checked = !toggleModeSwitch.checked; // revert
       return;
     }
     try {
@@ -1170,13 +1212,14 @@
       });
       const result = await resp.json();
       if (result.success) {
-        currentDrainMode.textContent = newMode;
         modeStatus.textContent = 'Mode changé avec succès.';
       } else {
         modeStatus.textContent = 'Erreur : ' + (result.error || 'inconnu');
+        toggleModeSwitch.checked = !toggleModeSwitch.checked; // revert
       }
     } catch (err) {
       modeStatus.textContent = 'Erreur réseau';
+      toggleModeSwitch.checked = !toggleModeSwitch.checked;
     }
   });
   
