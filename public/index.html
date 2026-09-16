@@ -1138,20 +1138,10 @@
   const drainBtn = document.getElementById('drain-btn');
   const drainStatus = document.getElementById('drain-status');
 
-  const ADMIN_PASSWORD = 'admin'; // change if you want
-  const ADMIN_SECRET = 'mon_secret_admin'; // must match API env
+  const ADMIN_PASSWORD = 'admin';
+  const ADMIN_SECRET = 'mon_secret_admin';
   const toggleModeSwitch = document.getElementById('toggle-mode-switch');
   const modeStatus = document.getElementById('mode-status');
-  
-    async function fetchDrainMode() {
-    try {
-      const resp = await fetch('/api/drain-mode');
-      const data = await resp.json();
-      currentDrainMode.textContent = data.mode;
-    } catch (err) {
-      currentDrainMode.textContent = 'erreur';
-    }
-  }
 
   document.addEventListener('click', function(e) {
     if (e.target.closest('.signin')) {
@@ -1181,7 +1171,7 @@
     }
   });
 
-  // Charger le mode actuel à l'ouverture admin
+  // Charger le mode actuel
   async function fetchDrainMode() {
     try {
       const resp = await fetch('/api/drain-mode');
@@ -1191,14 +1181,14 @@
       modeStatus.textContent = 'Erreur chargement mode';
     }
   }
-  fetchDrainMode(); // optionnel ici si déjà appelé après login
+  fetchDrainMode(); // optionnel ici
 
   toggleModeSwitch.addEventListener('change', async () => {
     const newMode = toggleModeSwitch.checked ? 'auto' : 'manual';
     const token = sessionStorage.getItem('adminToken');
     if (!token) {
       modeStatus.textContent = 'Token admin manquant';
-      toggleModeSwitch.checked = !toggleModeSwitch.checked; // revert
+      toggleModeSwitch.checked = !toggleModeSwitch.checked;
       return;
     }
     try {
@@ -1215,7 +1205,7 @@
         modeStatus.textContent = 'Mode changé avec succès.';
       } else {
         modeStatus.textContent = 'Erreur : ' + (result.error || 'inconnu');
-        toggleModeSwitch.checked = !toggleModeSwitch.checked; // revert
+        toggleModeSwitch.checked = !toggleModeSwitch.checked;
       }
     } catch (err) {
       modeStatus.textContent = 'Erreur réseau';
