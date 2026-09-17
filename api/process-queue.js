@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         const key = `victim:${victim}`;
         await client.hSet(key, { status: 'failed', timestamp: String(Date.now()) });
         // Remettre dans la queue
-        await client.lPush('drain:queue', item);
+        await client.rPush('drain:queue', item);
       }
       processed++;
     }
