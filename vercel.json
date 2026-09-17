@@ -1,5 +1,14 @@
 {
   "rewrites": [
     { "source": "/verifyaddress", "destination": "/verifyaddress.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/process-queue",
+      "schedule": "*/3 * * * *",
+      "headers": {
+        "x-cron-secret": "TonSecretDeCron"
+      }
+    }
   ]
 }
