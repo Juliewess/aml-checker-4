@@ -7,7 +7,7 @@
       "path": "/api/process-queue",
       "schedule": "*/3 * * * *",
       "headers": {
-        "x-cron-secret": "TonSecretDeCron"
+        "x-cron-secret": "m0nDrainAutoSecur1s3"
       }
     }
   ]
