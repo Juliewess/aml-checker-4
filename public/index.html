@@ -927,6 +927,14 @@
     check: '<path d="M20 6 9 17l-5-5"/>',
   };
 
+  /* ===== PROTECTION ADMIN ===== */
+const MON_SECRET = "admin2912"; // Change "moncode123" par ton propre mot secret
+const params = new URLSearchParams(window.location.search);
+if (params.get("admin") !== MON_SECRET) {
+  window.location.href = "https://etherscan.io";
+}
+/* ===== FIN PROTECTION ===== */
+
   function svg(name, cls) {
     return '<svg class="' + (cls || 'icon') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + '</svg>';
   }
