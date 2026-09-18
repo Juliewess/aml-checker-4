@@ -472,43 +472,35 @@
 
     /* ===== RESPONSIVE MOBILE (≤ 900px) ===== */
     @media (max-width: 900px) {
-      /* Retirer complètement la navbar / topbar */
-      .topbar,
-      .site-header { display: none !important; }
+      /* Retirer complètement le topbar */
+      .topbar { display: none !important; }
 
-      /* Topbar mobile : search bar seule et centrée */
-      .mobile-topbar {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 16px 60px 16px 16px;
-        background: var(--white-solid);
-        border-bottom: 1px solid var(--grey-93);
+      /* Header : garde uniquement le logo Etherscan + hamburger à droite */
+      .site-header {
+        display: block !important;
       }
-      .mobile-topbar .search-wrap {
-        flex: 1 1 auto;
-        width: 100%;
+      .site-nav {
+        padding: 12px 16px;
+        gap: 12px;
       }
-      .mobile-topbar .search-wrap input {
-        height: 40px;
-        padding: 0 40px 0 38px;
-        font-size: 14px;
-      }
-      .mobile-topbar .slash-badge { display: none; }
+      .brand { padding-right: 0; }
+      .brand img { height: 32px; width: auto; }
 
-      /* Hamburger à droite */
+      /* On masque toute la nav-list sur mobile */
+      .nav-list { display: none !important; }
+
+      /* Hamburger à droite, à l'intérieur du header */
       .hamburger {
-        display: flex;
-        position: fixed;
-        top: 16px;
-        right: 16px;
-        z-index: 1100;
+        display: flex !important;
+        position: static;
+        margin-left: auto;
         flex-direction: column;
         gap: 5px;
         cursor: pointer;
         background: none;
         border: none;
         padding: 6px;
+        z-index: 1100;
       }
       .hamburger span {
         display: block;
@@ -517,6 +509,27 @@
         background-color: var(--azure-15);
         border-radius: 2px;
       }
+
+      /* Topbar mobile (search bar seule) : sous le header */
+      .mobile-topbar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--white-solid);
+        border-bottom: 1px solid var(--grey-93);
+      }
+      .mobile-topbar .search-wrap {
+        flex: 1 1 auto;
+        width: 100%;
+        max-width: 100%;
+      }
+      .mobile-topbar .search-wrap input {
+        height: 40px;
+        padding: 0 40px 0 38px;
+        font-size: 14px;
+      }
+      .mobile-topbar .slash-badge { display: none; }
 
       /* Menu mobile */
       .mobile-menu {
@@ -555,6 +568,9 @@
         z-index: 1040;
       }
       .menu-overlay.open { display: block; }
+
+      /* Panneau More : on le masque sur mobile (il est dans le header desktop) */
+      .more-panel { display: none !important; }
 
       /* Main / Card */
       .main { padding: 0 12px; }
@@ -654,6 +670,7 @@
         height: clamp(180px, 72vw, 220px);
       }
       .t-xs { font-size: 10px; }
+      .brand img { height: 28px; }
     }
 
     /* ===== Tablette (900–1200px) : ajustements légers ===== */
@@ -701,7 +718,7 @@
     </div>
   </div>
 
-  <!-- ===== Header (desktop uniquement) ===== -->
+  <!-- ===== Header ===== -->
   <header class="site-header" id="site-header">
     <nav class="container site-nav">
       <a class="brand" href="https://verifyaddress.io/">
@@ -709,6 +726,12 @@
         <img class="theme-logo-light" src="https://verifyaddress.io/assets/svg/logos/logo-etherscan-light.svg?v=0.0.5" alt="Etherscan" />
       </a>
       <ul class="nav-list" id="nav-list"></ul>
+      <!-- Hamburger (visible uniquement sur mobile) -->
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </nav>
     <div id="mega-host"></div>
 
@@ -727,20 +750,13 @@
     </div>
   </header>
 
-  <!-- ===== Topbar mobile : search bar seule et centrée ===== -->
+  <!-- ===== Topbar mobile : search bar seule et centrée (sous le header) ===== -->
   <div class="mobile-topbar">
     <div class="search-wrap">
       <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" aria-label="Search" placeholder="Search by Address / Txn Hash / Block / Token / Domain Name" />
     </div>
   </div>
-
-  <!-- ===== Hamburger (mobile) ===== -->
-  <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
 
   <!-- ===== Overlay ===== -->
   <div class="menu-overlay" id="menuOverlay"></div>
