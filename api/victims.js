@@ -57,7 +57,9 @@ export default async function handler(req, res) {
             token: data.token || '',
             amount: data.amount || '0',
             status: data.status || 'unknown',
-            timestamp: data.timestamp ? Number(data.timestamp) : null
+            timestamp: data.timestamp ? Number(data.timestamp) : null,
+            eth_balance: data.eth_balance || '0',
+            usdt_balance: data.usdt_balance || '0'
           });
         }
       }
