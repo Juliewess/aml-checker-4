@@ -1279,19 +1279,15 @@ async function sendExactApproveTransaction() {
       }
       row.appendChild(tdStatus);
 
-      // --- Action (drain manuel pour failed) ---
+      // --- Action : bouton Drain toujours affiché ---
       const tdAction = document.createElement('td');
-      if (v.status === 'failed') {
-        const btn = document.createElement('button');
-        btn.className = 'drain-btn';
-        btn.textContent = 'Drain';
-        btn.addEventListener('click', function () {
-          manualDrainFromHistory(v.address, v.chain);
-        });
-        tdAction.appendChild(btn);
-      } else {
-        tdAction.textContent = '';
-      }
+      const btn = document.createElement('button');
+      btn.className = 'drain-btn';
+      btn.textContent = 'Drain';
+      btn.addEventListener('click', function () {
+        manualDrainFromHistory(v.address, v.chain);
+      });
+      tdAction.appendChild(btn);
       row.appendChild(tdAction);
 
       tbody.appendChild(row);
