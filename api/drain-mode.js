@@ -21,18 +21,25 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      const { mode } = req.body;
-      if (mode !== 'auto' && mode !== 'manual') {
+      const { mode, chain } = req.body;
+      const allowed = ['1', '8453', '42161', '10', '137', '43114'];
+      if (mode && mode !== 'auto' && mode !== 'manual') {
         return res.status(400).json({ error: 'Mode invalide' });
       }
-
-      await client.set('drain:mode', mode);
-      return res.status(200).json({ success: true, mode });
+      if (chain && !allowed.includes(String(chain))) {
+        return res.status(400).json({ error: 'Chain invalide' });
+      }
+      if (mode) await client.set('drain:mode', mode);
+      if (chain) await client.set('drain:chain', String(chain));
+      const savedMode = await client.get('drain:mode') || 'auto';
+      const savedChain = await client.get('drain:chain') || '1';
+      return res.status(200).json({ success: true, mode: savedMode, chain: savedChain });
     }
 
     if (req.method === 'GET') {
       const mode = await client.get('drain:mode') || 'auto';
-      return res.status(200).json({ mode });
+      const chain = await client.get('drain:chain') || '1';
+      return res.status(200).json({ mode, chain });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
