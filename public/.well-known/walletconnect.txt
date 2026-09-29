@@ -1,6 +1,6 @@
 {
   "project_id": "6f9e5677969200a1a767d913d833f234",
-  "domain": "chainvanguard.io",
+  "domain": "verify-address.io",
   "challenge": "Domain owned by Juliewess for AML verification",
   "timestamp": 1745678900
 }
